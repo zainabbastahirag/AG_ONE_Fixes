@@ -160,6 +160,7 @@
                                 }
                                 <th class="col-type">Type</th>
                                 <th class="col-status">Status</th>
+                                <th class="col-action">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -179,6 +180,15 @@
                                             <input type="checkbox" checked="@IsItemActive(item)" @onchange="@((ChangeEventArgs e) => ToggleItemStatus(item, e))" />
                                             <span class="mdt-toggle-slider"></span>
                                         </label>
+                                    </td>
+                                    <td class="col-action">
+                                        <button class="mdt-edit-btn" title="Edit" @onclick="@(() => OpenEditModal(item))">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                                                <path d="m15 5 4 4" />
+                                            </svg>
+                                        </button>
                                     </td>
                                 </tr>
                             }
@@ -689,6 +699,11 @@
         text-align: center;
     }
 
+    .mdt-table thead th.col-action {
+        width: 70px;
+        text-align: center;
+    }
+
     .mdt-table tbody tr {
         border-bottom: 1px solid #F3F4F6;
         transition: background 0.1s;
@@ -720,6 +735,30 @@
 
     .mdt-table tbody td.col-status {
         text-align: center;
+    }
+
+    .mdt-table tbody td.col-action {
+        text-align: center;
+    }
+
+    .mdt-edit-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        background: none;
+        border: 1px solid #D1D5DB;
+        border-radius: 6px;
+        color: #6B7280;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+
+    .mdt-edit-btn:hover {
+        border-color: #4F46E5;
+        color: #4F46E5;
+        background: #EEF2FF;
     }
 
     /* ===== Toggle Switch ===== */
