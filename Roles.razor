@@ -12,14 +12,17 @@
 
 @if (_view == "list")
 {
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- ROLES LIST VIEW                                                    -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
     <div class="rl-page">
-        <!-- Page Header -->
-        <div class="rl-page-header">
+        <!-- Header -->
+        <div class="rl-header">
             <div>
-                <h1 class="rl-page-title">Roles</h1>
-                <p class="rl-page-subtitle">Manage roles and access for users</p>
+                <h1 class="rl-title">Roles</h1>
+                <p class="rl-subtitle">Manage roles and access for users</p>
             </div>
-            <button class="rl-btn-add" @onclick="StartCreateRole">
+            <button class="rl-btn-create" @onclick="StartCreateRole">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M5 12h14" /><path d="M12 5v14" />
                 </svg>
@@ -27,151 +30,98 @@
             </button>
         </div>
 
-        <!-- Body: Sidebar + Content -->
-        <div class="rl-body">
-            <!-- Left Sidebar: Product Navigator -->
-            <aside class="rl-sidebar">
-                <div class="rl-sidebar-title">Product Navigator</div>
+        <!-- Product Filter Pills -->
+        <div class="rl-pills">
+            <button class="rl-pill @(_productFilter == null ? "active" : "")" @onclick="@(() => { _productFilter = null; _currentPage = 1; })">All Product</button>
+            @foreach (var p in _products)
+            {
+                <button class="rl-pill @(_productFilter == p.Id ? "active" : "")" @onclick="@(() => { _productFilter = p.Id; _currentPage = 1; })">@p.Name</button>
+            }
+        </div>
 
-                <div class="rl-sidebar-group">
-                    <button class="rl-sidebar-group-toggle expanded">
-                        <span class="rl-sidebar-group-name">Products</span>
-                        <svg class="rl-chevron" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
-                             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="m6 9 6 6 6-6" />
-                        </svg>
-                    </button>
-                    <ul class="rl-sidebar-list">
-                        <li class="rl-sidebar-item @(_productFilter == null ? "active" : "")"
-                            @onclick="@(() => _productFilter = null)">
-                            All Products
-                        </li>
-                        @foreach (var p in _products)
+        <!-- Search + Toolbar -->
+        <div class="rl-toolbar">
+            <div class="rl-search-wrap">
+                <svg class="rl-search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
+                </svg>
+                <input type="text" class="rl-search" placeholder="Search" @bind="_search" @bind:event="oninput" />
+            </div>
+            <div class="rl-toolbar-right">
+                <button class="rl-icon-btn" title="Refresh" @onclick="LoadRoles">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                        <path d="M21 3v5h-5" />
+                        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                        <path d="M8 16H3v5" />
+                    </svg>
+                </button>
+                <button class="rl-icon-btn" title="Settings">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                        <circle cx="12" cy="12" r="3" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="rl-table-card">
+            <div class="rl-table-wrap">
+                <table class="rl-table">
+                    <thead>
+                        <tr>
+                            <th class="col-check"><input type="checkbox" /></th>
+                            <th class="col-role">Role</th>
+                            <th class="col-desc">
+                                Description
+                                <svg class="rl-sort-icon" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5" /><path d="m7 9 5-5 5 5" /></svg>
+                            </th>
+                            <th class="col-product">
+                                Product
+                                <svg class="rl-sort-icon" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5" /><path d="m7 9 5-5 5 5" /></svg>
+                            </th>
+                            <th class="col-users">
+                                Users
+                                <svg class="rl-sort-icon" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5" /><path d="m7 9 5-5 5 5" /></svg>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!PagedRoles.Any())
                         {
-                            <li class="rl-sidebar-item @(_productFilter == p.Id ? "active" : "")"
-                                @onclick="@(() => _productFilter = p.Id)">
-                                @p.Name
-                            </li>
+                            <tr><td colspan="5" class="rl-empty-row">No roles found</td></tr>
                         }
-                    </ul>
-                </div>
-            </aside>
+                        @foreach (var role in PagedRoles)
+                        {
+                            <tr @onclick="@(() => StartEditRole(role.Id))" style="cursor:pointer;">
+                                <td class="col-check" @onclick:stopPropagation="true"><input type="checkbox" /></td>
+                                <td class="col-role"><span class="rl-role-name">@role.DisplayName</span></td>
+                                <td class="col-desc rl-desc-text">@(role.Description ?? "—")</td>
+                                <td class="col-product"><span class="rl-badge @GetProductColor(role.ProductName)">@(role.ProductName ?? "AG ONE")</span></td>
+                                <td class="col-users rl-users-val">@role.UserCount</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
 
-            <!-- Main Content -->
-            <div class="rl-main">
-                <!-- Filter Row -->
-                <div class="rl-filters">
-                    <div class="rl-filter-group">
-                        <label class="rl-filter-label">Product</label>
-                        <div class="rl-dropdown">
-                            <span class="rl-dropdown-value">@(_productFilter == null ? "All Products" : _products.FirstOrDefault(p => p.Id == _productFilter)?.Name ?? "All Products")</span>
-                            <button class="rl-dropdown-clear" @onclick="@(() => _productFilter = null)" title="Clear">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
-                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M18 6 6 18" /><path d="m6 6 12 12" />
-                                </svg>
-                            </button>
-                            <select class="rl-dropdown-select" @onchange="OnProductFilterChanged">
-                                <option value="">All Products</option>
-                                @foreach (var p in _products)
-                                {
-                                    <option value="@p.Id" selected="@(_productFilter == p.Id)">@p.Name</option>
-                                }
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Search + Refresh -->
-                <div class="rl-search-row">
-                    <div class="rl-search-box">
-                        <svg class="rl-search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                             stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
-                        </svg>
-                        <input type="text" class="rl-search-input" placeholder="Search" @bind="_search" @bind:event="oninput" />
-                    </div>
-                    <button class="rl-refresh-btn" @onclick="LoadRoles" title="Refresh">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-                            <path d="M21 3v5h-5" />
-                            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-                            <path d="M8 16H3v5" />
-                        </svg>
+            <!-- Table Footer -->
+            <div class="rl-table-footer">
+                <span class="rl-showing">Showing @((_currentPage - 1) * _pageSize + 1) to @(Math.Min(_currentPage * _pageSize, FilteredRoles.Count())) of @FilteredRoles.Count() entries</span>
+                <div class="rl-pagination">
+                    <button class="rl-pg-btn" disabled="@(_currentPage <= 1)" @onclick="PreviousPage">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+                    </button>
+                    @for (int p = 1; p <= TotalPages; p++)
+                    {
+                        var pageNum = p;
+                        <button class="rl-pg-num @(pageNum == _currentPage ? "active" : "")" @onclick="@(() => _currentPage = pageNum)">@pageNum</button>
+                    }
+                    <button class="rl-pg-btn" disabled="@(_currentPage >= TotalPages)" @onclick="NextPage">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg>
                     </button>
                 </div>
-
-                <!-- Data Table -->
-                <div class="rl-table-wrapper">
-                    <table class="rl-table">
-                        <thead>
-                            <tr>
-                                <th class="col-role">Role</th>
-                                <th class="col-desc">Description</th>
-                                <th class="col-product">Product</th>
-                                <th class="col-users">Users</th>
-                                <th class="col-action">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (!PagedRoles.Any())
-                            {
-                                <tr>
-                                    <td colspan="5" class="rl-empty-row">No roles found</td>
-                                </tr>
-                            }
-                            @foreach (var role in PagedRoles)
-                            {
-                                <tr>
-                                    <td class="col-role"><span class="rl-role-name">@role.DisplayName</span></td>
-                                    <td class="col-desc rl-desc-text">@(role.Description ?? "—")</td>
-                                    <td class="col-product">
-                                        <span class="rl-product-badge @GetProductColor(role.ProductName)">@(role.ProductName ?? "AG ONE")</span>
-                                    </td>
-                                    <td class="col-users">@role.UserCount</td>
-                                    <td class="col-action">
-                                        <button class="rl-edit-btn" title="Edit" @onclick="@(() => StartEditRole(role.Id))">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                                                <path d="m15 5 4 4" />
-                                            </svg>
-                                        </button>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Table Footer -->
-                @if (FilteredRoles.Any())
-                {
-                    <div class="rl-table-footer">
-                        <span class="rl-showing-text">Showing @((_currentPage - 1) * _pageSize + 1) to @(Math.Min(_currentPage * _pageSize, FilteredRoles.Count())) of @FilteredRoles.Count() entries</span>
-                        <div class="rl-pagination">
-                            <button class="rl-page-btn" disabled="@(_currentPage <= 1)" @onclick="PreviousPage">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
-                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="m15 18-6-6 6-6" />
-                                </svg>
-                            </button>
-                            @for (int p = 1; p <= TotalPages; p++)
-                            {
-                                var pageNum = p;
-                                <button class="rl-page-num @(pageNum == _currentPage ? "active" : "")" @onclick="@(() => GoToPage(pageNum))">@pageNum</button>
-                            }
-                            <button class="rl-page-btn" disabled="@(_currentPage >= TotalPages)" @onclick="NextPage">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
-                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="m9 18 6-6-6-6" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                }
             </div>
         </div>
     </div>
@@ -183,20 +133,20 @@ else
     <!-- ═══════════════════════════════════════════════════════════════════ -->
     <div class="rw-page">
         <button class="rw-back" @onclick="BackToList">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 19-7-7 7-7" /><path d="M19 12H5" /></svg>
-            Back to Roles
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7" /><path d="M19 12H5" /></svg>
+            Back to Users
         </button>
 
         <!-- Stepper -->
         <div class="rw-stepper">
-            <div class="rw-step @(_wizardStep == 1 ? "active" : _wizardStep > 1 ? "done" : "")">
-                <div class="rw-step-circle">1</div>
-                <span>General</span>
+            <div class="rw-step @(_wizardStep >= 1 ? "active" : "")">
+                <div class="rw-step-num">1</div>
+                <span class="rw-step-label">General</span>
             </div>
-            <div class="rw-step-line @(_wizardStep > 1 ? "done" : "")"></div>
-            <div class="rw-step @(_wizardStep == 2 ? "active" : "")">
-                <div class="rw-step-circle">2</div>
-                <span>Review</span>
+            <div class="rw-step-line @(_wizardStep >= 2 ? "done" : "")"></div>
+            <div class="rw-step @(_wizardStep >= 2 ? "active" : "")">
+                <div class="rw-step-num @(_wizardStep < 2 ? "inactive" : "")">2</div>
+                <span class="rw-step-label @(_wizardStep < 2 ? "inactive" : "")">Review</span>
             </div>
         </div>
 
@@ -205,29 +155,29 @@ else
             <!-- Step 1: General -->
             <div class="rw-card">
                 <div class="rw-form-row">
-                    <div class="rw-form-group">
-                        <label>Role Name</label>
-                        <input type="text" @bind="_formName" placeholder="E.g Content Editor, Team Lead" />
+                    <div class="rw-field">
+                        <label class="rw-label">Role Name</label>
+                        <input type="text" class="rw-input" @bind="_formName" placeholder="E.g Content Editor, Team Lead" />
                     </div>
-                    <div class="rw-form-group">
-                        <label>Description</label>
-                        <input type="text" @bind="_formDescription" placeholder="Describe this role" />
+                    <div class="rw-field">
+                        <label class="rw-label">Description</label>
+                        <input type="text" class="rw-input" @bind="_formDescription" placeholder="Describe this role" />
                     </div>
                 </div>
             </div>
 
-            <div class="rw-section">
+            <div class="rw-section-header">
                 <h2>Product Access</h2>
                 <p>Choose which products this user will have access to and assign role</p>
             </div>
 
             <div class="rw-access-layout">
                 <!-- Left: Product Selector -->
-                <div class="rw-product-list">
-                    <h3>Select Products</h3>
+                <div class="rw-products-panel">
+                    <h3 class="rw-panel-title">Select Products</h3>
                     @foreach (var p in _allProducts)
                     {
-                        <div class="rw-product-item @(_selectedProductId == p.Id ? "active" : "")" @onclick="() => SelectProduct(p.Id)">
+                        <div class="rw-product-row @(_selectedProductId == p.Id ? "selected" : "")" @onclick="@(() => SelectProduct(p.Id))">
                             <div class="rw-radio @(_selectedProductId == p.Id ? "checked" : "")"></div>
                             <span>@p.Name</span>
                         </div>
@@ -235,12 +185,16 @@ else
                 </div>
 
                 <!-- Right: Permission Matrix -->
-                <div class="rw-perm-panel">
-                    <h3>Select Role's Permissions</h3>
-                    @if (_selectedProductId == Guid.Empty)
+                <div class="rw-perms-panel">
+                    <h3 class="rw-panel-title">Select Role's Permissions</h3>
+                    @if (_selectedProductId == Guid.Empty && !_allProducts.Any(p => p.Id == _selectedProductId))
                     {
-                        <div class="rw-perm-empty">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><circle cx="15" cy="13" r="1" fill="#cbd5e1" stroke="none" /></svg>
+                        <div class="rw-perms-empty">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                                <polyline points="14 2 14 8 20 8" />
+                                <circle cx="15" cy="13" r="1" fill="#cbd5e1" stroke="none" />
+                            </svg>
                             <p>Select product on the left to assign role</p>
                         </div>
                     }
@@ -254,16 +208,16 @@ else
                                     <thead>
                                         <tr>
                                             <th class="rw-m-role">Role</th>
-                                            <th class="rw-m-action">Create</th>
-                                            <th class="rw-m-action">Read</th>
-                                            <th class="rw-m-action">Update</th>
-                                            <th class="rw-m-action">Delete</th>
+                                            <th class="rw-m-act">Create</th>
+                                            <th class="rw-m-act">Read</th>
+                                            <th class="rw-m-act">Update</th>
+                                            <th class="rw-m-act">Delete</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach (var group in matrix.Groups)
                                         {
-                                            <tr class="rw-m-group-row">
+                                            <tr class="rw-m-group">
                                                 <td colspan="5">@group.GroupName</td>
                                             </tr>
                                             @foreach (var row in group.Rows)
@@ -283,15 +237,15 @@ else
                         }
                         else
                         {
-                            <div class="rw-perm-empty"><p>No permissions defined for this product.</p></div>
+                            <div class="rw-perms-empty"><p>No permissions defined for this product.</p></div>
                         }
                     }
                 </div>
             </div>
 
-            <div class="rw-nav">
-                <button class="rw-btn-outline" @onclick="BackToList">Cancel</button>
-                <button class="rl-btn-add" @onclick="() => _wizardStep = 2" disabled="@(string.IsNullOrWhiteSpace(_formName))">
+            <div class="rw-footer">
+                <button class="rw-btn-back" @onclick="BackToList">Cancel</button>
+                <button class="rw-btn-next" @onclick="@(() => _wizardStep = 2)" disabled="@(string.IsNullOrWhiteSpace(_formName))">
                     Next
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6" /></svg>
                 </button>
@@ -301,41 +255,63 @@ else
         {
             <!-- Step 2: Review -->
             <div class="rw-card">
-                <h3>Review Role</h3>
-                <div class="rw-review-grid">
-                    <div class="rw-review-item"><span class="rw-review-label">Role Name</span><span class="rw-review-value">@_formName</span></div>
-                    <div class="rw-review-item"><span class="rw-review-label">Description</span><span class="rw-review-value">@(_formDescription ?? "—")</span></div>
-                    <div class="rw-review-item"><span class="rw-review-label">Products</span><span class="rw-review-value">@GetSelectedProductNames()</span></div>
-                    <div class="rw-review-item"><span class="rw-review-label">Permissions</span><span class="rw-review-value">@_selectedPermissions.Count selected</span></div>
+                <div class="rw-review-meta">
+                    <div class="rw-review-row">
+                        <span class="rw-review-label">Role Name</span>
+                        <span class="rw-review-value">@_formName</span>
+                    </div>
+                    <div class="rw-review-row">
+                        <span class="rw-review-label">Description</span>
+                        <span class="rw-review-value">@(_formDescription ?? "—")</span>
+                    </div>
+                    <div class="rw-review-row">
+                        <span class="rw-review-label">Product</span>
+                        <span class="rw-review-value">@GetSelectedProductNames()</span>
+                    </div>
                 </div>
 
                 @if (_selectedPermissions.Any())
                 {
-                    <h4 style="margin-top:20px;">Selected Permissions</h4>
-                    <div class="rw-review-perms">
-                        @foreach (var permId in _selectedPermissions)
+                    @foreach (var matrix in _permissionMatrix.Where(m => m.ProductId == _selectedProductId))
+                    {
+                        @foreach (var group in matrix.Groups)
                         {
-                            var perm = FindPermission(permId);
-                            if (perm != null)
+                            var groupPerms = GetGroupSelectedPermissions(group);
+                            @if (groupPerms.Any())
                             {
-                                <span class="rw-perm-chip">@perm</span>
+                                <div class="rw-review-group">
+                                    <div class="rw-review-group-header">@group.GroupName</div>
+                                    @foreach (var rp in groupPerms)
+                                    {
+                                        <div class="rw-review-perm-row">
+                                            <span class="rw-review-resource">@rp.Resource</span>
+                                            <div class="rw-review-chips">
+                                                @foreach (var action in rp.Actions)
+                                                {
+                                                    <span class="rw-chip">@action</span>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
                             }
                         }
-                    </div>
+                    }
+                }
+                else
+                {
+                    <p class="rw-review-empty">No permissions selected.</p>
                 }
             </div>
 
-            <div class="rw-nav">
-                <button class="rw-btn-outline" @onclick="() => _wizardStep = 1">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6" /></svg>
-                    Back
-                </button>
-                <button class="rl-btn-add" @onclick="SaveRole" disabled="@_saving">
+            <div class="rw-footer">
+                <button class="rw-btn-back" @onclick="@(() => _wizardStep = 1)">Back</button>
+                <button class="rw-btn-confirm" @onclick="SaveRole" disabled="@_saving">
                     @if (_saving)
                     {
-                        <span class="rl-spinner"></span>
+                        <span class="rw-spinner"></span>
                     }
-                    @(_editingRoleId.HasValue ? "Update Role" : "Create Role")
+                    @(_editingRoleId.HasValue ? "Confirm & Update Role" : "Confirm & Create Role")
                 </button>
             </div>
         }
@@ -343,35 +319,23 @@ else
 }
 
 <style>
-    /* ===== Page Layout ===== */
-    .rl-page {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-        font-family: 'Inter', 'Segoe UI', sans-serif;
-    }
+    /* ═══════════════════════════════════════════════════════════════════ */
+    /* LIST VIEW                                                          */
+    /* ═══════════════════════════════════════════════════════════════════ */
 
-    .rl-page-header {
+    .rl-page { font-family: 'Inter', 'Segoe UI', sans-serif; }
+
+    .rl-header {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        margin-bottom: 24px;
+        margin-bottom: 20px;
     }
 
-    .rl-page-title {
-        font-size: 24px;
-        font-weight: 700;
-        color: #111827;
-        margin: 0 0 4px 0;
-    }
+    .rl-title { font-size: 24px; font-weight: 800; color: #0f172a; margin: 0; }
+    .rl-subtitle { font-size: 14px; color: #64748b; margin: 4px 0 0; }
 
-    .rl-page-subtitle {
-        font-size: 14px;
-        color: #6B7280;
-        margin: 0;
-    }
-
-    .rl-btn-add {
+    .rl-btn-create {
         display: inline-flex;
         align-items: center;
         gap: 6px;
@@ -387,349 +351,173 @@ else
         transition: background 0.2s;
     }
 
-    .rl-btn-add:hover { background: #163050; }
-    .rl-btn-add:disabled { opacity: 0.5; cursor: not-allowed; }
+    .rl-btn-create:hover { background: #163050; }
 
-    /* ===== Body: Sidebar + Main ===== */
-    .rl-body {
-        display: flex;
-        gap: 24px;
-        flex: 1;
-        min-height: 0;
-    }
+    /* Pills */
+    .rl-pills { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
 
-    /* ===== Sidebar ===== */
-    .rl-sidebar {
-        width: 220px;
-        min-width: 220px;
+    .rl-pill {
+        padding: 7px 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
         background: #fff;
-        border-right: 1px solid #E5E7EB;
-        padding: 0 16px 16px 0;
-    }
-
-    .rl-sidebar-title {
-        font-size: 14px;
-        font-weight: 600;
-        color: #374151;
-        padding: 12px 0;
-        border-bottom: 1px solid #E5E7EB;
-        margin-bottom: 4px;
-    }
-
-    .rl-sidebar-group-toggle {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        width: 100%;
-        background: none;
-        border: none;
-        padding: 10px 0;
-        cursor: pointer;
+        color: #475569;
         font-size: 13px;
-        font-weight: 600;
-        color: #4F46E5;
-        transition: color 0.15s;
-    }
-
-    .rl-sidebar-group-toggle:hover { color: #3730A3; }
-
-    .rl-chevron { transition: transform 0.2s; }
-    .rl-sidebar-group-toggle.expanded .rl-chevron { transform: rotate(180deg); }
-
-    .rl-sidebar-list {
-        list-style: none;
-        margin: 0;
-        padding: 0 0 4px 0;
-    }
-
-    .rl-sidebar-item {
-        padding: 8px 12px;
-        font-size: 13px;
-        color: #374151;
-        border-radius: 6px;
+        font-weight: 500;
         cursor: pointer;
         transition: all 0.15s;
-        border-left: 3px solid transparent;
     }
 
-    .rl-sidebar-item:hover { background: #F3F4F6; }
+    .rl-pill:hover { border-color: #93c5fd; color: #3b82f6; }
 
-    .rl-sidebar-item.active {
-        background: #4F46E5;
-        color: #fff;
-        border-left-color: #4F46E5;
-        font-weight: 500;
+    .rl-pill.active {
+        background: #eff6ff;
+        color: #3b82f6;
+        border-color: #93c5fd;
+        font-weight: 600;
     }
 
-    /* ===== Main Content ===== */
-    .rl-main {
-        flex: 1;
-        min-width: 0;
-    }
+    /* Toolbar */
+    .rl-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 
-    /* ===== Filter Dropdowns ===== */
-    .rl-filters {
-        display: flex;
-        gap: 20px;
-        margin-bottom: 20px;
-    }
-
-    .rl-filter-group {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-    }
-
-    .rl-filter-label {
-        font-size: 12px;
-        font-weight: 500;
-        color: #6B7280;
-    }
-
-    .rl-dropdown {
-        position: relative;
-        display: flex;
-        align-items: center;
-        background: #fff;
-        border: 1px solid #D1D5DB;
-        border-radius: 8px;
-        padding: 8px 12px;
-        gap: 8px;
-        min-width: 200px;
-        cursor: pointer;
-    }
-
-    .rl-dropdown-value {
-        font-size: 14px;
-        color: #111827;
-        flex: 1;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .rl-dropdown-clear {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: none;
-        border: none;
-        padding: 2px;
-        cursor: pointer;
-        color: #9CA3AF;
-        border-radius: 4px;
-        transition: color 0.15s;
-    }
-
-    .rl-dropdown-clear:hover { color: #374151; }
-
-    .rl-dropdown-select {
-        position: absolute;
-        inset: 0;
-        opacity: 0;
-        cursor: pointer;
-        width: 100%;
-        height: 100%;
-    }
-
-    /* ===== Search Row ===== */
-    .rl-search-row {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 16px;
-    }
-
-    .rl-search-box {
-        position: relative;
-        flex: 0 1 340px;
-    }
+    .rl-search-wrap { position: relative; }
 
     .rl-search-icon {
         position: absolute;
         left: 12px;
         top: 50%;
         transform: translateY(-50%);
-        color: #9CA3AF;
+        color: #94a3b8;
         pointer-events: none;
     }
 
-    .rl-search-input {
-        width: 100%;
-        padding: 9px 12px 9px 36px;
-        border: 1px solid #D1D5DB;
+    .rl-search {
+        padding: 9px 14px 9px 36px;
+        border: 1px solid #d1d5db;
         border-radius: 8px;
         font-size: 14px;
-        color: #111827;
-        background: #fff;
+        width: 280px;
         outline: none;
         transition: border-color 0.15s;
     }
 
-    .rl-search-input::placeholder { color: #9CA3AF; }
-    .rl-search-input:focus { border-color: #4F46E5; }
+    .rl-search::placeholder { color: #9CA3AF; }
+    .rl-search:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
 
-    .rl-refresh-btn {
+    .rl-toolbar-right { display: flex; gap: 6px; }
+
+    .rl-icon-btn {
+        background: #fff;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 8px;
+        cursor: pointer;
+        color: #64748b;
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 38px;
-        height: 38px;
-        background: #fff;
-        border: 1px solid #D1D5DB;
-        border-radius: 8px;
-        cursor: pointer;
-        color: #6B7280;
         transition: all 0.15s;
     }
 
-    .rl-refresh-btn:hover {
-        border-color: #4F46E5;
-        color: #4F46E5;
-    }
+    .rl-icon-btn:hover { background: #f1f5f9; border-color: #94a3b8; }
 
-    /* ===== Data Table ===== */
-    .rl-table-wrapper {
-        border: 1px solid #E5E7EB;
-        border-radius: 10px;
-        overflow: hidden;
+    /* Table Card */
+    .rl-table-card {
         background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        overflow: hidden;
     }
 
-    .rl-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
+    .rl-table-wrap { overflow-x: auto; }
 
-    .rl-table thead tr { background: #4F46E5; }
+    .rl-table { width: 100%; border-collapse: collapse; }
+
+    .rl-table thead tr { background: #3b82f6; }
 
     .rl-table thead th {
         padding: 12px 16px;
+        text-align: left;
         font-size: 13px;
         font-weight: 600;
         color: #fff;
-        text-align: left;
         white-space: nowrap;
     }
 
-    .rl-table thead th.col-users { width: 80px; }
-    .rl-table thead th.col-action { width: 70px; text-align: center; }
+    .rl-table thead th.col-check { width: 44px; text-align: center; }
+    .rl-table thead th.col-users { width: 90px; }
 
-    .rl-table tbody tr {
-        border-bottom: 1px solid #F3F4F6;
-        transition: background 0.1s;
-    }
+    .rl-sort-icon { margin-left: 4px; vertical-align: middle; opacity: 0.8; }
 
+    .rl-table tbody tr { border-bottom: 1px solid #f1f5f9; transition: background 0.1s; }
     .rl-table tbody tr:last-child { border-bottom: none; }
-    .rl-table tbody tr:hover { background: #F9FAFB; }
+    .rl-table tbody tr:hover { background: #f8fafc; }
 
-    .rl-table tbody td {
-        padding: 12px 16px;
-        font-size: 14px;
-        color: #374151;
-    }
+    .rl-table tbody td { padding: 14px 16px; font-size: 14px; color: #0f172a; }
+    .rl-table tbody td.col-check { text-align: center; }
 
-    .rl-table tbody td.col-action { text-align: center; }
+    .rl-table input[type="checkbox"] { width: 16px; height: 16px; accent-color: #3b82f6; cursor: pointer; }
 
-    .rl-empty-row {
-        text-align: center;
-        padding: 48px 16px !important;
-        color: #94a3b8;
-    }
+    .rl-role-name { font-weight: 600; }
+    .rl-desc-text { color: #64748b; max-width: 340px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rl-users-val { font-weight: 600; color: #475569; }
 
-    .rl-role-name {
-        font-weight: 600;
-        color: #111827;
-    }
+    .rl-empty-row { text-align: center; padding: 48px 16px !important; color: #94a3b8; }
 
-    .rl-desc-text {
-        color: #6B7280;
-        max-width: 300px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    /* ===== Product Badges ===== */
-    .rl-product-badge {
+    /* Product Badge */
+    .rl-badge {
         display: inline-block;
         padding: 4px 12px;
         border-radius: 6px;
         font-size: 12px;
         font-weight: 600;
+        white-space: nowrap;
     }
 
-    .rl-product-badge.c-blue { background: #dbeafe; color: #1d4ed8; }
-    .rl-product-badge.c-purple { background: #ede9fe; color: #6d28d9; }
-    .rl-product-badge.c-green { background: #dcfce7; color: #16a34a; }
-    .rl-product-badge.c-yellow { background: #fef3c7; color: #d97706; }
-    .rl-product-badge.c-pink { background: #fce7f3; color: #db2777; }
-    .rl-product-badge.c-cyan { background: #cffafe; color: #0891b2; }
+    .rl-badge.c-blue { background: #dbeafe; color: #1d4ed8; }
+    .rl-badge.c-purple { background: #ede9fe; color: #6d28d9; }
+    .rl-badge.c-green { background: #dcfce7; color: #16a34a; }
+    .rl-badge.c-yellow { background: #fef3c7; color: #d97706; }
+    .rl-badge.c-pink { background: #fce7f3; color: #db2777; }
+    .rl-badge.c-cyan { background: #cffafe; color: #0891b2; }
 
-    /* ===== Edit Button ===== */
-    .rl-edit-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 32px;
-        height: 32px;
-        background: none;
-        border: 1px solid #D1D5DB;
-        border-radius: 6px;
-        color: #6B7280;
-        cursor: pointer;
-        transition: all 0.15s;
-    }
-
-    .rl-edit-btn:hover {
-        border-color: #4F46E5;
-        color: #4F46E5;
-        background: #EEF2FF;
-    }
-
-    /* ===== Table Footer ===== */
+    /* Table Footer */
     .rl-table-footer {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 14px 0 0 0;
+        padding: 14px 16px;
+        border-top: 1px solid #f1f5f9;
     }
 
-    .rl-showing-text {
-        font-size: 13px;
-        color: #6B7280;
-    }
+    .rl-showing { font-size: 13px; color: #3b82f6; }
 
-    .rl-pagination {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-    }
+    .rl-pagination { display: flex; align-items: center; gap: 4px; }
 
-    .rl-page-btn {
+    .rl-pg-btn {
         display: flex;
         align-items: center;
         justify-content: center;
         width: 32px;
         height: 32px;
-        border: 1px solid #D1D5DB;
+        border: 1px solid #e2e8f0;
         border-radius: 6px;
         background: #fff;
-        color: #374151;
+        color: #64748b;
         cursor: pointer;
         transition: all 0.15s;
     }
 
-    .rl-page-btn:disabled { opacity: 0.4; cursor: default; }
-    .rl-page-btn:not(:disabled):hover { border-color: #4F46E5; color: #4F46E5; }
+    .rl-pg-btn:disabled { opacity: 0.4; cursor: default; }
+    .rl-pg-btn:not(:disabled):hover { border-color: #3b82f6; color: #3b82f6; }
 
-    .rl-page-num {
+    .rl-pg-num {
         display: flex;
         align-items: center;
         justify-content: center;
         width: 32px;
         height: 32px;
-        border: 1px solid #D1D5DB;
+        border: 1px solid #e2e8f0;
         border-radius: 6px;
         background: #fff;
         color: #374151;
@@ -739,16 +527,14 @@ else
         transition: all 0.15s;
     }
 
-    .rl-page-num.active {
-        background: #4F46E5;
-        color: #fff;
-        border-color: #4F46E5;
-    }
+    .rl-pg-num.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+    .rl-pg-num:not(.active):hover { border-color: #3b82f6; color: #3b82f6; }
 
-    .rl-page-num:not(.active):hover { border-color: #4F46E5; color: #4F46E5; }
+    /* ═══════════════════════════════════════════════════════════════════ */
+    /* WIZARD                                                              */
+    /* ═══════════════════════════════════════════════════════════════════ */
 
-    /* ===== Wizard Styles ===== */
-    .rw-page { max-width: 1100px; }
+    .rw-page { max-width: 1100px; font-family: 'Inter', 'Segoe UI', sans-serif; }
 
     .rw-back {
         display: inline-flex;
@@ -756,16 +542,17 @@ else
         gap: 6px;
         background: none;
         border: none;
-        color: #4F46E5;
+        color: #0f172a;
         font-size: 14px;
-        font-weight: 600;
+        font-weight: 700;
         cursor: pointer;
         padding: 0;
-        margin-bottom: 20px;
+        margin-bottom: 24px;
     }
 
-    .rw-back:hover { color: #3730A3; }
+    .rw-back:hover { color: #3b82f6; }
 
+    /* Stepper */
     .rw-stepper {
         display: flex;
         align-items: center;
@@ -773,47 +560,43 @@ else
         margin-bottom: 32px;
     }
 
-    .rw-step {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
+    .rw-step { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 
-    .rw-step-circle {
-        width: 32px;
-        height: 32px;
+    .rw-step-num {
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
-        border: 2px solid #d1d5db;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 14px;
+        font-size: 15px;
         font-weight: 700;
-        color: #94a3b8;
-        background: #fff;
-    }
-
-    .rw-step.active .rw-step-circle,
-    .rw-step.done .rw-step-circle {
-        background: #4F46E5;
+        background: #3b82f6;
         color: #fff;
-        border-color: #4F46E5;
+        border: 3px solid #3b82f6;
     }
 
-    .rw-step span { font-size: 14px; font-weight: 500; color: #94a3b8; }
-    .rw-step.active span { color: #4F46E5; font-weight: 600; }
-    .rw-step.done span { color: #4F46E5; }
+    .rw-step-num.inactive {
+        background: #fff;
+        color: #94a3b8;
+        border-color: #d1d5db;
+    }
+
+    .rw-step-label { font-size: 13px; font-weight: 600; color: #3b82f6; }
+    .rw-step-label.inactive { color: #94a3b8; }
 
     .rw-step-line {
         flex: 1;
-        max-width: 200px;
-        height: 2px;
+        max-width: 400px;
+        height: 3px;
         background: #d1d5db;
-        margin: 0 16px;
+        margin: 0 20px;
+        margin-bottom: 24px;
     }
 
-    .rw-step-line.done { background: #4F46E5; }
+    .rw-step-line.done { background: #3b82f6; }
 
+    /* Card */
     .rw-card {
         background: #fff;
         border: 1px solid #e2e8f0;
@@ -822,37 +605,31 @@ else
         margin-bottom: 24px;
     }
 
-    .rw-form-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-    }
+    .rw-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 
-    .rw-form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-    }
+    .rw-field { display: flex; flex-direction: column; gap: 6px; }
 
-    .rw-form-group label { font-size: 13px; font-weight: 600; color: #374151; }
+    .rw-label { font-size: 13px; font-weight: 600; color: #374151; }
 
-    .rw-form-group input {
+    .rw-input {
         padding: 10px 14px;
         border: 1px solid #d1d5db;
         border-radius: 8px;
         font-size: 14px;
-    }
-
-    .rw-form-group input:focus {
+        color: #111827;
         outline: none;
-        border-color: #4F46E5;
-        box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+        transition: border-color 0.15s;
     }
 
-    .rw-section { margin-bottom: 16px; }
-    .rw-section h2 { font-size: 18px; font-weight: 700; color: #0f172a; margin: 0 0 4px; }
-    .rw-section p { font-size: 14px; color: #64748b; margin: 0; }
+    .rw-input::placeholder { color: #9CA3AF; }
+    .rw-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
 
+    /* Section Header */
+    .rw-section-header { margin-bottom: 16px; }
+    .rw-section-header h2 { font-size: 18px; font-weight: 700; color: #0f172a; margin: 0 0 4px; }
+    .rw-section-header p { font-size: 14px; color: #64748b; margin: 0; }
+
+    /* Access Layout */
     .rw-access-layout {
         display: flex;
         gap: 0;
@@ -864,68 +641,72 @@ else
         min-height: 400px;
     }
 
-    .rw-product-list {
-        width: 240px;
-        min-width: 240px;
+    .rw-products-panel {
+        width: 260px;
+        min-width: 260px;
         border-right: 1px solid #e2e8f0;
-        padding: 16px 0;
+        padding: 20px 0;
     }
 
-    .rw-product-list h3 { font-size: 13px; font-weight: 600; color: #475569; padding: 0 16px; margin: 0 0 12px; }
+    .rw-panel-title { font-size: 13px; font-weight: 600; color: #475569; padding: 0 20px; margin: 0 0 16px; }
 
-    .rw-product-item {
+    .rw-product-row {
         display: flex;
         align-items: center;
-        gap: 10px;
-        padding: 12px 16px;
+        gap: 12px;
+        padding: 14px 20px;
         cursor: pointer;
         font-size: 14px;
         color: #0f172a;
-        transition: background 0.15s;
-        border-left: 3px solid transparent;
+        border: 1px solid transparent;
+        margin: 0 12px 6px;
+        border-radius: 8px;
+        transition: all 0.15s;
     }
 
-    .rw-product-item:hover { background: #f8fafc; }
+    .rw-product-row:hover { background: #f8fafc; border-color: #e2e8f0; }
 
-    .rw-product-item.active {
-        background: #EEF2FF;
-        border-left-color: #4F46E5;
+    .rw-product-row.selected {
+        background: #eff6ff;
+        border-color: #93c5fd;
         font-weight: 600;
-        color: #4F46E5;
+        color: #1d4ed8;
     }
 
     .rw-radio {
-        width: 18px;
-        height: 18px;
+        width: 20px;
+        height: 20px;
         border-radius: 50%;
         border: 2px solid #d1d5db;
         flex-shrink: 0;
+        transition: all 0.15s;
     }
 
     .rw-radio.checked {
-        border-color: #4F46E5;
-        background: #4F46E5;
+        border-color: #3b82f6;
+        background: #3b82f6;
         box-shadow: inset 0 0 0 3px #fff;
     }
 
-    .rw-perm-panel { flex: 1; padding: 16px; overflow-x: auto; }
-    .rw-perm-panel h3 { font-size: 13px; font-weight: 600; color: #475569; margin: 0 0 16px; }
+    /* Permissions Panel */
+    .rw-perms-panel { flex: 1; padding: 20px; overflow-x: auto; }
 
-    .rw-perm-empty {
+    .rw-perms-empty {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 60px 20px;
+        padding: 80px 20px;
         color: #94a3b8;
     }
 
-    .rw-perm-empty p { margin: 12px 0 0; font-size: 14px; color: #4F46E5; }
+    .rw-perms-empty p { margin: 16px 0 0; font-size: 14px; color: #3b82f6; }
 
+    /* Permission Matrix */
     .rw-matrix-wrap { overflow-x: auto; }
-
     .rw-matrix { width: 100%; border-collapse: collapse; }
-    .rw-matrix thead { background: #4F46E5; }
+
+    .rw-matrix thead tr { background: #3b82f6; }
 
     .rw-matrix th {
         padding: 10px 16px;
@@ -937,32 +718,28 @@ else
 
     .rw-matrix th.rw-m-role { text-align: left; }
 
-    .rw-matrix td {
-        padding: 10px 16px;
-        border-bottom: 1px solid #f1f5f9;
-        font-size: 14px;
-    }
+    .rw-matrix td { padding: 10px 16px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
 
-    .rw-m-group-row { background: #f1f5f9; }
-    .rw-m-group-row td { font-weight: 700; color: #475569; font-size: 13px; }
+    .rw-m-group { background: #f1f5f9; }
+    .rw-m-group td { font-weight: 700; color: #475569; font-size: 13px; }
     .rw-m-resource { color: #0f172a; }
     .rw-m-check { text-align: center; }
-
-    .rw-m-check input { width: 18px; height: 18px; accent-color: #4F46E5; cursor: pointer; }
+    .rw-m-check input { width: 18px; height: 18px; accent-color: #3b82f6; cursor: pointer; }
     .rw-m-check input:disabled { opacity: 0.2; cursor: default; }
-    .rw-m-action { text-align: center; }
+    .rw-m-act { text-align: center; }
 
-    .rw-nav {
+    /* Wizard Footer */
+    .rw-footer {
         display: flex;
-        justify-content: space-between;
+        justify-content: center;
+        gap: 16px;
         margin-top: 8px;
     }
 
-    .rw-btn-outline {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 10px 20px;
+    .rw-btn-back {
+        flex: 1;
+        max-width: 400px;
+        padding: 12px 24px;
         border: 1px solid #d1d5db;
         border-radius: 8px;
         background: #fff;
@@ -970,68 +747,122 @@ else
         font-size: 14px;
         font-weight: 600;
         cursor: pointer;
+        text-align: center;
+        transition: background 0.15s;
     }
 
-    .rw-btn-outline:hover { background: #f9fafb; }
+    .rw-btn-back:hover { background: #f9fafb; }
 
-    .rw-review-grid {
+    .rw-btn-next {
+        flex: 1;
+        max-width: 400px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 12px 24px;
+        background: #3b82f6;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .rw-btn-next:hover { background: #2563eb; }
+    .rw-btn-next:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .rw-btn-confirm {
+        flex: 1;
+        max-width: 400px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 12px 24px;
+        background: linear-gradient(90deg, #4F46E5, #7C3AED);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.2s;
+    }
+
+    .rw-btn-confirm:hover { opacity: 0.9; }
+    .rw-btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Review Step */
+    .rw-review-meta {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 16px;
+        margin-bottom: 20px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #f1f5f9;
     }
 
-    .rw-review-item { display: flex; flex-direction: column; gap: 4px; }
+    .rw-review-row { display: flex; flex-direction: column; gap: 4px; }
     .rw-review-label { font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; }
     .rw-review-value { font-size: 15px; font-weight: 500; color: #0f172a; }
 
-    .rw-review-perms { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .rw-review-group { margin-bottom: 4px; }
 
-    .rw-perm-chip {
-        padding: 4px 10px;
-        background: #f0fdf4;
-        color: #16a34a;
+    .rw-review-group-header {
+        background: #f1f5f9;
+        padding: 10px 16px;
+        font-size: 14px;
+        font-weight: 700;
+        color: #374151;
+        border-radius: 6px;
+        margin-bottom: 2px;
+    }
+
+    .rw-review-perm-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 16px;
+        border-bottom: 1px solid #f8fafc;
+    }
+
+    .rw-review-resource { font-size: 14px; color: #0f172a; }
+
+    .rw-review-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .rw-chip {
+        padding: 4px 12px;
+        border: 1px solid #3b82f6;
+        color: #3b82f6;
         border-radius: 6px;
         font-size: 12px;
         font-weight: 500;
+        background: #fff;
     }
 
-    .rl-spinner {
+    .rw-review-empty { font-size: 14px; color: #94a3b8; text-align: center; padding: 20px 0; }
+
+    .rw-spinner {
         width: 16px;
         height: 16px;
         border: 2px solid rgba(255,255,255,0.3);
         border-top-color: #fff;
         border-radius: 50%;
-        animation: rl-spin 0.6s linear infinite;
+        animation: rw-spin 0.6s linear infinite;
         display: inline-block;
     }
 
-    @@keyframes rl-spin {
-        to { transform: rotate(360deg); }
-    }
+    @@keyframes rw-spin { to { transform: rotate(360deg); } }
 
     @@media (max-width: 768px) {
-        .rl-body { flex-direction: column; }
-
-        .rl-sidebar {
-            width: 100%;
-            min-width: unset;
-            border-right: none;
-            border-bottom: 1px solid #E5E7EB;
-            padding: 0 0 12px 0;
-        }
-
-        .rl-filters { flex-direction: column; }
-
         .rw-access-layout { flex-direction: column; }
-
-        .rw-product-list {
-            width: 100%;
-            min-width: 100%;
-            border-right: none;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
+        .rw-products-panel { width: 100%; min-width: 100%; border-right: none; border-bottom: 1px solid #e2e8f0; }
         .rw-form-row { grid-template-columns: 1fr; }
+        .rw-footer { flex-direction: column; }
+        .rw-btn-back, .rw-btn-next, .rw-btn-confirm { max-width: 100%; }
     }
 </style>
 
@@ -1113,6 +944,8 @@ else
         {
             _roles = new List<RoleListItemDto>
             {
+                new() { Id = Guid.NewGuid(), DisplayName = "IT Support", Description = "Configure and product related data", ProductName = "AG ONE", UserCount = 2 },
+                new() { Id = Guid.NewGuid(), DisplayName = "Tenant Owner", Description = "Full tenant control and configuration.", ProductName = "AG ONE", UserCount = 1 },
                 new() { Id = Guid.NewGuid(), DisplayName = "Tenant Admin", Description = "Manage tenant settings, users, and permissions.", ProductName = "AG ONE", UserCount = 2 },
                 new() { Id = Guid.NewGuid(), DisplayName = "Product Admin", Description = "Manage users, and product master data & configuration", ProductName = "AG ONE Pulse", UserCount = 3 },
                 new() { Id = Guid.NewGuid(), DisplayName = "Product Admin", Description = "Manage users, and product master data & configuration", ProductName = "AG ONE Work", UserCount = 1 },
@@ -1134,21 +967,20 @@ else
             {
                 new() { ProductId = Guid.Empty, ProductName = "AG ONE (admin)", Groups = new()
                 {
-                    new() { GroupName = "User Management", Rows = new() { new() { Resource = "Users", CreateId = Guid.NewGuid(), ReadId = Guid.NewGuid(), UpdateId = Guid.NewGuid(), DeleteId = Guid.NewGuid() }, new() { Resource = "Roles", CreateId = Guid.NewGuid(), ReadId = Guid.NewGuid(), UpdateId = Guid.NewGuid(), DeleteId = Guid.NewGuid() }, new() { Resource = "Permissions", CreateId = Guid.NewGuid(), ReadId = Guid.NewGuid(), UpdateId = Guid.NewGuid(), DeleteId = Guid.NewGuid() } } },
-                    new() { GroupName = "Tenant Management", Rows = new() { new() { Resource = "Tenant Information", CreateId = Guid.NewGuid(), ReadId = Guid.NewGuid(), UpdateId = Guid.NewGuid(), DeleteId = Guid.NewGuid() }, new() { Resource = "Subscriptions", CreateId = Guid.NewGuid(), ReadId = Guid.NewGuid(), UpdateId = Guid.NewGuid(), DeleteId = Guid.NewGuid() }, new() { Resource = "Billing", CreateId = Guid.NewGuid(), ReadId = Guid.NewGuid(), UpdateId = Guid.NewGuid(), DeleteId = Guid.NewGuid() } } }
+                    new() { GroupName = "Tenant Management", Rows = new() {
+                        new() { Resource = "SSO Configuration", CreateId = Guid.NewGuid(), ReadId = Guid.NewGuid(), UpdateId = Guid.NewGuid(), DeleteId = Guid.NewGuid() },
+                        new() { Resource = "API Management", CreateId = Guid.NewGuid(), ReadId = Guid.NewGuid(), UpdateId = Guid.NewGuid(), DeleteId = Guid.NewGuid() },
+                        new() { Resource = "Audit & Visibility", CreateId = Guid.NewGuid(), ReadId = Guid.NewGuid(), UpdateId = null, DeleteId = null }
+                    } },
+                    new() { GroupName = "Product Settings", Rows = new() {
+                        new() { Resource = "Product Master Data", CreateId = null, ReadId = Guid.NewGuid(), UpdateId = null, DeleteId = null },
+                        new() { Resource = "Product Configurations", CreateId = null, ReadId = Guid.NewGuid(), UpdateId = Guid.NewGuid(), DeleteId = null }
+                    } }
                 } }
             };
         }
     }
 
-    private void OnProductFilterChanged(ChangeEventArgs e)
-    {
-        var val = e.Value?.ToString();
-        _productFilter = string.IsNullOrEmpty(val) ? null : Guid.TryParse(val, out var id) ? id : null;
-        _currentPage = 1;
-    }
-
-    private void GoToPage(int page) { _currentPage = page; }
     private void PreviousPage() { if (_currentPage > 1) _currentPage--; }
     private void NextPage() { if (_currentPage < TotalPages) _currentPage++; }
 
@@ -1207,6 +1039,22 @@ else
         return null;
     }
 
+    private List<ReviewPermRow> GetGroupSelectedPermissions(PermissionGroupMatrixDto group)
+    {
+        var result = new List<ReviewPermRow>();
+        foreach (var row in group.Rows)
+        {
+            var actions = new List<string>();
+            if (row.CreateId.HasValue && _selectedPermissions.Contains(row.CreateId.Value)) actions.Add("Create");
+            if (row.ReadId.HasValue && _selectedPermissions.Contains(row.ReadId.Value)) actions.Add("Read");
+            if (row.UpdateId.HasValue && _selectedPermissions.Contains(row.UpdateId.Value)) actions.Add("Update");
+            if (row.DeleteId.HasValue && _selectedPermissions.Contains(row.DeleteId.Value)) actions.Add("Delete");
+            if (actions.Any())
+                result.Add(new ReviewPermRow { Resource = row.Resource, Actions = actions });
+        }
+        return result;
+    }
+
     private string GetProductColor(string? name) => (name ?? "").ToLower() switch
     {
         var n when n.Contains("work") => "c-green",
@@ -1240,6 +1088,7 @@ else
     }
 
     private class ProductInfo { public Guid Id { get; set; } public string Name { get; set; } = ""; }
+    private class ReviewPermRow { public string Resource { get; set; } = ""; public List<string> Actions { get; set; } = new(); }
 
     public class RoleListItemDto { public Guid Id { get; set; } public string DisplayName { get; set; } = ""; public string? Description { get; set; } public Guid? ProductId { get; set; } public string? ProductName { get; set; } public bool IsSystemRole { get; set; } public int UserCount { get; set; } }
     public class RoleDetailDto { public Guid Id { get; set; } public string DisplayName { get; set; } = ""; public string? Description { get; set; } public Guid? ProductId { get; set; } public List<Guid> PermissionIds { get; set; } = new(); }
