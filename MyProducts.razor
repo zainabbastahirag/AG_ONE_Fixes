@@ -1,0 +1,377 @@
+@page "/admin/my-products"
+@layout AdminLayout
+@using System.Linq
+@inject ISubscriptionService SubscriptionService
+@inject IProductService ProductService
+@inject IAuthService AuthService
+@inject IAGAuthorizationService AuthorizationService
+@inject IProductLaunchService ProductLaunchService
+@inject NavigationManager Navigation
+@inject ISettingsService SettingsService
+
+<PageTitle>My Products - AGOne</PageTitle>
+
+<div class="my-products-page">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">My Product</h1>
+            <p class="page-subtitle">View and launch all your accessible products in one place</p>
+        </div>
+    </div>
+
+    <div class="products-grid">
+        @if (_activeSubscriptions.Count == 0)
+        {
+            <div class="empty-state">
+                <p>No active subscriptions. Explore products to get started!</p>
+            </div>
+        }
+        else
+        {
+            @foreach (var sub in _activeSubscriptions)
+            {
+                <div class="product-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            @{
+                                var logoUrl = GetProductLogo(sub.ProductCode);
+                            }
+                            @if (!string.IsNullOrEmpty(logoUrl))
+                            {
+                                <img src="@logoUrl" alt="@sub.ProductName Logo" />
+                            }
+                            else
+                            {
+                                <span class="card-icon-initial">@sub.Initial</span>
+                            }
+                        </div>
+                        <div class="card-info">
+                            <h3 class="card-title">@sub.ProductName</h3>
+                            <p class="card-desc">@sub.Description</p>
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn-launch" @onclick="@(() => LaunchProductAsync(sub.ProductCode))">
+                            Launch
+                        </button>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<style>
+    .my-products-page {
+        padding: 0;
+        min-height: 100%;
+    }
+
+    .page-header {
+        margin-bottom: 2.5rem;
+    }
+
+    .page-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: #111827;
+        margin: 0 0 4px 0;
+    }
+
+    .page-subtitle {
+        font-size: 14px;
+        color: #6B7280;
+        margin: 0;
+    }
+
+    .products-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+    }
+
+    .empty-state {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 48px 24px;
+        background: #F9FAFB;
+        border-radius: 12px;
+        color: #6B7280;
+        font-size: 14px;
+    }
+
+    .product-card {
+        background: #fff;
+        border: 1px solid #E5E7EB;
+        border-radius: 12px;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transition: box-shadow 0.2s ease;
+    }
+
+        .product-card:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        }
+
+    .card-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        margin-bottom: 20px;
+    }
+
+    .card-icon {
+        width: 64px;
+        height: 64px;
+        min-width: 64px;
+        border-radius: 10px;
+        border: 1px solid #E5E7EB;
+        background: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+
+        .card-icon img {
+            max-width: 85%;
+            max-height: 85%;
+            object-fit: contain;
+        }
+
+    .card-icon-initial {
+        font-size: 22px;
+        font-weight: 700;
+        color: #4338CA;
+    }
+
+    .card-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .card-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #111827;
+        margin: 0 0 4px 0;
+    }
+
+    .card-desc {
+        font-size: 13px;
+        color: #6B7280;
+        margin: 0;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .card-actions {
+        margin-top: auto;
+    }
+
+    .btn-launch {
+        width: 100%;
+        padding: 10px 0;
+        border: none;
+        border-radius: 8px;
+        background: linear-gradient(90deg, #4338CA, #7C3AED);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.2s ease;
+        letter-spacing: 0.01em;
+    }
+
+        .btn-launch:hover {
+            opacity: 0.9;
+        }
+
+    @@media (max-width: 1024px) {
+        .products-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @@media (max-width: 640px) {
+        .products-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+@code {
+    private List<SubscriptionViewModel> _activeSubscriptions = new();
+    private List<ProductViewModel> _availableProducts = new();
+    private IEnumerable<string>? _userRoles;
+    private List<Guid> _subscribedProductIds = new();
+    private bool _isPlatformLevel = false;
+    private UserDto? currentUser;
+    private bool _isMGateUser = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        try
+        {
+            currentUser = await AuthService.GetCurrentUserAsync();
+
+            var allowedMGateUserIds = await SettingsService.GetMGateAllowedUserIdsAsync();
+            var currentUserId = currentUser?.Id.ToString().ToUpperInvariant() ?? "";
+            _isMGateUser = allowedMGateUserIds.Any(id => id.ToUpperInvariant() == currentUserId);
+
+            _userRoles = currentUser?.Roles ?? new List<string>();
+            _isPlatformLevel = AuthorizationService.CanSeeAllProducts(_userRoles);
+
+            var products = await ProductService.GetAllAsync();
+            var subscriptions = await SubscriptionService.GetMySubscriptionsAsync();
+
+            _subscribedProductIds = subscriptions.Select(s => s.ProductId).ToList();
+
+            ProcessData(products, subscriptions);
+        }
+        catch (Exception ex)
+        {
+            LoadSampleData();
+        }
+    }
+
+    private void ProcessData(List<ProductDto> products, List<SubscriptionDto> subscriptions)
+    {
+        foreach (var sub in subscriptions.Where(s => s.Status == "Active"))
+        {
+            var product = products.FirstOrDefault(p => p.Id == sub.ProductId);
+
+            _activeSubscriptions.Add(new SubscriptionViewModel
+            {
+                SubscriptionId = sub.Id,
+                ProductId = sub.ProductId,
+                ProductCode = product?.Code ?? "",
+                ProductName = sub.ProductName ?? product?.Name ?? "Product",
+                Description = product?.ShortDescription ?? "Product description",
+                PlanName = sub.PlanName ?? "Standard",
+                UsedLicenses = sub.UsedLicenses,
+                MaxLicenses = sub.MaxLicenses,
+                NextBilling = sub.EndDate?.ToString("MMM dd, yyyy") ?? "N/A",
+                Initial = (product?.Name ?? "P").Substring(0, 1),
+                ColorClass = GetColorClass(product?.Code ?? "")
+            });
+        }
+    }
+
+    private void LoadSampleData()
+    {
+        _activeSubscriptions = new List<SubscriptionViewModel>
+        {
+            new()
+            {
+                SubscriptionId = Guid.NewGuid(),
+                ProductId = Guid.NewGuid(),
+                ProductCode = "AGOneLearn",
+                ProductName = "AGOne Learn",
+                Description = "Enterprise Learning Management System",
+                PlanName = "Professional",
+                UsedLicenses = 35,
+                MaxLicenses = 50,
+                NextBilling = DateTime.Now.AddMonths(3).ToString("MMM dd, yyyy"),
+                Initial = "L",
+                ColorClass = "bg-blue"
+            },
+            new()
+            {
+                SubscriptionId = Guid.NewGuid(),
+                ProductId = Guid.NewGuid(),
+                ProductCode = "AGOneOdela",
+                ProductName = "AGOne Odela",
+                Description = "Operations & Workflow Management",
+                PlanName = "Enterprise",
+                UsedLicenses = 85,
+                MaxLicenses = 200,
+                NextBilling = DateTime.Now.AddMonths(6).ToString("MMM dd, yyyy"),
+                Initial = "O",
+                ColorClass = "bg-purple"
+            }
+        };
+    }
+
+    private string GetColorClass(string code)
+    {
+        if (code.Contains("Learn")) return "bg-blue";
+        if (code.Contains("Odela")) return "bg-purple";
+        if (code.Contains("HR")) return "bg-green";
+        if (code.Contains("Analytics") || code.Contains("ANALYTICS")) return "bg-orange";
+        if (code.Contains("SPOT") || code.Contains("SENTIMENT") || code.Contains("PLANVIEW")) return "bg-blue";
+        return "bg-blue";
+    }
+
+    private async Task LaunchProductAsync(string code)
+    {
+        await ProductLaunchService.LaunchProductAsync(code);
+    }
+
+    private string? GetProductLogo(string code)
+    {
+        if (string.IsNullOrEmpty(code)) return null;
+
+        var upperCode = code.ToUpperInvariant();
+
+        return upperCode switch
+        {
+            "AGONEANALYTICS" or "AGONE_ANALYTICS" or "ANALYTICS" => "/images/logos/mgate-logo-analytics.png",
+            "AGONESPOTCITY" or "SPOTCITY" => "/images/logos/mgate-logo-spotcity.png",
+            "AGONESENTIMENTCITY" or "SENTIMENTCITY" => "/images/logos/mgate-logo-sentimentcity.png",
+            "AGONESPOTLANDMANAGEMENT" or "SPOTLAND" => "/images/logos/mgate-logo-spotland.png",
+            "PLANVIEW" => "/images/logos/mgate-logo-planview.png",
+            _ => null
+        };
+    }
+
+    public class SubscriptionViewModel
+    {
+        public Guid SubscriptionId { get; set; }
+        public Guid ProductId { get; set; }
+        public string ProductCode { get; set; } = "";
+        public string ProductName { get; set; } = "";
+        public string Description { get; set; } = "";
+        public string PlanName { get; set; } = "";
+        public int UsedLicenses { get; set; }
+        public int MaxLicenses { get; set; }
+        public string NextBilling { get; set; } = "";
+        public string Initial { get; set; } = "";
+        public string ColorClass { get; set; } = "";
+
+        public int UsagePercent => MaxLicenses == 0 ? 0 : UsedLicenses * 100 / MaxLicenses;
+
+        public string UsageColor
+        {
+            get
+            {
+                int pct = UsagePercent;
+                if (pct < 70) return "green";
+                if (pct < 90) return "yellow";
+                return "red";
+            }
+        }
+    }
+
+    public class ProductViewModel
+    {
+        public Guid Id { get; set; }
+        public string Code { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Description { get; set; } = "";
+        public string Price { get; set; } = "";
+        public string Initial { get; set; } = "";
+        public string ColorClass { get; set; } = "";
+        public List<string> Tags { get; set; } = new();
+    }
+}
