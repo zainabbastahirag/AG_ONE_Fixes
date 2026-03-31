@@ -1,0 +1,1611 @@
+@page "/admin/masterdatatenant"
+@layout AdminLayout
+@inject ISubscriptionService SubscriptionService
+@inject IProductService ProductService
+@inject IAuthService AuthService
+@inject IAGAuthorizationService AuthorizationService
+@inject ITenantMasterDataApiService TenantMasterDataService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>Master Data - AGOne</PageTitle>
+
+<div class="mdt-page">
+    <!-- Page Header -->
+    <div class="mdt-page-header">
+        <div class="mdt-page-header-left">
+            <h1 class="mdt-page-title">Master Data</h1>
+            <p class="mdt-page-subtitle">Manage organizational master data including departments, locations, and cost centers</p>
+        </div>
+        <button class="mdt-btn-add-values" @onclick="OpenAddModal">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14" /><path d="M12 5v14" />
+            </svg>
+            Add Values
+        </button>
+    </div>
+
+    <!-- Body: Sidebar + Content -->
+    <div class="mdt-body">
+        <!-- Left Sidebar: Field Navigator -->
+        <aside class="mdt-sidebar">
+            <div class="mdt-sidebar-title">Field Navigator</div>
+
+            @foreach (var group in _sidebarGroups)
+            {
+                <div class="mdt-sidebar-group">
+                    <button class="mdt-sidebar-group-toggle @(group.IsExpanded ? "expanded" : "")"
+                            @onclick="@(() => ToggleSidebarGroup(group))">
+                        <span class="mdt-sidebar-group-name">@group.GroupName</span>
+                        <svg class="mdt-chevron" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m6 9 6 6 6-6" />
+                        </svg>
+                    </button>
+
+                    @if (group.IsExpanded)
+                    {
+                        <ul class="mdt-sidebar-list">
+                            @foreach (var entity in group.Entities)
+                            {
+                                <li class="mdt-sidebar-item @(_selectedEntityCode == entity.EntityCode ? "active" : "")"
+                                    @onclick="@(() => SelectSidebarEntity(entity))">
+                                    @entity.EntityName
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            }
+        </aside>
+
+        <!-- Main Content -->
+        <div class="mdt-main">
+            <!-- Filter Row: Scope + Product dropdowns -->
+            <div class="mdt-filters">
+                <div class="mdt-filter-group">
+                    <label class="mdt-filter-label">Scope</label>
+                    <div class="mdt-dropdown">
+                        <span class="mdt-dropdown-value">@(_selectedScope == "global" ? "Global" : "Product")</span>
+                        <button class="mdt-dropdown-clear" @onclick="@(() => SelectScope("global"))" title="Clear">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+                            </svg>
+                        </button>
+                        <select class="mdt-dropdown-select" value="@_selectedScope" @onchange="OnScopeChanged">
+                            <option value="global">Global</option>
+                            <option value="product">Product</option>
+                        </select>
+                    </div>
+                </div>
+
+                @if (_selectedScope == "product")
+                {
+                    <div class="mdt-filter-group">
+                        <label class="mdt-filter-label">Product</label>
+                        <div class="mdt-dropdown product-dropdown">
+                            <span class="mdt-dropdown-value">@GetSelectedProductName()</span>
+                            <button class="mdt-dropdown-clear" title="Clear">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+                                </svg>
+                            </button>
+                            <select class="mdt-dropdown-select" value="@_selectedProductId" @onchange="OnProductChanged">
+                                @foreach (var product in _subscribedProducts)
+                                {
+                                    <option value="@product.ProductId">@product.ProductName</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Search + Refresh -->
+            <div class="mdt-search-row">
+                <div class="mdt-search-box">
+                    <svg class="mdt-search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
+                    </svg>
+                    <input type="text" class="mdt-search-input" placeholder="Search" @bind="_searchQuery" @bind:event="oninput" />
+                </div>
+                <button class="mdt-refresh-btn" @onclick="RefreshData" title="Refresh">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                        <path d="M21 3v5h-5" />
+                        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                        <path d="M8 16H3v5" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Data Table -->
+            @if (_isLoading || _isLoadingData)
+            {
+                <div class="mdt-loading">
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Small" Indeterminate="true" />
+                    <span>Loading...</span>
+                </div>
+            }
+            else if (FilteredItems.Count == 0)
+            {
+                <div class="mdt-empty-state">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="16" x2="8" y1="13" y2="13" /><line x1="16" x2="8" y1="17" y2="17" />
+                        <line x1="10" x2="8" y1="9" y2="9" />
+                    </svg>
+                    <h4>No data found</h4>
+                    <p>Start by adding a new value or import from a file.</p>
+                </div>
+            }
+            else
+            {
+                <div class="mdt-table-wrapper">
+                    <table class="mdt-table">
+                        <thead>
+                            <tr>
+                                <th class="col-id">ID</th>
+                                @foreach (var field in _currentFields.Where(f => f.ShowInList).OrderBy(f => f.DisplayOrder))
+                                {
+                                    <th>@field.FieldName</th>
+                                }
+                                <th class="col-type">Type</th>
+                                <th class="col-status">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{ var pageItems = GetPagedItems(); var rowIdx = (_currentPage - 1) * _pageSize; }
+                            @foreach (var item in pageItems)
+                            {
+                                rowIdx++;
+                                <tr>
+                                    <td class="col-id">@GetItemCode(item, rowIdx)</td>
+                                    @foreach (var field in _currentFields.Where(f => f.ShowInList).OrderBy(f => f.DisplayOrder))
+                                    {
+                                        <td>@GetFieldDisplayValue(item.FieldValues, field)</td>
+                                    }
+                                    <td class="col-type mdt-type-text">Single select dropdown</td>
+                                    <td class="col-status">
+                                        <label class="mdt-toggle">
+                                            <input type="checkbox" checked="@IsItemActive(item)" @onchange="@((ChangeEventArgs e) => ToggleItemStatus(item, e))" />
+                                            <span class="mdt-toggle-slider"></span>
+                                        </label>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Table Footer -->
+                <div class="mdt-table-footer">
+                    <span class="mdt-showing-text">Showing @((_currentPage - 1) * _pageSize + 1) to @(Math.Min(_currentPage * _pageSize, FilteredItems.Count)) of @FilteredItems.Count entries</span>
+                    <div class="mdt-pagination">
+                        <button class="mdt-page-btn" disabled="@(_currentPage <= 1)" @onclick="PreviousPage">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m15 18-6-6 6-6" />
+                            </svg>
+                        </button>
+                        @for (int p = 1; p <= TotalPages; p++)
+                        {
+                            var pageNum = p;
+                            <button class="mdt-page-num @(pageNum == _currentPage ? "active" : "")" @onclick="@(() => GoToPage(pageNum))">@pageNum</button>
+                        }
+                        <button class="mdt-page-btn" disabled="@(_currentPage >= TotalPages)" @onclick="NextPage">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m9 18 6-6-6-6" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Modal -->
+@if (_showModal)
+{
+    <div class="modal-overlay" @onclick="CloseModal">
+        <div class="modal-container" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h3>@(_isEditMode ? "Edit" : "Add New") @GetSelectedEntityName()</h3>
+                <button class="modal-close-btn" @onclick="CloseModal">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6 6 18M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <MudForm @ref="_form" @bind-IsValid="_formIsValid">
+                    <MudGrid>
+                        @foreach (var field in _currentFields.Where(f => f.ShowInForm).OrderBy(f => f.DisplayOrder))
+                        {
+                            <MudItem xs="12" sm="@(field.DataType.ToLower() == "boolean" || field.DataType.ToLower() == "bool" ? 12 : 6)">
+                                @switch (field.DataType.ToLower())
+                                {
+                                    case "string":
+                                    case "text":
+                                        <MudTextField T="string"
+                                                      Value="GetFieldValue<string>(field.FieldCode)"
+                                                      ValueChanged="@((string val) => SetFieldValue(field.FieldCode, val))"
+                                                      Label="@field.FieldName"
+                                                      HelperText="@field.FieldDescription"
+                                                      Required="@field.IsRequired"
+                                                      RequiredError="@($"{field.FieldName} is required")"
+                                                      MaxLength="@(field.MaxLength ?? 500)"
+                                                      ReadOnly="@field.IsReadOnly"
+                                                      Variant="Variant.Outlined"
+                                                      Class="mb-3" />
+                                        break;
+                                    case "int":
+                                    case "integer":
+                                        <MudNumericField T="int?"
+                                                         Value="GetFieldValue<int?>(field.FieldCode)"
+                                                         ValueChanged="@((int? val) => SetFieldValue(field.FieldCode, val))"
+                                                         Label="@field.FieldName"
+                                                         HelperText="@field.FieldDescription"
+                                                         Required="@field.IsRequired"
+                                                         RequiredError="@($"{field.FieldName} is required")"
+                                                         ReadOnly="@field.IsReadOnly"
+                                                         Variant="Variant.Outlined"
+                                                         Class="mb-3" />
+                                        break;
+                                    case "decimal":
+                                    case "money":
+                                    case "currency":
+                                    case "number":
+                                        <MudNumericField T="decimal?"
+                                                         Value="GetFieldValue<decimal?>(field.FieldCode)"
+                                                         ValueChanged="@((decimal? val) => SetFieldValue(field.FieldCode, val))"
+                                                         Label="@field.FieldName"
+                                                         HelperText="@field.FieldDescription"
+                                                         Required="@field.IsRequired"
+                                                         RequiredError="@($"{field.FieldName} is required")"
+                                                         ReadOnly="@field.IsReadOnly"
+                                                         Variant="Variant.Outlined"
+                                                         Class="mb-3" />
+                                        break;
+                                    case "bool":
+                                    case "boolean":
+                                        <MudCheckBox T="bool"
+                                                     Value="GetFieldValue<bool>(field.FieldCode)"
+                                                     ValueChanged="@((bool val) => SetFieldValue(field.FieldCode, val))"
+                                                     Label="@field.FieldName"
+                                                     ReadOnly="@field.IsReadOnly"
+                                                     Color="Color.Primary"
+                                                     Class="mb-3" />
+                                        break;
+                                    case "date":
+                                        <MudDatePicker Date="@GetFieldDateValue(field.FieldCode)"
+                                                       DateChanged="@((DateTime? val) => SetFieldValue(field.FieldCode, val))"
+                                                       Label="@field.FieldName"
+                                                       HelperText="@field.FieldDescription"
+                                                       Required="@field.IsRequired"
+                                                       RequiredError="@($"{field.FieldName} is required")"
+                                                       ReadOnly="@field.IsReadOnly"
+                                                       Variant="Variant.Outlined"
+                                                       Editable="true"
+                                                       DateFormat="yyyy-MM-dd"
+                                                       PickerVariant="PickerVariant.Dialog"
+                                                       Class="mb-3" />
+                                        break;
+                                    case "datetime":
+                                        <MudDatePicker Date="@GetFieldDateValue(field.FieldCode)"
+                                                       DateChanged="@((DateTime? val) => SetFieldValue(field.FieldCode, val))"
+                                                       Label="@field.FieldName"
+                                                       HelperText="@field.FieldDescription"
+                                                       Required="@field.IsRequired"
+                                                       RequiredError="@($"{field.FieldName} is required")"
+                                                       ReadOnly="@field.IsReadOnly"
+                                                       Variant="Variant.Outlined"
+                                                       Editable="true"
+                                                       DateFormat="yyyy-MM-dd HH:mm"
+                                                       PickerVariant="PickerVariant.Dialog"
+                                                       Class="mb-3" />
+                                        break;
+                                    case "lookup":
+                                    default:
+                                        <MudTextField T="string"
+                                                      Value="GetFieldValue<string>(field.FieldCode)"
+                                                      ValueChanged="@((string val) => SetFieldValue(field.FieldCode, val))"
+                                                      Label="@field.FieldName"
+                                                      HelperText="@field.FieldDescription"
+                                                      Required="@field.IsRequired"
+                                                      RequiredError="@($"{field.FieldName} is required")"
+                                                      ReadOnly="@field.IsReadOnly"
+                                                      Variant="Variant.Outlined"
+                                                      Class="mb-3" />
+                                        break;
+                                }
+                            </MudItem>
+                        }
+                    </MudGrid>
+                </MudForm>
+            </div>
+            <div class="modal-footer">
+                <MudButton OnClick="CloseModal" Variant="Variant.Text">Cancel</MudButton>
+                <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SaveItem" Disabled="@(!_formIsValid || _isSaving)">
+                    @if (_isSaving)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    }
+                    @(_isEditMode ? "Update" : "Add")
+                </MudButton>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Delete Confirmation Modal -->
+@if (_showDeleteConfirm)
+{
+    <div class="modal-overlay" @onclick="CancelDelete">
+        <div class="modal-container delete-confirm" @onclick:stopPropagation="true">
+            <div class="modal-header delete">
+                <h3>Confirm Delete</h3>
+                <button class="modal-close-btn" @onclick="CancelDelete">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6 6 18M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="delete-confirm-content">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+                         stroke="#f44336" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" /><path d="M12 8v4" /><path d="m12 16 .01 0" />
+                    </svg>
+                    <p>Are you sure you want to delete <strong>@_deleteItemName</strong>?</p>
+                    <p class="text-muted">This action cannot be undone.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <MudButton OnClick="CancelDelete" Variant="Variant.Text">Cancel</MudButton>
+                <MudButton Color="Color.Error" Variant="Variant.Filled" OnClick="ConfirmDelete">Delete</MudButton>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    /* ===== Page Layout ===== */
+    .mdt-page {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+    }
+
+    .mdt-page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 24px;
+    }
+
+    .mdt-page-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: #111827;
+        margin: 0 0 4px 0;
+    }
+
+    .mdt-page-subtitle {
+        font-size: 14px;
+        color: #6B7280;
+        margin: 0;
+    }
+
+    .mdt-btn-add-values {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 20px;
+        background: #1e3a5f;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.2s;
+    }
+
+    .mdt-btn-add-values:hover {
+        background: #163050;
+    }
+
+    /* ===== Body: Sidebar + Main ===== */
+    .mdt-body {
+        display: flex;
+        gap: 24px;
+        flex: 1;
+        min-height: 0;
+    }
+
+    /* ===== Sidebar ===== */
+    .mdt-sidebar {
+        width: 220px;
+        min-width: 220px;
+        background: #fff;
+        border-right: 1px solid #E5E7EB;
+        padding: 0 16px 16px 0;
+    }
+
+    .mdt-sidebar-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #374151;
+        padding: 12px 0 12px 0;
+        border-bottom: 1px solid #E5E7EB;
+        margin-bottom: 4px;
+    }
+
+    .mdt-sidebar-group {
+        margin-bottom: 0;
+    }
+
+    .mdt-sidebar-group-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        background: none;
+        border: none;
+        padding: 10px 0;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        color: #4F46E5;
+        transition: color 0.15s;
+    }
+
+    .mdt-sidebar-group-toggle:hover {
+        color: #3730A3;
+    }
+
+    .mdt-chevron {
+        transition: transform 0.2s;
+    }
+
+    .mdt-sidebar-group-toggle.expanded .mdt-chevron {
+        transform: rotate(180deg);
+    }
+
+    .mdt-sidebar-list {
+        list-style: none;
+        margin: 0;
+        padding: 0 0 4px 0;
+    }
+
+    .mdt-sidebar-item {
+        padding: 8px 12px;
+        font-size: 13px;
+        color: #374151;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.15s;
+        border-left: 3px solid transparent;
+    }
+
+    .mdt-sidebar-item:hover {
+        background: #F3F4F6;
+    }
+
+    .mdt-sidebar-item.active {
+        background: #4F46E5;
+        color: #fff;
+        border-left-color: #4F46E5;
+        font-weight: 500;
+    }
+
+    /* ===== Main Content ===== */
+    .mdt-main {
+        flex: 1;
+        min-width: 0;
+    }
+
+    /* ===== Filter Dropdowns ===== */
+    .mdt-filters {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .mdt-filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .mdt-filter-label {
+        font-size: 12px;
+        font-weight: 500;
+        color: #6B7280;
+    }
+
+    .mdt-dropdown {
+        position: relative;
+        display: flex;
+        align-items: center;
+        background: #fff;
+        border: 1px solid #D1D5DB;
+        border-radius: 8px;
+        padding: 8px 12px;
+        gap: 8px;
+        min-width: 160px;
+        cursor: pointer;
+    }
+
+    .mdt-dropdown.product-dropdown {
+        min-width: 220px;
+    }
+
+    .mdt-dropdown-value {
+        font-size: 14px;
+        color: #111827;
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .mdt-dropdown-clear {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: none;
+        padding: 2px;
+        cursor: pointer;
+        color: #9CA3AF;
+        border-radius: 4px;
+        transition: color 0.15s;
+    }
+
+    .mdt-dropdown-clear:hover {
+        color: #374151;
+    }
+
+    .mdt-dropdown-select {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+        width: 100%;
+        height: 100%;
+    }
+
+    /* ===== Search Row ===== */
+    .mdt-search-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .mdt-search-box {
+        position: relative;
+        flex: 0 1 340px;
+    }
+
+    .mdt-search-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9CA3AF;
+        pointer-events: none;
+    }
+
+    .mdt-search-input {
+        width: 100%;
+        padding: 9px 12px 9px 36px;
+        border: 1px solid #D1D5DB;
+        border-radius: 8px;
+        font-size: 14px;
+        color: #111827;
+        background: #fff;
+        outline: none;
+        transition: border-color 0.15s;
+    }
+
+    .mdt-search-input::placeholder {
+        color: #9CA3AF;
+    }
+
+    .mdt-search-input:focus {
+        border-color: #4F46E5;
+    }
+
+    .mdt-refresh-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        background: #fff;
+        border: 1px solid #D1D5DB;
+        border-radius: 8px;
+        cursor: pointer;
+        color: #6B7280;
+        transition: all 0.15s;
+    }
+
+    .mdt-refresh-btn:hover {
+        border-color: #4F46E5;
+        color: #4F46E5;
+    }
+
+    /* ===== Data Table ===== */
+    .mdt-table-wrapper {
+        border: 1px solid #E5E7EB;
+        border-radius: 10px;
+        overflow: hidden;
+        background: #fff;
+    }
+
+    .mdt-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .mdt-table thead tr {
+        background: #4F46E5;
+    }
+
+    .mdt-table thead th {
+        padding: 12px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #fff;
+        text-align: left;
+        white-space: nowrap;
+    }
+
+    .mdt-table thead th.col-id {
+        width: 100px;
+    }
+
+    .mdt-table thead th.col-type {
+        width: 200px;
+    }
+
+    .mdt-table thead th.col-status {
+        width: 80px;
+        text-align: center;
+    }
+
+    .mdt-table tbody tr {
+        border-bottom: 1px solid #F3F4F6;
+        transition: background 0.1s;
+    }
+
+    .mdt-table tbody tr:last-child {
+        border-bottom: none;
+    }
+
+    .mdt-table tbody tr:hover {
+        background: #F9FAFB;
+    }
+
+    .mdt-table tbody td {
+        padding: 12px 16px;
+        font-size: 14px;
+        color: #374151;
+    }
+
+    .mdt-table tbody td.col-id {
+        font-weight: 500;
+        color: #111827;
+    }
+
+    .mdt-type-text {
+        color: #6B7280;
+        font-size: 13px;
+    }
+
+    .mdt-table tbody td.col-status {
+        text-align: center;
+    }
+
+    /* ===== Toggle Switch ===== */
+    .mdt-toggle {
+        position: relative;
+        display: inline-block;
+        width: 40px;
+        height: 22px;
+        cursor: pointer;
+    }
+
+    .mdt-toggle input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .mdt-toggle-slider {
+        position: absolute;
+        inset: 0;
+        background: #D1D5DB;
+        border-radius: 999px;
+        transition: background 0.25s;
+    }
+
+    .mdt-toggle-slider::before {
+        content: '';
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        left: 3px;
+        top: 3px;
+        background: #fff;
+        border-radius: 50%;
+        transition: transform 0.25s;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+
+    .mdt-toggle input:checked + .mdt-toggle-slider {
+        background: #22C55E;
+    }
+
+    .mdt-toggle input:checked + .mdt-toggle-slider::before {
+        transform: translateX(18px);
+    }
+
+    /* ===== Table Footer ===== */
+    .mdt-table-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 14px 0 0 0;
+    }
+
+    .mdt-showing-text {
+        font-size: 13px;
+        color: #6B7280;
+    }
+
+    .mdt-pagination {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .mdt-page-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border: 1px solid #D1D5DB;
+        border-radius: 6px;
+        background: #fff;
+        color: #374151;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+
+    .mdt-page-btn:disabled {
+        opacity: 0.4;
+        cursor: default;
+    }
+
+    .mdt-page-btn:not(:disabled):hover {
+        border-color: #4F46E5;
+        color: #4F46E5;
+    }
+
+    .mdt-page-num {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border: 1px solid #D1D5DB;
+        border-radius: 6px;
+        background: #fff;
+        color: #374151;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+
+    .mdt-page-num.active {
+        background: #4F46E5;
+        color: #fff;
+        border-color: #4F46E5;
+    }
+
+    .mdt-page-num:not(.active):hover {
+        border-color: #4F46E5;
+        color: #4F46E5;
+    }
+
+    /* ===== Loading / Empty ===== */
+    .mdt-loading {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        justify-content: center;
+        padding: 60px 20px;
+        color: #6B7280;
+        font-size: 14px;
+    }
+
+    .mdt-empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #9CA3AF;
+    }
+
+    .mdt-empty-state h4 {
+        margin: 16px 0 4px;
+        color: #374151;
+        font-size: 16px;
+    }
+
+    .mdt-empty-state p {
+        font-size: 14px;
+        color: #6B7280;
+    }
+
+    /* ===== Modals ===== */
+    .modal-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1300;
+        animation: fadeIn 0.2s ease-in-out;
+    }
+
+    .modal-container {
+        background: #fff;
+        border-radius: 10px;
+        max-width: 800px;
+        width: 90%;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        animation: slideIn 0.3s ease-out;
+        z-index: 1301;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 24px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1976d2;
+    }
+
+    .modal-close-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        color: #666;
+        transition: all 0.2s;
+    }
+
+    .modal-close-btn:hover {
+        background: #f5f5f5;
+        color: #333;
+    }
+
+    .modal-body {
+        padding: 24px;
+        overflow-y: auto;
+        flex: 1;
+    }
+
+    .modal-footer {
+        padding: 16px 24px;
+        border-top: 1px solid #e0e0e0;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+    }
+
+    .modal-container.delete-confirm {
+        max-width: 450px;
+    }
+
+    .modal-header.delete h3 {
+        color: #f44336;
+    }
+
+    .delete-confirm-content {
+        text-align: center;
+        padding: 20px 0;
+    }
+
+    .delete-confirm-content svg {
+        margin-bottom: 16px;
+    }
+
+    .delete-confirm-content p {
+        margin: 8px 0;
+    }
+
+    .delete-confirm-content .text-muted {
+        color: #666;
+        font-size: 0.875rem;
+    }
+
+    @@keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @@keyframes slideIn {
+        from { transform: translateY(-50px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    ::deep .mud-popover {
+        z-index: 1400 !important;
+    }
+
+    ::deep .mud-picker-inline-paper {
+        z-index: 1400 !important;
+    }
+
+    ::deep .mud-overlay {
+        z-index: 1350 !important;
+    }
+
+    @@media (max-width: 768px) {
+        .mdt-body {
+            flex-direction: column;
+        }
+
+        .mdt-sidebar {
+            width: 100%;
+            min-width: unset;
+            border-right: none;
+            border-bottom: 1px solid #E5E7EB;
+            padding: 0 0 12px 0;
+        }
+
+        .mdt-filters {
+            flex-direction: column;
+        }
+    }
+</style>
+
+@code {
+    // State
+    private string _selectedScope = "product";
+    private Guid _selectedProductId = Guid.Empty;
+    private string _selectedEntityCode = "";
+    private Guid _selectedMasterDataDefId = Guid.Empty;
+    private int _currentPage = 1;
+    private int _pageSize = 10;
+    private bool _isLoading = true;
+    private bool _isLoadingData = false;
+    private string _searchQuery = "";
+
+    // Data
+    private List<SubscribedProductViewModel> _subscribedProducts = new();
+    private List<TenantMasterDataItemDto> _masterDataItems = new();
+    private List<MasterDataDefinitionWithFieldsDto> _entityTabs = new();
+    private List<MasterDataFieldDto> _currentFields = new();
+    private ProductMasterDataSchemaDto? _currentSchema;
+
+    // Sidebar
+    private List<SidebarGroup> _sidebarGroups = new();
+
+    // Modal state
+    private bool _showModal = false;
+    private bool _isEditMode = false;
+    private bool _formIsValid = false;
+    private bool _isSaving = false;
+    private MudForm? _form;
+    private EditItemModel _editItem = new();
+
+    // Delete confirmation state
+    private bool _showDeleteConfirm = false;
+    private TenantMasterDataItemDto? _itemToDelete = null;
+    private string _deleteItemName = "";
+
+    // Computed
+    private List<TenantMasterDataItemDto> FilteredItems
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(_searchQuery))
+                return _masterDataItems;
+
+            var q = _searchQuery.Trim().ToLower();
+            return _masterDataItems.Where(item =>
+                item.FieldValues != null &&
+                item.FieldValues.Values.Any(v => v?.ToString()?.ToLower().Contains(q) == true)
+            ).ToList();
+        }
+    }
+
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling((double)FilteredItems.Count / _pageSize));
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSubscribedProductsAsync();
+    }
+
+    private async Task LoadSubscribedProductsAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            var subscriptions = await SubscriptionService.GetMySubscriptionsAsync();
+            var products = await ProductService.GetAllAsync();
+
+            foreach (var sub in subscriptions.Where(s => s.Status == "Active"))
+            {
+                var product = products.FirstOrDefault(p => p.Id == sub.ProductId);
+                if (product != null)
+                {
+                    _subscribedProducts.Add(new SubscribedProductViewModel
+                    {
+                        ProductId = sub.ProductId,
+                        ProductCode = product.Code ?? "",
+                        ProductName = product.Name
+                    });
+                }
+            }
+
+            if (_subscribedProducts.Any())
+            {
+                _selectedProductId = _subscribedProducts.First().ProductId;
+                await LoadProductSchemaAsync();
+            }
+        }
+        catch
+        {
+            _subscribedProducts = new List<SubscribedProductViewModel>
+            {
+                new() { ProductId = Guid.Parse("22222222-2222-2222-2222-222222222222"), ProductCode = "AGOneWork", ProductName = "AG ONE Work" },
+                new() { ProductId = Guid.NewGuid(), ProductCode = "AGOneLearn", ProductName = "AG ONE Learn" }
+            };
+            _selectedProductId = _subscribedProducts.First().ProductId;
+            await LoadProductSchemaAsync();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task LoadProductSchemaAsync()
+    {
+        if (_selectedProductId == Guid.Empty) return;
+
+        _isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            _currentSchema = await TenantMasterDataService.GetProductSchemaAsync(_selectedProductId);
+
+            if (_currentSchema != null && _currentSchema.Definitions.Any())
+            {
+                _entityTabs = _currentSchema.Definitions;
+                BuildSidebarGroups();
+
+                var firstDef = _entityTabs.First();
+                _selectedEntityCode = firstDef.EntityCode;
+                _selectedMasterDataDefId = firstDef.MasterDataDefId;
+                _currentFields = firstDef.Fields;
+
+                await LoadDataItemsAsync();
+            }
+            else
+            {
+                _entityTabs = new();
+                _masterDataItems = new();
+                BuildSidebarGroups();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading schema: {ex.Message}");
+            LoadSampleSchema();
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void BuildSidebarGroups()
+    {
+        _sidebarGroups = new List<SidebarGroup>();
+
+        var grouped = _entityTabs
+            .GroupBy(e => e.GroupName ?? "General")
+            .OrderBy(g => g.Key);
+
+        foreach (var grp in grouped)
+        {
+            _sidebarGroups.Add(new SidebarGroup
+            {
+                GroupName = grp.Key,
+                IsExpanded = true,
+                Entities = grp.OrderBy(e => e.DisplayOrder).ToList()
+            });
+        }
+
+        if (!_sidebarGroups.Any() && _entityTabs.Any())
+        {
+            _sidebarGroups.Add(new SidebarGroup
+            {
+                GroupName = "Employee Info",
+                IsExpanded = true,
+                Entities = _entityTabs.OrderBy(e => e.DisplayOrder).ToList()
+            });
+        }
+    }
+
+    private void LoadSampleSchema()
+    {
+        _entityTabs = new List<MasterDataDefinitionWithFieldsDto>
+        {
+            new() { MasterDataDefId = Guid.NewGuid(), EntityCode = "GENDER", EntityName = "Gender", GroupName = "Employee Info", DisplayOrder = 1, IsActive = true },
+            new() { MasterDataDefId = Guid.NewGuid(), EntityCode = "EMPLOYMENT_TYPE", EntityName = "Employment Type", GroupName = "Employee Info", DisplayOrder = 2, IsActive = true },
+            new() { MasterDataDefId = Guid.NewGuid(), EntityCode = "PROBATION_STATUS", EntityName = "Probation Status", GroupName = "Employee Info", DisplayOrder = 3, IsActive = true },
+            new() { MasterDataDefId = Guid.NewGuid(), EntityCode = "MARITAL_STATUS", EntityName = "Marital Status", GroupName = "Employee Info", DisplayOrder = 4, IsActive = true },
+            new() { MasterDataDefId = Guid.NewGuid(), EntityCode = "JOB_TITLE", EntityName = "Job Title / Role", GroupName = "Employee Info", DisplayOrder = 5, IsActive = true },
+            new() { MasterDataDefId = Guid.NewGuid(), EntityCode = "DEPARTMENT", EntityName = "Department", GroupName = "Employee Info", DisplayOrder = 6, IsActive = true },
+            new() { MasterDataDefId = Guid.NewGuid(), EntityCode = "NATIONALITY", EntityName = "Nationality / Country", GroupName = "Employee Info", DisplayOrder = 7, IsActive = true },
+            new() { MasterDataDefId = Guid.NewGuid(), EntityCode = "OFFICE_LOCATION", EntityName = "Office Location", GroupName = "Employee Info", DisplayOrder = 8, IsActive = true },
+            new() { MasterDataDefId = Guid.NewGuid(), EntityCode = "RELATIONSHIP", EntityName = "Relationship", GroupName = "Employee Info", DisplayOrder = 9, IsActive = true },
+            new() { MasterDataDefId = Guid.NewGuid(), EntityCode = "PHONE_CODE", EntityName = "Phone Code", GroupName = "Configurations", DisplayOrder = 10, IsActive = true },
+            new() { MasterDataDefId = Guid.NewGuid(), EntityCode = "TAX_TYPE", EntityName = "Tax Type", GroupName = "Configurations", DisplayOrder = 11, IsActive = true },
+            new() { MasterDataDefId = Guid.NewGuid(), EntityCode = "MS_LICENSE", EntityName = "Microsoft Access License", GroupName = "Configurations", DisplayOrder = 12, IsActive = true },
+            new() { MasterDataDefId = Guid.NewGuid(), EntityCode = "LAPTOP_TYPE", EntityName = "Laptop Type", GroupName = "Configurations", DisplayOrder = 13, IsActive = true }
+        };
+
+        BuildSidebarGroups();
+
+        if (_entityTabs.Any())
+        {
+            var first = _entityTabs.First();
+            _selectedEntityCode = first.EntityCode;
+            _selectedMasterDataDefId = first.MasterDataDefId;
+        }
+
+        _masterDataItems = new List<TenantMasterDataItemDto>
+        {
+            new() { Id = 1, FieldValues = new Dictionary<string, object?> { ["CODE"] = "WG01", ["VALUE"] = "Male", ["IS_ACTIVE"] = true } },
+            new() { Id = 2, FieldValues = new Dictionary<string, object?> { ["CODE"] = "WG02", ["VALUE"] = "Female", ["IS_ACTIVE"] = true } },
+            new() { Id = 3, FieldValues = new Dictionary<string, object?> { ["CODE"] = "WG03", ["VALUE"] = "Non-binary", ["IS_ACTIVE"] = false } },
+            new() { Id = 4, FieldValues = new Dictionary<string, object?> { ["CODE"] = "WG04", ["VALUE"] = "Others", ["IS_ACTIVE"] = false } },
+            new() { Id = 5, FieldValues = new Dictionary<string, object?> { ["CODE"] = "WG05", ["VALUE"] = "Prefer not to say", ["IS_ACTIVE"] = true } }
+        };
+    }
+
+    private async Task LoadDataItemsAsync()
+    {
+        if (_selectedProductId == Guid.Empty || string.IsNullOrEmpty(_selectedEntityCode)) return;
+
+        _isLoadingData = true;
+        _currentPage = 1;
+        StateHasChanged();
+
+        try
+        {
+            _masterDataItems = await TenantMasterDataService.GetTenantDataItemsAsync(_selectedProductId, _selectedEntityCode);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading items: {ex.Message}");
+            _masterDataItems = new();
+        }
+        finally
+        {
+            _isLoadingData = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnProductChanged(ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out var productId))
+        {
+            _selectedProductId = productId;
+            await LoadProductSchemaAsync();
+        }
+    }
+
+    private void OnScopeChanged(ChangeEventArgs e)
+    {
+        _selectedScope = e.Value?.ToString() ?? "product";
+        StateHasChanged();
+    }
+
+    private void SelectScope(string scope)
+    {
+        _selectedScope = scope;
+        StateHasChanged();
+    }
+
+    private void ToggleSidebarGroup(SidebarGroup group)
+    {
+        group.IsExpanded = !group.IsExpanded;
+    }
+
+    private async Task SelectSidebarEntity(MasterDataDefinitionWithFieldsDto entity)
+    {
+        _selectedEntityCode = entity.EntityCode;
+        _selectedMasterDataDefId = entity.MasterDataDefId;
+        _currentFields = entity.Fields;
+        _searchQuery = "";
+        await LoadDataItemsAsync();
+    }
+
+    private async Task RefreshData()
+    {
+        await LoadDataItemsAsync();
+    }
+
+    private string GetSelectedEntityName()
+    {
+        var tab = _entityTabs.FirstOrDefault(t => t.EntityCode == _selectedEntityCode);
+        return tab?.EntityName ?? "Master Data";
+    }
+
+    private string GetSelectedProductName()
+    {
+        var product = _subscribedProducts.FirstOrDefault(p => p.ProductId == _selectedProductId);
+        return product?.ProductName ?? "Product";
+    }
+
+    private string GetItemCode(TenantMasterDataItemDto item, int rowIndex)
+    {
+        if (item.FieldValues != null && item.FieldValues.TryGetValue("CODE", out var code) && code != null)
+            return code.ToString() ?? $"#{rowIndex}";
+        return $"#{rowIndex}";
+    }
+
+    private bool IsItemActive(TenantMasterDataItemDto item)
+    {
+        if (item.FieldValues != null && item.FieldValues.TryGetValue("IS_ACTIVE", out var val))
+        {
+            if (val is bool b) return b;
+            if (val is System.Text.Json.JsonElement je && je.ValueKind == System.Text.Json.JsonValueKind.True) return true;
+            if (bool.TryParse(val?.ToString(), out var parsed)) return parsed;
+        }
+        return true;
+    }
+
+    private void ToggleItemStatus(TenantMasterDataItemDto item, ChangeEventArgs e)
+    {
+        if (item.FieldValues != null)
+        {
+            item.FieldValues["IS_ACTIVE"] = bool.TryParse(e.Value?.ToString(), out var v) && v;
+            StateHasChanged();
+        }
+    }
+
+    private List<TenantMasterDataItemDto> GetPagedItems()
+    {
+        return FilteredItems
+            .Skip((_currentPage - 1) * _pageSize)
+            .Take(_pageSize)
+            .ToList();
+    }
+
+    private void GoToPage(int page)
+    {
+        _currentPage = page;
+    }
+
+    private void PreviousPage()
+    {
+        if (_currentPage > 1) _currentPage--;
+    }
+
+    private void NextPage()
+    {
+        if (_currentPage < TotalPages) _currentPage++;
+    }
+
+    // Modal operations
+    private void OpenAddModal()
+    {
+        _isEditMode = false;
+        _editItem = new EditItemModel { FieldValues = InitializeFieldValues() };
+        _showModal = true;
+    }
+
+    private void OpenEditModal(TenantMasterDataItemDto item)
+    {
+        _isEditMode = true;
+        _editItem = new EditItemModel
+        {
+            Id = item.Id,
+            FieldValues = item.FieldValues ?? new Dictionary<string, object?>()
+        };
+        _showModal = true;
+    }
+
+    private Dictionary<string, object?> InitializeFieldValues()
+    {
+        var fieldValues = new Dictionary<string, object?>();
+        foreach (var field in _currentFields.Where(f => f.ShowInForm))
+        {
+            if (!string.IsNullOrEmpty(field.DefaultValue))
+                fieldValues[field.FieldCode] = ConvertDefaultValue(field.DefaultValue, field.DataType);
+            else
+                fieldValues[field.FieldCode] = GetDefaultForType(field.DataType);
+        }
+        return fieldValues;
+    }
+
+    private object? ConvertDefaultValue(string defaultValue, string dataType)
+    {
+        try
+        {
+            return dataType.ToLower() switch
+            {
+                "int" or "integer" or "number" => int.TryParse(defaultValue, out var intVal) ? intVal : null,
+                "decimal" or "money" or "currency" => decimal.TryParse(defaultValue, out var decVal) ? decVal : null,
+                "bool" or "boolean" => bool.TryParse(defaultValue, out var boolVal) && boolVal,
+                "date" or "datetime" => DateTime.TryParse(defaultValue, out var dateVal) ? dateVal : null,
+                _ => defaultValue
+            };
+        }
+        catch { return null; }
+    }
+
+    private object? GetDefaultForType(string dataType)
+    {
+        return dataType.ToLower() switch
+        {
+            "int" or "integer" or "number" => null,
+            "decimal" or "money" or "currency" => null,
+            "bool" or "boolean" => false,
+            "date" or "datetime" => null,
+            _ => ""
+        };
+    }
+
+    private void CloseModal()
+    {
+        _showModal = false;
+        _editItem = new EditItemModel();
+    }
+
+    private async Task SaveItem()
+    {
+        if (_form == null) return;
+        await _form.Validate();
+        if (!_formIsValid) return;
+
+        _isSaving = true;
+        StateHasChanged();
+
+        try
+        {
+            if (_isEditMode)
+            {
+                var updateDto = new UpdateTenantMasterDataItemDto
+                {
+                    ItemId = _editItem.Id,
+                    FieldValues = _editItem.FieldValues
+                };
+
+                var result = await TenantMasterDataService.UpdateItemAsync(_selectedProductId, _selectedEntityCode, _editItem.Id, updateDto);
+                if (result != null)
+                {
+                    Snackbar.Add("Item updated successfully", Severity.Success);
+                    await LoadDataItemsAsync();
+                    CloseModal();
+                }
+                else
+                {
+                    Snackbar.Add("Failed to update item", Severity.Error);
+                }
+            }
+            else
+            {
+                var addDto = new AddTenantMasterDataItemDto
+                {
+                    MasterDataDefId = _selectedMasterDataDefId,
+                    EntityCode = _selectedEntityCode,
+                    FieldValues = _editItem.FieldValues
+                };
+
+                var result = await TenantMasterDataService.AddItemAsync(_selectedProductId, addDto);
+                if (result != null)
+                {
+                    Snackbar.Add("Item added successfully", Severity.Success);
+                    await LoadDataItemsAsync();
+                    CloseModal();
+                }
+                else
+                {
+                    Snackbar.Add("Failed to add item", Severity.Error);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleDelete(TenantMasterDataItemDto item)
+    {
+        var isMandatory = item.FieldValues.TryGetValue("IS_MANDATORY", out var mandatory) &&
+                          (mandatory is true || mandatory?.ToString()?.ToLower() == "true");
+        if (isMandatory)
+        {
+            Snackbar.Add("Cannot delete a mandatory item", Severity.Warning);
+            return;
+        }
+
+        var itemName = item.FieldValues.TryGetValue("NAME", out var name) ? name?.ToString() :
+                       item.FieldValues.TryGetValue("VALUE", out var val) ? val?.ToString() : $"Item #{item.Id}";
+
+        _deleteItemName = itemName ?? $"Item #{item.Id}";
+        _itemToDelete = item;
+        _showDeleteConfirm = true;
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (_itemToDelete == null) return;
+
+        try
+        {
+            var result = await TenantMasterDataService.DeleteItemAsync(_selectedProductId, _selectedEntityCode, _itemToDelete.Id);
+            if (result)
+            {
+                Snackbar.Add("Item deleted successfully", Severity.Success);
+                await LoadDataItemsAsync();
+            }
+            else
+            {
+                Snackbar.Add("Failed to delete item", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _showDeleteConfirm = false;
+            _itemToDelete = null;
+        }
+    }
+
+    private void CancelDelete()
+    {
+        _showDeleteConfirm = false;
+        _itemToDelete = null;
+    }
+
+    private void HandleImport()
+    {
+        Snackbar.Add("Import functionality coming soon", Severity.Info);
+    }
+
+    // View Models
+    public class SubscribedProductViewModel
+    {
+        public Guid ProductId { get; set; }
+        public string ProductCode { get; set; } = "";
+        public string ProductName { get; set; } = "";
+    }
+
+    public class EditItemModel
+    {
+        public int Id { get; set; }
+        public Dictionary<string, object?> FieldValues { get; set; } = new();
+    }
+
+    public class SidebarGroup
+    {
+        public string GroupName { get; set; } = "";
+        public bool IsExpanded { get; set; } = true;
+        public List<MasterDataDefinitionWithFieldsDto> Entities { get; set; } = new();
+    }
+
+    // Field value helpers
+    private T? GetFieldValue<T>(string fieldCode)
+    {
+        if (_editItem.FieldValues.TryGetValue(fieldCode, out var value) && value != null)
+        {
+            try
+            {
+                if (value is T typedValue) return typedValue;
+                if (value is System.Text.Json.JsonElement jsonElement)
+                {
+                    var json = jsonElement.GetRawText();
+                    return System.Text.Json.JsonSerializer.Deserialize<T>(json);
+                }
+                var targetType = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
+                return (T)Convert.ChangeType(value, targetType);
+            }
+            catch { return default; }
+        }
+        return default;
+    }
+
+    private void SetFieldValue(string fieldCode, object? value)
+    {
+        _editItem.FieldValues[fieldCode] = value;
+    }
+
+    private DateTime? GetFieldDateValue(string fieldCode)
+    {
+        var value = GetFieldValue<object>(fieldCode);
+        if (value == null) return null;
+        if (value is DateTime dt) return dt;
+        if (value is System.Text.Json.JsonElement je && je.TryGetDateTime(out var jdt)) return jdt;
+        if (DateTime.TryParse(value.ToString(), out var parsed)) return parsed;
+        return null;
+    }
+
+    private string GetFieldDisplayValue(Dictionary<string, object?>? fieldValues, MasterDataFieldDto field)
+    {
+        if (fieldValues == null || !fieldValues.TryGetValue(field.FieldCode, out var value) || value == null)
+            return "-";
+
+        try
+        {
+            return field.DataType.ToLower() switch
+            {
+                "bool" or "boolean" => value is true || value.ToString()?.ToLower() == "true" ? "Yes" : "No",
+                "date" => value is DateTime dt ? dt.ToString("yyyy-MM-dd") :
+                          value is System.Text.Json.JsonElement je && je.TryGetDateTime(out var jdt) ? jdt.ToString("yyyy-MM-dd") :
+                          DateTime.TryParse(value.ToString(), out var pdt) ? pdt.ToString("yyyy-MM-dd") : value.ToString() ?? "-",
+                "datetime" => value is DateTime dtm ? dtm.ToString("yyyy-MM-dd HH:mm") :
+                              value is System.Text.Json.JsonElement jem && jem.TryGetDateTime(out var jdtm) ? jdtm.ToString("yyyy-MM-dd HH:mm") :
+                              DateTime.TryParse(value.ToString(), out var pdtm) ? pdtm.ToString("yyyy-MM-dd HH:mm") : value.ToString() ?? "-",
+                "decimal" or "money" or "currency" or "number" => value is decimal dec ? dec.ToString("N2") :
+                                                                   decimal.TryParse(value.ToString(), out var pdec) ? pdec.ToString("N2") : value.ToString() ?? "-",
+                "int" or "integer" => value is int i ? i.ToString() : value.ToString() ?? "-",
+                _ => value.ToString() ?? "-"
+            };
+        }
+        catch { return value?.ToString() ?? "-"; }
+    }
+}
