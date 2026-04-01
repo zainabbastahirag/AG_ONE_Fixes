@@ -1,7 +1,16 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// FILE: AGOnePermissionService.cs
+// GOES IN: Shared project
+//
+// Shared .csproj only needs these NuGet packages (all WASM-compatible):
+//   <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="8.0.*" />
+//   <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.*" />
+//
+// NO <FrameworkReference Include="Microsoft.AspNetCore.App" /> needed!
+// ═══════════════════════════════════════════════════════════════════════════
+
 using System.Security.Claims;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Caching.Memory;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace AGOne.Shared.Authorization;
@@ -60,7 +69,7 @@ public static class Permissions
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 2. INTERFACE — lives in Shared, so both API and UI can reference it
+// 2. INTERFACE — used by both API and UI
 // ═══════════════════════════════════════════════════════════════════════════
 
 public interface IAGOnePermissionService
@@ -78,77 +87,16 @@ public interface IAGOnePermissionService
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 3. SERVER IMPLEMENTATION — for API (reads from HttpContext JWT claims)
-// ═══════════════════════════════════════════════════════════════════════════
-
-public sealed class ServerPermissionService : IAGOnePermissionService
-{
-    private readonly IHttpContextAccessor _http;
-    private readonly IMemoryCache _cache;
-
-    public ServerPermissionService(IHttpContextAccessor http, IMemoryCache cache)
-    {
-        _http = http;
-        _cache = cache;
-    }
-
-    private ClaimsPrincipal User
-        => _http.HttpContext?.User ?? throw new UnauthorizedAccessException("No HTTP context");
-
-    public Guid GetUserId()
-    {
-        var v = User.FindFirst("sub")?.Value;
-        return Guid.TryParse(v, out var id) ? id : throw new UnauthorizedAccessException("No sub claim");
-    }
-
-    public Guid GetTenantId()
-    {
-        var v = User.FindFirst("tenant_id")?.Value;
-        return Guid.TryParse(v, out var id) ? id : throw new UnauthorizedAccessException("No tenant_id claim");
-    }
-
-    public Guid? GetProductId()
-    {
-        var v = User.FindFirst("product_id")?.Value;
-        return Guid.TryParse(v, out var id) ? id : null;
-    }
-
-    public string? GetPrimaryRole() => User.FindFirst("primary_role")?.Value;
-    public List<string> GetRoles() => User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
-    public List<string> GetProductRoles() => User.FindAll("product_role").Select(c => c.Value).ToList();
-
-    public HashSet<string> GetPermissions()
-    {
-        var key = $"perms:{GetTenantId()}:{GetUserId()}";
-        if (_cache.TryGetValue(key, out HashSet<string>? cached) && cached != null)
-            return cached;
-
-        var perms = User.FindAll("permission")
-            .Select(c => c.Value)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        _cache.Set(key, perms, TimeSpan.FromMinutes(10));
-        return perms;
-    }
-
-    public bool HasPermission(string code) => GetPermissions().Contains(code);
-    public bool HasAll(params string[] codes) { var p = GetPermissions(); return codes.All(p.Contains); }
-    public bool HasAny(params string[] codes) { var p = GetPermissions(); return codes.Any(p.Contains); }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// 4. BLAZOR WASM / UI IMPLEMENTATION — for Frontend (reads from
-//    AuthenticationStateProvider, which gets claims from the cookie/token)
+// 3. CLIENT IMPLEMENTATION — for Blazor UI (reads from AuthenticationStateProvider)
 // ═══════════════════════════════════════════════════════════════════════════
 
 public sealed class ClientPermissionService : IAGOnePermissionService
 {
-    private readonly Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider _authState;
+    private readonly AuthenticationStateProvider _authState;
     private HashSet<string>? _cachedPermissions;
     private ClaimsPrincipal? _cachedUser;
 
-    public ClientPermissionService(
-        Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider authState)
+    public ClientPermissionService(AuthenticationStateProvider authState)
     {
         _authState = authState;
     }
@@ -186,11 +134,9 @@ public sealed class ClientPermissionService : IAGOnePermissionService
     public HashSet<string> GetPermissions()
     {
         if (_cachedPermissions != null) return _cachedPermissions;
-
         _cachedPermissions = GetUser().FindAll("permission")
             .Select(c => c.Value)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
         return _cachedPermissions;
     }
 
@@ -200,83 +146,11 @@ public sealed class ClientPermissionService : IAGOnePermissionService
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 5. [RequirePermission] ATTRIBUTE — for API controllers
-// ═══════════════════════════════════════════════════════════════════════════
-
-[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true)]
-public sealed class RequirePermissionAttribute : AuthorizeAttribute
-{
-    internal const string Prefix = "AGPerm:";
-    public RequirePermissionAttribute(string permission) { Policy = Prefix + permission; }
-    public RequirePermissionAttribute(params string[] permissions) { Policy = Prefix + string.Join(",", permissions); }
-}
-
-internal sealed class PermissionPolicyProvider : IAuthorizationPolicyProvider
-{
-    private readonly DefaultAuthorizationPolicyProvider _fallback;
-    public PermissionPolicyProvider(Microsoft.Extensions.Options.IOptions<AuthorizationOptions> o)
-        => _fallback = new DefaultAuthorizationPolicyProvider(o);
-
-    public Task<AuthorizationPolicy> GetDefaultPolicyAsync() => _fallback.GetDefaultPolicyAsync();
-    public Task<AuthorizationPolicy?> GetFallbackPolicyAsync() => _fallback.GetFallbackPolicyAsync();
-
-    public Task<AuthorizationPolicy?> GetPolicyAsync(string policyName)
-    {
-        if (!policyName.StartsWith(RequirePermissionAttribute.Prefix))
-            return _fallback.GetPolicyAsync(policyName);
-
-        var codes = policyName[RequirePermissionAttribute.Prefix.Length..]
-            .Split(',', StringSplitOptions.RemoveEmptyEntries);
-
-        var policy = new AuthorizationPolicyBuilder()
-            .RequireAuthenticatedUser()
-            .AddRequirements(new PermReq(codes))
-            .Build();
-
-        return Task.FromResult<AuthorizationPolicy?>(policy);
-    }
-}
-
-internal sealed record PermReq(string[] Codes) : IAuthorizationRequirement;
-
-internal sealed class PermHandler : AuthorizationHandler<PermReq>
-{
-    private readonly IAGOnePermissionService _svc;
-    public PermHandler(IAGOnePermissionService svc) => _svc = svc;
-    protected override Task HandleRequirementAsync(AuthorizationHandlerContext ctx, PermReq req)
-    {
-        if (ctx.User.Identity?.IsAuthenticated == true && _svc.HasAny(req.Codes))
-            ctx.Succeed(req);
-        return Task.CompletedTask;
-    }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// 6. DI REGISTRATION — call the right one from each project
+// 4. DI — call from Blazor UI Program.cs
 // ═══════════════════════════════════════════════════════════════════════════
 
 public static class AGOnePermissionExtensions
 {
-    /// <summary>
-    /// Call from your API / Server project's Program.cs or DependencyInjection.cs.
-    /// Registers ServerPermissionService which reads JWT claims from HttpContext.
-    ///
-    /// Prerequisites (already in most API projects):
-    ///   builder.Services.AddHttpContextAccessor();
-    ///   builder.Services.AddMemoryCache();
-    /// </summary>
-    public static IServiceCollection AddAGOneServerPermissions(this IServiceCollection services)
-    {
-        services.AddScoped<IAGOnePermissionService, ServerPermissionService>();
-        services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
-        services.AddScoped<IAuthorizationHandler, PermHandler>();
-        return services;
-    }
-
-    /// <summary>
-    /// Call from your Blazor UI project's Program.cs.
-    /// Registers ClientPermissionService which reads claims from AuthenticationStateProvider.
-    /// </summary>
     public static IServiceCollection AddAGOneClientPermissions(this IServiceCollection services)
     {
         services.AddScoped<IAGOnePermissionService, ClientPermissionService>();
