@@ -200,15 +200,20 @@ internal sealed class PermHandler : AuthorizationHandler<PermReq>
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 5. DI — one line in Program.cs
+// 5. DI REGISTRATION
+//
+//    Infrastructure project — call from your DependencyInjection.cs:
+//        services.AddAGOnePermissions();
+//
+//    Web/API project — make sure these are registered (they usually already are):
+//        builder.Services.AddHttpContextAccessor();
+//        builder.Services.AddMemoryCache();
 // ═══════════════════════════════════════════════════════════════════════════
 
 public static class AGOnePermissionExtensions
 {
     public static IServiceCollection AddAGOnePermissions(this IServiceCollection services)
     {
-        services.AddHttpContextAccessor();
-        services.AddMemoryCache();
         services.AddScoped<IAGOnePermissionService, AGOnePermissionService>();
         services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
         services.AddScoped<IAuthorizationHandler, PermHandler>();
