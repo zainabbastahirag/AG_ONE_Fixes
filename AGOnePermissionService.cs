@@ -3,20 +3,15 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using System.Net.Http.Json;
 
 namespace AGOne.Shared.Authorization;
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 1. PERMISSION CONSTANTS — use these everywhere
+// 1. PERMISSION CONSTANTS
 // ═══════════════════════════════════════════════════════════════════════════
 
 public static class Permissions
 {
-    public const string ClaimType = "permissions";
-    public const string VersionClaim = "perm_version";
-
     public static class AgOne
     {
         public static class Users   { public const string Create = "agone.users.create"; public const string Read = "agone.users.read"; public const string Update = "agone.users.update"; public const string Delete = "agone.users.delete"; }
@@ -31,10 +26,10 @@ public static class Permissions
 
     public static class Work
     {
-        public static class Employee  { public const string Create = "work.employee.create"; public const string Read = "work.employee.read"; public const string Update = "work.employee.update"; public const string Delete = "work.employee.delete"; }
-        public static class Recruit   { public const string Create = "work.recruitment.create"; public const string Read = "work.recruitment.read"; public const string Update = "work.recruitment.update"; public const string Delete = "work.recruitment.delete"; }
-        public static class Activate  { public const string Create = "work.activate.create"; public const string Read = "work.activate.read"; public const string Update = "work.activate.update"; public const string Delete = "work.activate.delete"; }
-        public static class Master    { public const string Create = "work.masterdata.create"; public const string Read = "work.masterdata.read"; public const string Update = "work.masterdata.update"; public const string Delete = "work.masterdata.delete"; }
+        public static class Employee { public const string Create = "work.employee.create"; public const string Read = "work.employee.read"; public const string Update = "work.employee.update"; public const string Delete = "work.employee.delete"; }
+        public static class Recruit  { public const string Create = "work.recruitment.create"; public const string Read = "work.recruitment.read"; public const string Update = "work.recruitment.update"; public const string Delete = "work.recruitment.delete"; }
+        public static class Activate { public const string Create = "work.activate.create"; public const string Read = "work.activate.read"; public const string Update = "work.activate.update"; public const string Delete = "work.activate.delete"; }
+        public static class Master   { public const string Create = "work.masterdata.create"; public const string Read = "work.masterdata.read"; public const string Update = "work.masterdata.update"; public const string Delete = "work.masterdata.delete"; }
     }
 
     public static class Learn
@@ -65,266 +60,158 @@ public static class Permissions
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 2. INTERFACE — inject this anywhere: controllers, services, Blazor
+// 2. INTERFACE
 // ═══════════════════════════════════════════════════════════════════════════
 
 public interface IAGOnePermissionService
 {
-    Task<bool> HasPermissionAsync(string permissionCode);
-    Task<bool> HasAllAsync(params string[] codes);
-    Task<bool> HasAnyAsync(params string[] codes);
-    HashSet<string> GetCurrentPermissions();
-    long GetCurrentVersion();
-    Task RefreshPermissionsAsync();
+    bool HasPermission(string code);
+    bool HasAll(params string[] codes);
+    bool HasAny(params string[] codes);
+    HashSet<string> GetPermissions();
+    List<string> GetRoles();
+    List<string> GetProductRoles();
+    string? GetPrimaryRole();
+    Guid GetUserId();
+    Guid GetTenantId();
+    Guid? GetProductId();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 3. IMPLEMENTATION — reads from JWT claims, caches, refreshes from gateway
+// 3. IMPLEMENTATION — reads your JWT claims exactly as you issue them
+//
+//    JWT claim types you use:
+//      "sub"          → user id
+//      "tenant_id"    → tenant id
+//      "product_id"   → optional product id
+//      "primary_role" → first role by priority
+//      ClaimTypes.Role→ all role names
+//      "product_role" → "ProductCode:RoleName"
+//      "permission"   → one claim per permission code
 // ═══════════════════════════════════════════════════════════════════════════
 
 public sealed class AGOnePermissionService : IAGOnePermissionService
 {
     private readonly IHttpContextAccessor _http;
     private readonly IMemoryCache _cache;
-    private readonly IHttpClientFactory? _httpClientFactory;
-    private readonly ILogger<AGOnePermissionService> _logger;
-    private readonly AGOnePermissionOptions _options;
 
-    public AGOnePermissionService(
-        IHttpContextAccessor http,
-        IMemoryCache cache,
-        ILogger<AGOnePermissionService> logger,
-        AGOnePermissionOptions options,
-        IHttpClientFactory? httpClientFactory = null)
+    public AGOnePermissionService(IHttpContextAccessor http, IMemoryCache cache)
     {
         _http = http;
         _cache = cache;
-        _logger = logger;
-        _options = options;
-        _httpClientFactory = httpClientFactory;
     }
 
-    private ClaimsPrincipal? User => _http.HttpContext?.User;
+    private ClaimsPrincipal User
+        => _http.HttpContext?.User ?? throw new UnauthorizedAccessException("No HTTP context");
 
-    private Guid GetUserId()
+    public Guid GetUserId()
     {
-        var sub = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User?.FindFirst("sub")?.Value;
-        return Guid.TryParse(sub, out var id) ? id : throw new UnauthorizedAccessException("No user in context");
+        var v = User.FindFirst("sub")?.Value;
+        return Guid.TryParse(v, out var id) ? id : throw new UnauthorizedAccessException("No sub claim");
     }
 
-    private Guid GetTenantId()
+    public Guid GetTenantId()
     {
-        var tid = User?.FindFirst("tenant_id")?.Value ?? User?.FindFirst("tid")?.Value;
-        return Guid.TryParse(tid, out var id) ? id : throw new UnauthorizedAccessException("No tenant in context");
+        var v = User.FindFirst("tenant_id")?.Value;
+        return Guid.TryParse(v, out var id) ? id : throw new UnauthorizedAccessException("No tenant_id claim");
     }
 
-    public long GetCurrentVersion()
+    public Guid? GetProductId()
     {
-        var v = User?.FindFirst(Permissions.VersionClaim)?.Value;
-        return long.TryParse(v, out var ver) ? ver : 0;
+        var v = User.FindFirst("product_id")?.Value;
+        return Guid.TryParse(v, out var id) ? id : null;
     }
 
-    public HashSet<string> GetCurrentPermissions()
+    public string? GetPrimaryRole() => User.FindFirst("primary_role")?.Value;
+
+    public List<string> GetRoles()
+        => User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
+
+    public List<string> GetProductRoles()
+        => User.FindAll("product_role").Select(c => c.Value).ToList();
+
+    public HashSet<string> GetPermissions()
     {
-        var userId = GetUserId();
-        var tenantId = GetTenantId();
-        var cacheKey = $"perms:{tenantId}:{userId}";
+        var key = $"perms:{GetTenantId()}:{GetUserId()}";
 
-        if (_cache.TryGetValue(cacheKey, out CachedPermissions? cached) && cached != null)
-        {
-            var jwtVersion = GetCurrentVersion();
-            if (jwtVersion <= cached.Version)
-                return cached.Codes;
-        }
+        if (_cache.TryGetValue(key, out HashSet<string>? cached) && cached != null)
+            return cached;
 
-        var perms = User?.FindAll(Permissions.ClaimType)
+        var perms = User.FindAll("permission")
             .Select(c => c.Value)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase)
-            ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        var version = GetCurrentVersion();
-
-        _cache.Set(cacheKey, new CachedPermissions(perms, version), _options.CacheDuration);
-
+        _cache.Set(key, perms, TimeSpan.FromMinutes(10));
         return perms;
     }
 
-    public Task<bool> HasPermissionAsync(string permissionCode)
-    {
-        return Task.FromResult(GetCurrentPermissions().Contains(permissionCode));
-    }
-
-    public Task<bool> HasAllAsync(params string[] codes)
-    {
-        var perms = GetCurrentPermissions();
-        return Task.FromResult(codes.All(c => perms.Contains(c)));
-    }
-
-    public Task<bool> HasAnyAsync(params string[] codes)
-    {
-        var perms = GetCurrentPermissions();
-        return Task.FromResult(codes.Any(c => perms.Contains(c)));
-    }
-
-    public async Task RefreshPermissionsAsync()
-    {
-        var userId = GetUserId();
-        var tenantId = GetTenantId();
-        var cacheKey = $"perms:{tenantId}:{userId}";
-
-        _cache.Remove(cacheKey);
-
-        if (_httpClientFactory != null && !string.IsNullOrEmpty(_options.GatewayBaseUrl))
-        {
-            try
-            {
-                var client = _httpClientFactory.CreateClient("AGOneGateway");
-                var result = await client.GetFromJsonAsync<GatewayPermissionResponse>(
-                    $"api/internal/permissions/{tenantId}/{userId}");
-
-                if (result != null)
-                {
-                    var perms = new HashSet<string>(result.Permissions, StringComparer.OrdinalIgnoreCase);
-                    _cache.Set(cacheKey, new CachedPermissions(perms, result.Version), _options.CacheDuration);
-                    _logger.LogInformation("Refreshed permissions from gateway for user {UserId}, version {V}", userId, result.Version);
-                    return;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to refresh permissions from gateway, falling back to JWT claims");
-            }
-        }
-
-        GetCurrentPermissions();
-    }
-
-    private sealed record CachedPermissions(HashSet<string> Codes, long Version);
-    private sealed record GatewayPermissionResponse(HashSet<string> Permissions, long Version);
+    public bool HasPermission(string code) => GetPermissions().Contains(code);
+    public bool HasAll(params string[] codes) { var p = GetPermissions(); return codes.All(p.Contains); }
+    public bool HasAny(params string[] codes) { var p = GetPermissions(); return codes.Any(p.Contains); }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 4. OPTIONS
-// ═══════════════════════════════════════════════════════════════════════════
-
-public sealed class AGOnePermissionOptions
-{
-    /// <summary>AG ONE gateway URL — only needed by downstream apps (Work/Learn/Safe).</summary>
-    public string? GatewayBaseUrl { get; set; }
-
-    /// <summary>How long to cache permissions in memory. Default: 5 minutes.</summary>
-    public TimeSpan CacheDuration { get; set; } = TimeSpan.FromMinutes(5);
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// 5. [RequirePermission] ATTRIBUTE — use on controllers / actions
+// 4. [RequirePermission] ATTRIBUTE
 // ═══════════════════════════════════════════════════════════════════════════
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true)]
 public sealed class RequirePermissionAttribute : AuthorizeAttribute
 {
     internal const string Prefix = "AGPerm:";
-
-    public RequirePermissionAttribute(string permission)
-    {
-        Policy = Prefix + permission;
-    }
-
-    public RequirePermissionAttribute(params string[] permissions)
-    {
-        Policy = Prefix + string.Join(",", permissions);
-    }
+    public RequirePermissionAttribute(string permission) { Policy = Prefix + permission; }
+    public RequirePermissionAttribute(params string[] permissions) { Policy = Prefix + string.Join(",", permissions); }
 }
-
-// ═══════════════════════════════════════════════════════════════════════════
-// 6. POLICY PROVIDER + HANDLER — wires up the attribute automatically
-// ═══════════════════════════════════════════════════════════════════════════
 
 internal sealed class PermissionPolicyProvider : IAuthorizationPolicyProvider
 {
     private readonly DefaultAuthorizationPolicyProvider _fallback;
-
-    public PermissionPolicyProvider(Microsoft.Extensions.Options.IOptions<AuthorizationOptions> opts)
-        => _fallback = new DefaultAuthorizationPolicyProvider(opts);
+    public PermissionPolicyProvider(Microsoft.Extensions.Options.IOptions<AuthorizationOptions> o)
+        => _fallback = new DefaultAuthorizationPolicyProvider(o);
 
     public Task<AuthorizationPolicy> GetDefaultPolicyAsync() => _fallback.GetDefaultPolicyAsync();
     public Task<AuthorizationPolicy?> GetFallbackPolicyAsync() => _fallback.GetFallbackPolicyAsync();
 
     public Task<AuthorizationPolicy?> GetPolicyAsync(string policyName)
     {
-        if (!policyName.StartsWith(RequirePermissionAttribute.Prefix))
-            return _fallback.GetPolicyAsync(policyName);
-
-        var codes = policyName[RequirePermissionAttribute.Prefix.Length..]
-            .Split(',', StringSplitOptions.RemoveEmptyEntries);
-
+        if (!policyName.StartsWith(Prefix)) return _fallback.GetPolicyAsync(policyName);
+        var codes = policyName[Prefix.Length..].Split(',', StringSplitOptions.RemoveEmptyEntries);
         var policy = new AuthorizationPolicyBuilder()
             .RequireAuthenticatedUser()
-            .AddRequirements(new PermissionRequirement(codes))
+            .AddRequirements(new PermReq(codes))
             .Build();
-
         return Task.FromResult<AuthorizationPolicy?>(policy);
     }
+
+    private const string Prefix = RequirePermissionAttribute.Prefix;
 }
 
-internal sealed class PermissionRequirement : IAuthorizationRequirement
-{
-    public string[] Codes { get; }
-    public PermissionRequirement(string[] codes) => Codes = codes;
-}
+internal sealed record PermReq(string[] Codes) : IAuthorizationRequirement;
 
-internal sealed class PermissionHandler : AuthorizationHandler<PermissionRequirement>
+internal sealed class PermHandler : AuthorizationHandler<PermReq>
 {
     private readonly IAGOnePermissionService _svc;
-    public PermissionHandler(IAGOnePermissionService svc) => _svc = svc;
-
-    protected override async Task HandleRequirementAsync(AuthorizationHandlerContext ctx, PermissionRequirement req)
+    public PermHandler(IAGOnePermissionService svc) => _svc = svc;
+    protected override Task HandleRequirementAsync(AuthorizationHandlerContext ctx, PermReq req)
     {
-        if (ctx.User.Identity?.IsAuthenticated != true) return;
-        if (await _svc.HasAnyAsync(req.Codes))
+        if (ctx.User.Identity?.IsAuthenticated == true && _svc.HasAny(req.Codes))
             ctx.Succeed(req);
+        return Task.CompletedTask;
     }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 7. DI REGISTRATION — one line in Program.cs
+// 5. DI — one line in Program.cs
 // ═══════════════════════════════════════════════════════════════════════════
 
 public static class AGOnePermissionExtensions
 {
-    /// <summary>
-    /// Register the shared permission service. Call in every product's Program.cs.
-    ///
-    /// AG ONE gateway:
-    ///   builder.Services.AddAGOnePermissions();
-    ///
-    /// Downstream (Work/Learn/Safe/Pulse/Spot):
-    ///   builder.Services.AddAGOnePermissions(o => o.GatewayBaseUrl = "https://agone.example.com");
-    /// </summary>
-    public static IServiceCollection AddAGOnePermissions(
-        this IServiceCollection services,
-        Action<AGOnePermissionOptions>? configure = null)
+    public static IServiceCollection AddAGOnePermissions(this IServiceCollection services)
     {
-        var options = new AGOnePermissionOptions();
-        configure?.Invoke(options);
-        services.AddSingleton(options);
-
         services.AddHttpContextAccessor();
         services.AddMemoryCache();
-
-        if (!string.IsNullOrEmpty(options.GatewayBaseUrl))
-        {
-            services.AddHttpClient("AGOneGateway", c =>
-            {
-                c.BaseAddress = new Uri(options.GatewayBaseUrl.TrimEnd('/') + "/");
-                c.Timeout = TimeSpan.FromSeconds(10);
-            });
-        }
-
         services.AddScoped<IAGOnePermissionService, AGOnePermissionService>();
         services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
-        services.AddScoped<IAuthorizationHandler, PermissionHandler>();
-
+        services.AddScoped<IAuthorizationHandler, PermHandler>();
         return services;
     }
 }
