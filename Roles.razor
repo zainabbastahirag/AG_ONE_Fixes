@@ -187,7 +187,7 @@ else
                 <!-- Right: Permission Matrix -->
                 <div class="rw-perms-panel">
                     <h3 class="rw-panel-title">Select Role's Permissions</h3>
-                    @if (_selectedProductId == Guid.Empty && !_allProducts.Any(p => p.Id == _selectedProductId))
+                    @if (!_hasProductSelected)
                     {
                         <div class="rw-perms-empty">
                             <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -200,14 +200,14 @@ else
                     }
                     else
                     {
-                        var matrix = _permissionMatrix.FirstOrDefault(m => m.ProductId == _selectedProductId);
-                        if (matrix != null)
+                        var matrix = GetDeduplicatedMatrix(_selectedProductId);
+                        if (matrix != null && matrix.Groups.Any())
                         {
                             <div class="rw-matrix-wrap">
                                 <table class="rw-matrix">
                                     <thead>
                                         <tr>
-                                            <th class="rw-m-role">Role</th>
+                                            <th class="rw-m-role">Resource</th>
                                             <th class="rw-m-act">Create</th>
                                             <th class="rw-m-act">Read</th>
                                             <th class="rw-m-act">Update</th>
@@ -270,31 +270,31 @@ else
                     </div>
                 </div>
 
-                @if (_selectedPermissions.Any())
+                @{
+                    var reviewMatrix = GetDeduplicatedMatrix(_selectedProductId);
+                }
+                @if (_selectedPermissions.Any() && reviewMatrix != null)
                 {
-                    @foreach (var matrix in _permissionMatrix.Where(m => m.ProductId == _selectedProductId))
+                    @foreach (var group in reviewMatrix.Groups)
                     {
-                        @foreach (var group in matrix.Groups)
+                        var groupPerms = GetGroupSelectedPermissions(group);
+                        @if (groupPerms.Any())
                         {
-                            var groupPerms = GetGroupSelectedPermissions(group);
-                            @if (groupPerms.Any())
-                            {
-                                <div class="rw-review-group">
-                                    <div class="rw-review-group-header">@group.GroupName</div>
-                                    @foreach (var rp in groupPerms)
-                                    {
-                                        <div class="rw-review-perm-row">
-                                            <span class="rw-review-resource">@rp.Resource</span>
-                                            <div class="rw-review-chips">
-                                                @foreach (var action in rp.Actions)
-                                                {
-                                                    <span class="rw-chip">@action</span>
-                                                }
-                                            </div>
+                            <div class="rw-review-group">
+                                <div class="rw-review-group-header">@group.GroupName</div>
+                                @foreach (var rp in groupPerms)
+                                {
+                                    <div class="rw-review-perm-row">
+                                        <span class="rw-review-resource">@rp.Resource</span>
+                                        <div class="rw-review-chips">
+                                            @foreach (var action in rp.Actions)
+                                            {
+                                                <span class="rw-chip">@action</span>
+                                            }
                                         </div>
-                                    }
-                                </div>
-                            }
+                                    </div>
+                                }
+                            </div>
                         }
                     }
                 }
@@ -887,6 +887,7 @@ else
     private string _formName = "";
     private string? _formDescription;
     private Guid _selectedProductId = Guid.Empty;
+    private bool _hasProductSelected = false;
     private HashSet<Guid> _selectedPermissions = new();
     private bool _saving;
 
@@ -984,7 +985,7 @@ else
     private void PreviousPage() { if (_currentPage > 1) _currentPage--; }
     private void NextPage() { if (_currentPage < TotalPages) _currentPage++; }
 
-    private void StartCreateRole() { _view = "wizard"; _wizardStep = 1; _editingRoleId = null; _formName = ""; _formDescription = null; _selectedProductId = Guid.Empty; _selectedPermissions.Clear(); }
+    private void StartCreateRole() { _view = "wizard"; _wizardStep = 1; _editingRoleId = null; _formName = ""; _formDescription = null; _selectedProductId = Guid.Empty; _hasProductSelected = false; _selectedPermissions.Clear(); }
 
     private async Task StartEditRole(Guid roleId) { await LoadAndEditRole(roleId); }
 
@@ -999,6 +1000,7 @@ else
                 _formName = detail.DisplayName;
                 _formDescription = detail.Description;
                 _selectedProductId = detail.ProductId ?? Guid.Empty;
+                _hasProductSelected = true;
                 _selectedPermissions = detail.PermissionIds.ToHashSet();
                 _view = "wizard";
                 _wizardStep = 1;
@@ -1009,20 +1011,52 @@ else
             _editingRoleId = roleId;
             _formName = _roles.FirstOrDefault(r => r.Id == roleId)?.DisplayName ?? "";
             _formDescription = _roles.FirstOrDefault(r => r.Id == roleId)?.Description;
+            _hasProductSelected = false;
             _view = "wizard";
             _wizardStep = 1;
         }
     }
 
-    private void BackToList() { _view = "list"; _editingRoleId = null; }
-    private void SelectProduct(Guid pid) { _selectedProductId = pid; }
+    private void BackToList() { _view = "list"; _editingRoleId = null; _hasProductSelected = false; }
+
+    private void SelectProduct(Guid pid)
+    {
+        _selectedProductId = pid;
+        _hasProductSelected = true;
+    }
+
     private bool IsPermSelected(Guid? permId) => permId.HasValue && _selectedPermissions.Contains(permId.Value);
     private void TogglePerm(Guid? permId) { if (!permId.HasValue) return; if (!_selectedPermissions.Remove(permId.Value)) _selectedPermissions.Add(permId.Value); }
 
     private string GetSelectedProductNames()
     {
-        if (_selectedProductId == Guid.Empty) return "AG ONE (admin)";
         return _allProducts.FirstOrDefault(p => p.Id == _selectedProductId)?.Name ?? "—";
+    }
+
+    /// <summary>
+    /// Deduplicates the API response: the backend returns duplicate rows per group
+    /// (same resource + same IDs repeated). This keeps only one row per unique resource per group.
+    /// </summary>
+    private ProductPermissionMatrixDto? GetDeduplicatedMatrix(Guid productId)
+    {
+        var raw = _permissionMatrix.FirstOrDefault(m => m.ProductId == productId);
+        if (raw == null) return null;
+
+        var deduped = new ProductPermissionMatrixDto
+        {
+            ProductId = raw.ProductId,
+            ProductName = raw.ProductName,
+            Groups = raw.Groups.Select(g => new PermissionGroupMatrixDto
+            {
+                GroupName = g.GroupName,
+                Rows = g.Rows
+                    .GroupBy(r => r.Resource)
+                    .Select(grp => grp.First())
+                    .ToList()
+            }).ToList()
+        };
+
+        return deduped;
     }
 
     private string? FindPermission(Guid permId)
@@ -1042,8 +1076,12 @@ else
     private List<ReviewPermRow> GetGroupSelectedPermissions(PermissionGroupMatrixDto group)
     {
         var result = new List<ReviewPermRow>();
+        var seen = new HashSet<string>();
+
         foreach (var row in group.Rows)
         {
+            if (!seen.Add(row.Resource)) continue;
+
             var actions = new List<string>();
             if (row.CreateId.HasValue && _selectedPermissions.Contains(row.CreateId.Value)) actions.Add("Create");
             if (row.ReadId.HasValue && _selectedPermissions.Contains(row.ReadId.Value)) actions.Add("Read");
