@@ -177,8 +177,8 @@ else
                     <h3 class="rw-panel-title">Select Products</h3>
                     @foreach (var p in _allProducts)
                     {
-                        <div class="rw-product-row @(_selectedProductId == p.Id ? "selected" : "")" @onclick="@(() => SelectProduct(p.Id))">
-                            <div class="rw-radio @(_selectedProductId == p.Id ? "checked" : "")"></div>
+                        <div class="rw-product-row @(_selectedProductId.HasValue && _selectedProductId.Value == p.Id ? "selected" : "")" @onclick="@(() => SelectProduct(p.Id))">
+                            <div class="rw-radio @(_selectedProductId.HasValue && _selectedProductId.Value == p.Id ? "checked" : "")"></div>
                             <span>@p.Name</span>
                         </div>
                     }
@@ -187,7 +187,7 @@ else
                 <!-- Right: Permission Matrix -->
                 <div class="rw-perms-panel">
                     <h3 class="rw-panel-title">Select Role's Permissions</h3>
-                    @if (!_hasProductSelected)
+                    @if (!_selectedProductId.HasValue)
                     {
                         <div class="rw-perms-empty">
                             <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -200,7 +200,7 @@ else
                     }
                     else
                     {
-                        var matrix = GetDeduplicatedMatrix(_selectedProductId);
+                        var matrix = GetDeduplicatedMatrix(_selectedProductId.Value);
                         if (matrix != null && matrix.Groups.Any())
                         {
                             <div class="rw-matrix-wrap">
@@ -271,7 +271,7 @@ else
                 </div>
 
                 @{
-                    var reviewMatrix = GetDeduplicatedMatrix(_selectedProductId);
+                    var reviewMatrix = _selectedProductId.HasValue ? GetDeduplicatedMatrix(_selectedProductId.Value) : null;
                 }
                 @if (_selectedPermissions.Any() && reviewMatrix != null)
                 {
@@ -877,17 +877,14 @@ else
     private List<ProductInfo> _allProducts = new();
     private List<ProductPermissionMatrixDto> _permissionMatrix = new();
 
-    // Pagination
     private int _currentPage = 1;
     private int _pageSize = 10;
 
-    // Wizard
     private int _wizardStep = 1;
     private Guid? _editingRoleId;
     private string _formName = "";
     private string? _formDescription;
-    private Guid _selectedProductId = Guid.Empty;
-    private bool _hasProductSelected = false;
+    private Guid? _selectedProductId;
     private HashSet<Guid> _selectedPermissions = new();
     private bool _saving;
 
@@ -919,73 +916,60 @@ else
         {
             var subs = await SubscriptionService.GetMySubscriptionsAsync();
             var prods = await ProductService.GetAllAsync();
-            _products = subs.Where(s => s.Status == "Active").Select(s => { var p = prods.FirstOrDefault(x => x.Id == s.ProductId); return new ProductInfo { Id = s.ProductId, Name = p?.Name ?? s.ProductName ?? "Product" }; }).ToList();
-            _allProducts = new List<ProductInfo> { new() { Id = Guid.Empty, Name = "AG ONE (admin)" } };
-            _allProducts.AddRange(_products);
+            _products = subs.Where(s => s.Status == "Active")
+                .Select(s =>
+                {
+                    var p = prods.FirstOrDefault(x => x.Id == s.ProductId);
+                    return new ProductInfo { Id = s.ProductId, Name = p?.Name ?? s.ProductName ?? "Product" };
+                }).ToList();
         }
         catch
         {
-            _products = new List<ProductInfo>
-            {
-                new() { Id = Guid.NewGuid(), Name = "AG ONE Work" },
-                new() { Id = Guid.NewGuid(), Name = "AG ONE Learn" },
-                new() { Id = Guid.NewGuid(), Name = "AG ONE Safe" },
-                new() { Id = Guid.NewGuid(), Name = "AG ONE Pulse" },
-                new() { Id = Guid.NewGuid(), Name = "AG ONE SPOT" }
-            };
-            _allProducts = new List<ProductInfo> { new() { Id = Guid.Empty, Name = "AG ONE (admin)" } };
-            _allProducts.AddRange(_products);
+            _products = new();
         }
     }
 
     private async Task LoadRoles()
     {
         try { _roles = await Http.GetFromJsonAsync<List<RoleListItemDto>>("api/roles") ?? new(); }
-        catch
-        {
-            _roles = new List<RoleListItemDto>
-            {
-                new() { Id = Guid.NewGuid(), DisplayName = "IT Support", Description = "Configure and product related data", ProductName = "AG ONE", UserCount = 2 },
-                new() { Id = Guid.NewGuid(), DisplayName = "Tenant Owner", Description = "Full tenant control and configuration.", ProductName = "AG ONE", UserCount = 1 },
-                new() { Id = Guid.NewGuid(), DisplayName = "Tenant Admin", Description = "Manage tenant settings, users, and permissions.", ProductName = "AG ONE", UserCount = 2 },
-                new() { Id = Guid.NewGuid(), DisplayName = "Product Admin", Description = "Manage users, and product master data & configuration", ProductName = "AG ONE Pulse", UserCount = 3 },
-                new() { Id = Guid.NewGuid(), DisplayName = "Product Admin", Description = "Manage users, and product master data & configuration", ProductName = "AG ONE Work", UserCount = 1 },
-                new() { Id = Guid.NewGuid(), DisplayName = "HR", Description = "Manage employee and HR-related data.", ProductName = "AG ONE Work", UserCount = 7 },
-                new() { Id = Guid.NewGuid(), DisplayName = "Hiring Manager", Description = "Oversee hiring tasks and candidate workflows.", ProductName = "AG ONE Pulse", UserCount = 8 },
-                new() { Id = Guid.NewGuid(), DisplayName = "L&D", Description = "Manage learning content and training activities.", ProductName = "AG ONE Learn", UserCount = 12 },
-                new() { Id = Guid.NewGuid(), DisplayName = "Admin", Description = "Perform system and user compliance administration.", ProductName = "AG ONE Safe", UserCount = 10 },
-            };
-        }
+        catch { _roles = new(); }
         _currentPage = 1;
     }
 
     private async Task LoadPermissionMatrix()
     {
-        try { _permissionMatrix = await Http.GetFromJsonAsync<List<ProductPermissionMatrixDto>>("api/roles/permissions/matrix") ?? new(); }
+        try
+        {
+            _permissionMatrix = await Http.GetFromJsonAsync<List<ProductPermissionMatrixDto>>("api/roles/permissions/matrix") ?? new();
+        }
         catch
         {
-            _permissionMatrix = new List<ProductPermissionMatrixDto>
-            {
-                new() { ProductId = Guid.Empty, ProductName = "AG ONE (admin)", Groups = new()
-                {
-                    new() { GroupName = "Tenant Management", Rows = new() {
-                        new() { Resource = "SSO Configuration", CreateId = Guid.NewGuid(), ReadId = Guid.NewGuid(), UpdateId = Guid.NewGuid(), DeleteId = Guid.NewGuid() },
-                        new() { Resource = "API Management", CreateId = Guid.NewGuid(), ReadId = Guid.NewGuid(), UpdateId = Guid.NewGuid(), DeleteId = Guid.NewGuid() },
-                        new() { Resource = "Audit & Visibility", CreateId = Guid.NewGuid(), ReadId = Guid.NewGuid(), UpdateId = null, DeleteId = null }
-                    } },
-                    new() { GroupName = "Product Settings", Rows = new() {
-                        new() { Resource = "Product Master Data", CreateId = null, ReadId = Guid.NewGuid(), UpdateId = null, DeleteId = null },
-                        new() { Resource = "Product Configurations", CreateId = null, ReadId = Guid.NewGuid(), UpdateId = Guid.NewGuid(), DeleteId = null }
-                    } }
-                } }
-            };
+            _permissionMatrix = new();
+        }
+
+        _allProducts = _permissionMatrix
+            .Select(m => new ProductInfo { Id = m.ProductId, Name = m.ProductName })
+            .ToList();
+
+        if (!_products.Any() && _allProducts.Any())
+        {
+            _products = _allProducts.ToList();
         }
     }
 
     private void PreviousPage() { if (_currentPage > 1) _currentPage--; }
     private void NextPage() { if (_currentPage < TotalPages) _currentPage++; }
 
-    private void StartCreateRole() { _view = "wizard"; _wizardStep = 1; _editingRoleId = null; _formName = ""; _formDescription = null; _selectedProductId = Guid.Empty; _hasProductSelected = false; _selectedPermissions.Clear(); }
+    private void StartCreateRole()
+    {
+        _view = "wizard";
+        _wizardStep = 1;
+        _editingRoleId = null;
+        _formName = "";
+        _formDescription = null;
+        _selectedProductId = null;
+        _selectedPermissions.Clear();
+    }
 
     private async Task StartEditRole(Guid roleId) { await LoadAndEditRole(roleId); }
 
@@ -999,50 +983,48 @@ else
                 _editingRoleId = detail.Id;
                 _formName = detail.DisplayName;
                 _formDescription = detail.Description;
-                _selectedProductId = detail.ProductId ?? Guid.Empty;
-                _hasProductSelected = true;
+                _selectedProductId = detail.ProductId;
                 _selectedPermissions = detail.PermissionIds.ToHashSet();
                 _view = "wizard";
                 _wizardStep = 1;
+                return;
             }
         }
-        catch
-        {
-            _editingRoleId = roleId;
-            _formName = _roles.FirstOrDefault(r => r.Id == roleId)?.DisplayName ?? "";
-            _formDescription = _roles.FirstOrDefault(r => r.Id == roleId)?.Description;
-            _hasProductSelected = false;
-            _view = "wizard";
-            _wizardStep = 1;
-        }
+        catch { }
+
+        _editingRoleId = roleId;
+        _formName = _roles.FirstOrDefault(r => r.Id == roleId)?.DisplayName ?? "";
+        _formDescription = _roles.FirstOrDefault(r => r.Id == roleId)?.Description;
+        _selectedProductId = null;
+        _view = "wizard";
+        _wizardStep = 1;
     }
 
-    private void BackToList() { _view = "list"; _editingRoleId = null; _hasProductSelected = false; }
+    private void BackToList() { _view = "list"; _editingRoleId = null; _selectedProductId = null; }
 
-    private void SelectProduct(Guid pid)
-    {
-        _selectedProductId = pid;
-        _hasProductSelected = true;
-    }
+    private void SelectProduct(Guid pid) { _selectedProductId = pid; }
 
     private bool IsPermSelected(Guid? permId) => permId.HasValue && _selectedPermissions.Contains(permId.Value);
-    private void TogglePerm(Guid? permId) { if (!permId.HasValue) return; if (!_selectedPermissions.Remove(permId.Value)) _selectedPermissions.Add(permId.Value); }
+
+    private void TogglePerm(Guid? permId)
+    {
+        if (!permId.HasValue) return;
+        if (!_selectedPermissions.Remove(permId.Value))
+            _selectedPermissions.Add(permId.Value);
+    }
 
     private string GetSelectedProductNames()
     {
-        return _allProducts.FirstOrDefault(p => p.Id == _selectedProductId)?.Name ?? "—";
+        if (_selectedProductId == null) return "—";
+        return _allProducts.FirstOrDefault(p => p.Id == _selectedProductId.Value)?.Name ?? "—";
     }
 
-    /// <summary>
-    /// Deduplicates the API response: the backend returns duplicate rows per group
-    /// (same resource + same IDs repeated). This keeps only one row per unique resource per group.
-    /// </summary>
     private ProductPermissionMatrixDto? GetDeduplicatedMatrix(Guid productId)
     {
         var raw = _permissionMatrix.FirstOrDefault(m => m.ProductId == productId);
         if (raw == null) return null;
 
-        var deduped = new ProductPermissionMatrixDto
+        return new ProductPermissionMatrixDto
         {
             ProductId = raw.ProductId,
             ProductName = raw.ProductName,
@@ -1055,8 +1037,6 @@ else
                     .ToList()
             }).ToList()
         };
-
-        return deduped;
     }
 
     private string? FindPermission(Guid permId)
@@ -1081,7 +1061,6 @@ else
         foreach (var row in group.Rows)
         {
             if (!seen.Add(row.Resource)) continue;
-
             var actions = new List<string>();
             if (row.CreateId.HasValue && _selectedPermissions.Contains(row.CreateId.Value)) actions.Add("Create");
             if (row.ReadId.HasValue && _selectedPermissions.Contains(row.ReadId.Value)) actions.Add("Read");
@@ -1108,14 +1087,15 @@ else
         _saving = true; StateHasChanged();
         try
         {
+            var productId = _selectedProductId ?? Guid.Empty;
             if (_editingRoleId.HasValue)
             {
-                await Http.PutAsJsonAsync($"api/roles/{_editingRoleId}", new { Id = _editingRoleId, Name = _formName, Description = _formDescription, ProductAccessIds = new List<Guid> { _selectedProductId }, PermissionIds = _selectedPermissions.ToList() });
+                await Http.PutAsJsonAsync($"api/roles/{_editingRoleId}", new { Id = _editingRoleId, Name = _formName, Description = _formDescription, ProductAccessIds = new List<Guid> { productId }, PermissionIds = _selectedPermissions.ToList() });
                 Snackbar.Add("Role updated", Severity.Success);
             }
             else
             {
-                await Http.PostAsJsonAsync("api/roles", new { Name = _formName, Description = _formDescription, ProductAccessIds = new List<Guid> { _selectedProductId }, PermissionIds = _selectedPermissions.ToList() });
+                await Http.PostAsJsonAsync("api/roles", new { Name = _formName, Description = _formDescription, ProductAccessIds = new List<Guid> { productId }, PermissionIds = _selectedPermissions.ToList() });
                 Snackbar.Add("Role created", Severity.Success);
             }
             await LoadRoles();
