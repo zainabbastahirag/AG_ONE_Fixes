@@ -1,20 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // FILE: UserAccessController.cs
-// GOES IN: API project (AGOne.Api)
-// Namespace: AGOne.Api.Controllers
-//
-// API endpoints for the Assign User Access wizard.
-// Depends on: IUserAccessService (from Shared), IAGOnePermissionService
+// GOES IN: API project (AGOne.Api/Controllers/)
 // ═══════════════════════════════════════════════════════════════════════════
 
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using AGOne.Shared.Authorization;
+using System.Security.Claims;
 using AGOne.Shared.DTOs;
+using AGOne.Shared.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 
 namespace AGOne.Api.Controllers;
 
@@ -23,172 +16,57 @@ namespace AGOne.Api.Controllers;
 [Authorize]
 public class UserAccessController : ControllerBase
 {
-    private readonly IUserAccessService _userAccessService;
-    private readonly IAGOnePermissionService _permissionService;
-    private readonly ILogger<UserAccessController> _logger;
+    private readonly IUserAccessService _service;
 
-    public UserAccessController(
-        IUserAccessService userAccessService,
-        IAGOnePermissionService permissionService,
-        ILogger<UserAccessController> logger)
+    public UserAccessController(IUserAccessService service)
     {
-        _userAccessService = userAccessService;
-        _permissionService = permissionService;
-        _logger = logger;
+        _service = service;
     }
 
-    /// <summary>
-    /// Returns tenant entities (branches) for the entity dropdown in Step 1.
-    /// </summary>
+    private Guid? GetTenantId()
+    {
+        var tid = User.FindFirst("tenant_id")?.Value;
+        return Guid.TryParse(tid, out var id) ? id : null;
+    }
+
     [HttpGet("entities")]
-    public async Task<ActionResult<List<AssignAccessEntityDto>>> GetEntities()
+    public async Task<IActionResult> GetEntities()
     {
-        try
-        {
-            var tenantId = _permissionService.GetTenantId();
-            var entities = await _userAccessService.GetEntitiesAsync(tenantId);
-            return Ok(entities);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Unauthorized();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error fetching entities for assign-access");
-            return StatusCode(500, new { message = "Failed to load entities." });
-        }
+        var tenantId = GetTenantId();
+        if (tenantId == null) return Unauthorized();
+        return Ok(await _service.GetEntitiesAsync(tenantId.Value));
     }
 
-    /// <summary>
-    /// Searches users for the user dropdown in Step 1.
-    /// Supports optional search text and entity (tenant) filter.
-    /// </summary>
     [HttpGet("users")]
-    public async Task<ActionResult<List<AssignAccessUserDto>>> SearchUsers(
-        [FromQuery] string? search = null,
-        [FromQuery] Guid? entityId = null)
+    public async Task<IActionResult> SearchUsers([FromQuery] string? search)
     {
-        try
-        {
-            var tenantId = _permissionService.GetTenantId();
-            var users = await _userAccessService.SearchUsersAsync(tenantId, search, entityId);
-            return Ok(users);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Unauthorized();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error searching users for assign-access. Search={Search}, EntityId={EntityId}",
-                search, entityId);
-            return StatusCode(500, new { message = "Failed to search users." });
-        }
+        var tenantId = GetTenantId();
+        if (tenantId == null) return Unauthorized();
+        return Ok(await _service.SearchUsersAsync(tenantId.Value, search));
     }
 
-    /// <summary>
-    /// Returns products the tenant is subscribed to for the product checklist in Step 2.
-    /// </summary>
     [HttpGet("products")]
-    public async Task<ActionResult<List<AssignAccessProductDto>>> GetProducts()
+    public async Task<IActionResult> GetProducts()
     {
-        try
-        {
-            var tenantId = _permissionService.GetTenantId();
-            var products = await _userAccessService.GetProductsAsync(tenantId);
-            return Ok(products);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Unauthorized();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error fetching products for assign-access");
-            return StatusCode(500, new { message = "Failed to load products." });
-        }
+        var tenantId = GetTenantId();
+        if (tenantId == null) return Unauthorized();
+        return Ok(await _service.GetProductsAsync(tenantId.Value));
     }
 
-    /// <summary>
-    /// Returns roles for the role checklist in Step 2.
-    /// If productId is provided, filters to roles for that product.
-    /// </summary>
     [HttpGet("roles")]
-    public async Task<ActionResult<List<AssignAccessRoleDto>>> GetRoles(
-        [FromQuery] Guid? productId = null)
+    public async Task<IActionResult> GetRoles([FromQuery] Guid? productId)
     {
-        try
-        {
-            var tenantId = _permissionService.GetTenantId();
-            var roles = await _userAccessService.GetRolesAsync(tenantId, productId);
-            return Ok(roles);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Unauthorized();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error fetching roles for assign-access. ProductId={ProductId}", productId);
-            return StatusCode(500, new { message = "Failed to load roles." });
-        }
+        var tenantId = GetTenantId();
+        if (tenantId == null) return Unauthorized();
+        return Ok(await _service.GetRolesAsync(tenantId.Value, productId));
     }
 
-    /// <summary>
-    /// Assigns product/role combinations to one or more users.
-    /// Handles duplicate detection (existing UserRole rows are skipped).
-    /// </summary>
     [HttpPost("assign")]
-    public async Task<ActionResult<AssignAccessResponse>> AssignAccess(
-        [FromBody] AssignAccessRequest request)
+    public async Task<IActionResult> AssignAccess([FromBody] AssignAccessRequest request)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        if (request.UserIds == null || request.UserIds.Count == 0)
-            return BadRequest(new AssignAccessResponse
-            {
-                Success = false,
-                Message = "At least one user must be selected."
-            });
-
-        if (request.Assignments == null || request.Assignments.Count == 0)
-            return BadRequest(new AssignAccessResponse
-            {
-                Success = false,
-                Message = "At least one product-role assignment is required."
-            });
-
-        try
-        {
-            var tenantId = _permissionService.GetTenantId();
-            var response = await _userAccessService.AssignAccessAsync(tenantId, request);
-
-            if (!response.Success)
-            {
-                _logger.LogWarning("Assign access returned failure: {Message}", response.Message);
-                return BadRequest(response);
-            }
-
-            _logger.LogInformation(
-                "Access assigned: {AssignedCount} new, {SkippedCount} duplicates skipped for {UserCount} user(s)",
-                response.AssignedCount, response.SkippedDuplicateCount, request.UserIds.Count);
-
-            return Ok(response);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Unauthorized();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error assigning access for {UserCount} users", request.UserIds.Count);
-            return StatusCode(500, new AssignAccessResponse
-            {
-                Success = false,
-                Message = "An unexpected error occurred while assigning access."
-            });
-        }
+        var tenantId = GetTenantId();
+        if (tenantId == null) return Unauthorized();
+        var result = await _service.AssignAccessAsync(tenantId.Value, request);
+        return result.Success ? Ok(result) : BadRequest(result);
     }
 }
