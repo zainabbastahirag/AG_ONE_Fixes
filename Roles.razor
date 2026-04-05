@@ -748,7 +748,9 @@ else
     .rw-m-resource { color: #0f172a; }
     .rw-m-check { text-align: center; }
     .rw-m-check input { width: 18px; height: 18px; accent-color: #3b82f6; cursor: pointer; }
-    .rw-m-check input:disabled { opacity: 0.2; cursor: default; }
+    .rw-m-check input:disabled { opacity: 0.6; cursor: default; accent-color: #3b82f6; }
+    .rw-m-check input:checked { accent-color: #3b82f6; }
+    .rw-m-check input:checked:disabled { accent-color: #3b82f6; opacity: 0.8; }
     .rw-m-act { text-align: center; }
 
     /* Wizard Footer */
