@@ -241,7 +241,9 @@
                         @foreach (var productId in _selectedProductIds)
                         {
                             var product = _products.FirstOrDefault(p => p.Id == productId);
-                            var productRoles = _allRoles.Where(r => r.ProductId == productId || (r.ProductId == null && !r.IsSystemRole)).ToList();
+                            var productRoles = productId == Guid.Empty
+                                ? _allRoles.Where(r => r.ProductId == null && !r.IsSystemRole).ToList()
+                                : _allRoles.Where(r => r.ProductId == productId && !r.IsSystemRole).ToList();
 
                             @if (product != null)
                             {
@@ -1166,19 +1168,33 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadEntities();
+        await LoadProducts();
+        await LoadRoles();
         await LoadUsers(null);
 
         // If userId passed via query string, pre-select user and jump to Step 2
         if (Guid.TryParse(PreselectedUserId, out var uid))
         {
+            // Try to find user in loaded list first
             var user = _allUsers.FirstOrDefault(u => u.Id == uid);
+
+            // If not in list (e.g. too many users, paginated), fetch directly
+            if (user == null)
+            {
+                try
+                {
+                    var directUsers = await Http.GetFromJsonAsync<List<AssignAccessUserDto>>($"api/users/access/users?search=") ?? new();
+                    user = directUsers.FirstOrDefault(u => u.Id == uid);
+                }
+                catch { }
+            }
+
             if (user != null)
             {
                 _selectedUsers.Add(user);
-                await LoadProducts();
-                await LoadRoles();
                 await LoadExistingRolesForUser(uid);
                 _currentStep = 2;
+                StateHasChanged();
             }
         }
     }
@@ -1194,20 +1210,20 @@
             _existingRoles = new();
         }
 
-        // Auto-check: for each existing role, select the product and the role
+        // Auto-check products and roles from existing assignments
         foreach (var er in _existingRoles)
         {
+            // Determine the product ID: use the role's ProductId, or Guid.Empty for platform roles
             var productId = er.ProductId ?? Guid.Empty;
+
+            // Check the product checkbox
             _selectedProductIds.Add(productId);
 
-            var matchedRole = _allRoles.FirstOrDefault(r => r.Id == er.RoleId);
-            if (matchedRole != null)
-            {
-                var roleProductId = matchedRole.ProductId ?? Guid.Empty;
-                _selectedRoleKeys.Add(new ProductRoleKey(roleProductId, matchedRole.Id));
-            }
+            // Check the role checkbox using ProductRoleKey
+            _selectedRoleKeys.Add(new ProductRoleKey(productId, er.RoleId));
         }
 
+        // Set the first checked product as the active/visible one on the right panel
         if (_selectedProductIds.Any())
             _activeProductId = _selectedProductIds.First();
     }
@@ -1314,8 +1330,8 @@
     private async Task GoToStep2()
     {
         if (!_selectedUsers.Any()) return;
-        await LoadProducts();
-        await LoadRoles();
+        if (!_products.Any()) await LoadProducts();
+        if (!_allRoles.Any()) await LoadRoles();
         _currentStep = 2;
     }
 
