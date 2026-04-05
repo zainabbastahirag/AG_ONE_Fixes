@@ -299,20 +299,15 @@ DECLARE @FoundCount INT = (SELECT COUNT(DISTINCT Email) FROM #Resolved);
 PRINT 'Found ' + CAST(@FoundCount AS VARCHAR) + ' users in Users table.';
 
 -- ═══════════════════════════════════════════════════════════════
--- UPDATE: existing UserRoles (update Priority + un-soft-delete)
+-- STEP 1: DELETE all existing UserRoles for this tenant
 -- ═══════════════════════════════════════════════════════════════
-UPDATE ur
-SET ur.Priority  = r.Priority,
-    ur.IsDeleted = 0,
-    ur.UpdatedAt = @Now
-FROM core.UserRoles ur
-INNER JOIN #Resolved r ON ur.UserId = r.UserId AND ur.RoleId = r.RoleId AND ur.TenantId = @TenantId;
+DELETE FROM core.UserRoles WHERE TenantId = @TenantId;
 
-DECLARE @Updated INT = @@ROWCOUNT;
-PRINT 'Updated ' + CAST(@Updated AS VARCHAR) + ' existing UserRole records.';
+DECLARE @Deleted INT = @@ROWCOUNT;
+PRINT 'Deleted ' + CAST(@Deleted AS VARCHAR) + ' old UserRole records.';
 
 -- ═══════════════════════════════════════════════════════════════
--- INSERT: new UserRoles that don't exist yet
+-- STEP 2: INSERT fresh from Excel mapping
 -- ═══════════════════════════════════════════════════════════════
 INSERT INTO core.UserRoles (Id, UserId, RoleId, TenantId, CreatedAt, IsDeleted, Priority, ProductId)
 SELECT
@@ -324,15 +319,10 @@ SELECT
     0,
     r.Priority,
     r.ProductId
-FROM #Resolved r
-WHERE NOT EXISTS (
-    SELECT 1 FROM core.UserRoles ur
-    WHERE ur.UserId = r.UserId AND ur.RoleId = r.RoleId AND ur.TenantId = @TenantId
-);
+FROM #Resolved r;
 
 DECLARE @Inserted INT = @@ROWCOUNT;
-PRINT 'Inserted ' + CAST(@Inserted AS VARCHAR) + ' new UserRole records.';
-PRINT 'Total: ' + CAST(@Updated + @Inserted AS VARCHAR) + ' records processed.';
+PRINT 'Inserted ' + CAST(@Inserted AS VARCHAR) + ' new UserRole records from Excel.';
 
 -- ═══════════════════════════════════════════════════════════════
 -- SUMMARY: Show what was assigned
@@ -342,13 +332,7 @@ SELECT
     ro.DisplayName AS RoleName,
     COALESCE(p.Name, 'Platform') AS Product,
     r.Priority,
-    CASE
-        WHEN EXISTS (
-            SELECT 1 FROM core.UserRoles ur
-            WHERE ur.UserId = r.UserId AND ur.RoleId = r.RoleId AND ur.TenantId = @TenantId AND ur.CreatedAt = @Now
-        ) THEN 'INSERTED'
-        ELSE 'UPDATED'
-    END AS [Action]
+    'INSERTED' AS [Action]
 FROM #Resolved r
 INNER JOIN core.Roles ro ON ro.Id = r.RoleId
 LEFT JOIN core.Products p ON p.Id = ro.ProductId
