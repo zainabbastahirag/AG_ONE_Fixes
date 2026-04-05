@@ -1162,7 +1162,7 @@
     private HashSet<ProductRoleKey> _selectedRoleKeys = new();
 
     // ═══ Existing roles (for pre-checking) ═══
-    private List<ExistingUserRole> _existingRoles = new();
+    private List<UserExistingRoleDto> _existingRoles = new();
 
     // ═══ Lifecycle ═══
     protected override async Task OnInitializedAsync()
@@ -1203,27 +1203,25 @@
     {
         try
         {
-            _existingRoles = await Http.GetFromJsonAsync<List<ExistingUserRole>>($"api/users/{userId}/roles") ?? new();
+            _existingRoles = await Http.GetFromJsonAsync<List<UserExistingRoleDto>>($"api/users/access/user-roles/{userId}") ?? new();
         }
         catch
         {
             _existingRoles = new();
         }
 
-        // Auto-check products and roles from existing assignments
+        _selectedProductIds.Clear();
+        _selectedRoleKeys.Clear();
+
         foreach (var er in _existingRoles)
         {
-            // Determine the product ID: use the role's ProductId, or Guid.Empty for platform roles
+            // Platform roles have ProductId = null in DB, but products list uses Guid.Empty for AG ONE (admin)
             var productId = er.ProductId ?? Guid.Empty;
 
-            // Check the product checkbox
             _selectedProductIds.Add(productId);
-
-            // Check the role checkbox using ProductRoleKey
             _selectedRoleKeys.Add(new ProductRoleKey(productId, er.RoleId));
         }
 
-        // Set the first checked product as the active/visible one on the right panel
         if (_selectedProductIds.Any())
             _activeProductId = _selectedProductIds.First();
     }
@@ -1477,16 +1475,12 @@
         public int SkippedDuplicateCount { get; set; }
     }
 
-    public class ExistingUserRole
+    public class UserExistingRoleDto
     {
-        public Guid Id { get; set; }
         public Guid RoleId { get; set; }
         public string RoleName { get; set; } = "";
         public string RoleDisplayName { get; set; } = "";
         public Guid? ProductId { get; set; }
         public string? ProductName { get; set; }
-        public int Priority { get; set; }
-        public bool IsSystemRole { get; set; }
-        public List<string> Permissions { get; set; } = new();
     }
 }

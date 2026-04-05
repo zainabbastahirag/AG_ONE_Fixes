@@ -69,4 +69,12 @@ public class UserAccessController : ControllerBase
         var result = await _service.AssignAccessAsync(tenantId.Value, request);
         return result.Success ? Ok(result) : BadRequest(result);
     }
+
+    [HttpGet("user-roles/{userId:guid}")]
+    public async Task<IActionResult> GetUserExistingRoles(Guid userId)
+    {
+        var tenantId = GetTenantId();
+        if (tenantId == null) return Unauthorized();
+        return Ok(await _service.GetUserExistingRolesAsync(tenantId.Value, userId));
+    }
 }

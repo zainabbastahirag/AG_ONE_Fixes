@@ -184,4 +184,20 @@ public class UserAccessService : IUserAccessService
             SkippedCount = skipped
         };
     }
+
+    public async Task<List<UserExistingRoleDto>> GetUserExistingRolesAsync(Guid tenantId, Guid userId)
+    {
+        return await _db.UserRoles
+            .Where(ur => ur.UserId == userId && ur.TenantId == tenantId && !ur.IsDeleted)
+            .Join(_db.Roles.Where(r => !r.IsDeleted), ur => ur.RoleId, r => r.Id, (ur, r) => new { ur, r })
+            .Select(x => new UserExistingRoleDto
+            {
+                RoleId = x.r.Id,
+                RoleName = x.r.Name,
+                RoleDisplayName = x.r.DisplayName,
+                ProductId = x.r.ProductId,
+                ProductName = x.r.Product != null ? x.r.Product.Name : null
+            })
+            .ToListAsync();
+    }
 }
