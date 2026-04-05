@@ -1,0 +1,1413 @@
+@page "/admin/users/assign-access"
+@layout AdminLayout
+@inject HttpClient Http
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+
+<PageTitle>Assign User Access - AGOne</PageTitle>
+
+<div class="aa-page">
+    <!-- Back link -->
+    <a class="aa-back" href="/admin/users" @onclick:preventDefault @onclick="NavigateBack">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m12 19-7-7 7-7" /><path d="M19 12H5" />
+        </svg>
+        Back to Users
+    </a>
+
+    <!-- ═══ 3-Step Stepper ═══ -->
+    <div class="aa-stepper">
+        <div class="aa-step @(_currentStep >= 1 ? "active" : "")">
+            <div class="aa-step-num @(_currentStep >= 1 ? "" : "inactive")">1</div>
+            <span class="aa-step-label @(_currentStep >= 1 ? "" : "inactive")">Find User / Email</span>
+        </div>
+        <div class="aa-step-line @(_currentStep >= 2 ? "done" : "")"></div>
+        <div class="aa-step @(_currentStep >= 2 ? "active" : "")">
+            <div class="aa-step-num @(_currentStep >= 2 ? "" : "inactive")">2</div>
+            <span class="aa-step-label @(_currentStep >= 2 ? "" : "inactive")">Assign Access</span>
+        </div>
+        <div class="aa-step-line @(_currentStep >= 3 ? "done" : "")"></div>
+        <div class="aa-step @(_currentStep >= 3 ? "active" : "")">
+            <div class="aa-step-num @(_currentStep >= 3 ? "" : "inactive")">3</div>
+            <span class="aa-step-label @(_currentStep >= 3 ? "" : "inactive")">Review</span>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- STEP 1: Find User / Email                                          -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    @if (_currentStep == 1)
+    {
+        <div class="aa-card">
+            <h2 class="aa-card-title">Assign User Access</h2>
+            <p class="aa-card-subtitle">Search existing user or invite a new one.</p>
+
+            <!-- Entity Dropdown -->
+            <div class="aa-field">
+                <label class="aa-label">Entity</label>
+                <div class="aa-select-wrap">
+                    <select class="aa-select" value="@_selectedEntityId" @onchange="OnEntityChanged">
+                        <option value="">Select Entity</option>
+                        @foreach (var entity in _entities)
+                        {
+                            <option value="@entity.Id">@entity.Name</option>
+                        }
+                    </select>
+                    <svg class="aa-select-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m6 9 6 6 6-6" />
+                    </svg>
+                </div>
+            </div>
+
+            <!-- User Search / Select -->
+            <div class="aa-field">
+                <label class="aa-label">Select User</label>
+                <div class="aa-user-select-wrap">
+                    <div class="aa-user-search-box" @onclick="ToggleUserDropdown">
+                        <svg class="aa-search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                             stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
+                        </svg>
+                        <input type="text" class="aa-user-search-input" placeholder="Search by name or email..."
+                               @bind="_userSearch" @bind:event="oninput"
+                               @onfocus="() => _showUserDropdown = true"
+                               @onkeyup="OnUserSearchKeyUp" />
+                        @if (_selectedUsers.Any())
+                        {
+                            <span class="aa-selected-badge">@_selectedUsers.Count selected</span>
+                        }
+                    </div>
+
+                    @if (_showUserDropdown)
+                    {
+                        <div class="aa-user-dropdown">
+                            @if (_isLoadingUsers)
+                            {
+                                <div class="aa-dropdown-loading">Searching...</div>
+                            }
+                            else if (!_filteredUsers.Any())
+                            {
+                                <div class="aa-dropdown-empty">No users found</div>
+                            }
+                            else
+                            {
+                                @foreach (var user in _filteredUsers)
+                                {
+                                    var isSelected = _selectedUsers.Any(u => u.Id == user.Id);
+                                    <div class="aa-user-option @(isSelected ? "selected" : "")"
+                                         @onclick="@(() => ToggleUser(user))">
+                                        <div class="aa-user-check">
+                                            @if (isSelected)
+                                            {
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                                     fill="#3b82f6" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                                    <rect x="3" y="3" width="18" height="18" rx="3" />
+                                                    <path d="m9 12 2 2 4-4" />
+                                                </svg>
+                                            }
+                                            else
+                                            {
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                                     fill="none" stroke="#d1d5db" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <rect x="3" y="3" width="18" height="18" rx="3" />
+                                                </svg>
+                                            }
+                                        </div>
+                                        <div class="aa-user-avatar">
+                                            @if (!string.IsNullOrEmpty(user.AvatarUrl))
+                                            {
+                                                <img src="@user.AvatarUrl" alt="@user.FullName" />
+                                            }
+                                            else
+                                            {
+                                                <span class="aa-avatar-initials">@user.Initials</span>
+                                            }
+                                        </div>
+                                        <div class="aa-user-details">
+                                            <span class="aa-user-name">@user.FullName</span>
+                                            <span class="aa-user-email">@user.Email</span>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Selected Users Chips -->
+            @if (_selectedUsers.Any())
+            {
+                <div class="aa-selected-chips">
+                    @foreach (var user in _selectedUsers)
+                    {
+                        <div class="aa-chip">
+                            <span class="aa-chip-avatar">@user.Initials</span>
+                            <span>@user.FullName</span>
+                            <button class="aa-chip-remove" @onclick="@(() => RemoveUser(user))">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                     fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    }
+                </div>
+            }
+
+            <!-- Info Box -->
+            <div class="aa-info-box">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                     stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" />
+                </svg>
+                <span>Users are stored centrally in AG ONE. If the user already exists, you can assign them access to additional products and roles.</span>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="aa-footer">
+            <button class="aa-btn-cancel" @onclick="NavigateBack">Cancel</button>
+            <button class="aa-btn-continue" @onclick="GoToStep2" disabled="@(!_selectedUsers.Any())">
+                Continue
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m9 18 6-6-6-6" />
+                </svg>
+            </button>
+        </div>
+    }
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- STEP 2: Assign Access                                              -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    @if (_currentStep == 2)
+    {
+        <div class="aa-section-header">
+            <h2>Product Access</h2>
+            <p>Choose which products this user will have access to and assign role</p>
+        </div>
+
+        <div class="aa-access-layout">
+            <!-- Left: Select Products -->
+            <div class="aa-products-panel">
+                <h3 class="aa-panel-title">Select Products</h3>
+                @if (!_products.Any())
+                {
+                    <div class="aa-panel-empty">No products available</div>
+                }
+                @foreach (var product in _products)
+                {
+                    var isChecked = _selectedProductIds.Contains(product.Id);
+                    <div class="aa-product-row @(isChecked ? "checked" : "") @(_activeProductId == product.Id ? "active" : "")"
+                         @onclick="@(() => ToggleProduct(product.Id))">
+                        <div class="aa-checkbox @(isChecked ? "checked" : "")">
+                            @if (isChecked)
+                            {
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                     fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="m5 12 5 5L20 7" />
+                                </svg>
+                            }
+                        </div>
+                        <span>@product.Name</span>
+                    </div>
+                }
+            </div>
+
+            <!-- Right: Assign Product Roles -->
+            <div class="aa-roles-panel">
+                <h3 class="aa-panel-title">Assign Product Roles</h3>
+                @if (!_selectedProductIds.Any())
+                {
+                    <div class="aa-roles-empty">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24"
+                             fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                            <circle cx="9" cy="7" r="4" />
+                            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                        </svg>
+                        <p>Select a product on the left to assign roles</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="aa-roles-list">
+                        @foreach (var productId in _selectedProductIds)
+                        {
+                            var product = _products.FirstOrDefault(p => p.Id == productId);
+                            var productRoles = _allRoles.Where(r => r.ProductId == productId || (r.ProductId == null && !r.IsSystemRole)).ToList();
+
+                            @if (product != null)
+                            {
+                                <div class="aa-role-group">
+                                    <div class="aa-role-group-header">@product.Name</div>
+                                    @if (!productRoles.Any())
+                                    {
+                                        <div class="aa-role-none">No roles defined for this product</div>
+                                    }
+                                    @foreach (var role in productRoles)
+                                    {
+                                        var key = new ProductRoleKey(productId, role.Id);
+                                        var isRoleChecked = _selectedRoleKeys.Contains(key);
+                                        <div class="aa-role-row @(isRoleChecked ? "checked" : "")"
+                                             @onclick="@(() => ToggleRole(key))">
+                                            <div class="aa-checkbox @(isRoleChecked ? "checked" : "")">
+                                                @if (isRoleChecked)
+                                                {
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                                         fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="m5 12 5 5L20 7" />
+                                                    </svg>
+                                                }
+                                            </div>
+                                            <div class="aa-role-info">
+                                                <span class="aa-role-name">@role.DisplayName</span>
+                                                @if (!string.IsNullOrWhiteSpace(role.Description))
+                                                {
+                                                    <span class="aa-role-desc">@role.Description</span>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+
+                        @if (_selectedProductIds.Any() && !_selectedRoleKeys.Any())
+                        {
+                            <div class="aa-role-hint">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                     fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" />
+                                </svg>
+                                Select a role to grant access to @(_products.FirstOrDefault(p => p.Id == _selectedProductIds.First())?.Name ?? "the product")
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="aa-footer">
+            <button class="aa-btn-cancel" @onclick="@(() => _currentStep = 1)">Back</button>
+            <button class="aa-btn-continue" @onclick="GoToStep3" disabled="@(!_selectedRoleKeys.Any())">
+                Continue
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m9 18 6-6-6-6" />
+                </svg>
+            </button>
+        </div>
+    }
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- STEP 3: Review                                                     -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    @if (_currentStep == 3)
+    {
+        <div class="aa-card">
+            <h2 class="aa-card-title">Review & Confirm</h2>
+            <p class="aa-card-subtitle">Please review the access assignments before confirming.</p>
+
+            <!-- Selected Users Summary -->
+            <div class="aa-review-section">
+                <h3 class="aa-review-heading">Selected Users (@_selectedUsers.Count)</h3>
+                <div class="aa-review-users">
+                    @foreach (var user in _selectedUsers)
+                    {
+                        <div class="aa-review-user-chip">
+                            <div class="aa-review-avatar">@user.Initials</div>
+                            <div>
+                                <div class="aa-review-user-name">@user.FullName</div>
+                                <div class="aa-review-user-email">@user.Email</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Product & Role Summary -->
+            <div class="aa-review-section">
+                <h3 class="aa-review-heading">Products & Roles</h3>
+                @foreach (var productId in _selectedProductIds)
+                {
+                    var product = _products.FirstOrDefault(p => p.Id == productId);
+                    var assignedRoles = _selectedRoleKeys
+                        .Where(k => k.ProductId == productId)
+                        .Select(k => _allRoles.FirstOrDefault(r => r.Id == k.RoleId))
+                        .Where(r => r != null)
+                        .ToList();
+
+                    @if (product != null && assignedRoles.Any())
+                    {
+                        <div class="aa-review-product">
+                            <div class="aa-review-product-header">
+                                <span class="aa-review-product-badge">@product.Name</span>
+                            </div>
+                            <div class="aa-review-roles">
+                                @foreach (var role in assignedRoles)
+                                {
+                                    <div class="aa-review-role-item">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                             fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="m5 12 5 5L20 7" />
+                                        </svg>
+                                        <span>@role!.DisplayName</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="aa-footer">
+            <button class="aa-btn-cancel" @onclick="@(() => _currentStep = 2)">Back</button>
+            <button class="aa-btn-confirm" @onclick="SubmitAssignment" disabled="@_isSubmitting">
+                @if (_isSubmitting)
+                {
+                    <span class="aa-spinner"></span>
+                }
+                Confirm & Assign
+            </button>
+        </div>
+    }
+</div>
+
+<!-- Click-away overlay for user dropdown -->
+@if (_showUserDropdown)
+{
+    <div class="aa-overlay" @onclick="() => _showUserDropdown = false"></div>
+}
+
+<style>
+    /* ═══════════════════════════════════════════════════════════════════ */
+    /* PAGE LAYOUT                                                        */
+    /* ═══════════════════════════════════════════════════════════════════ */
+
+    .aa-page {
+        max-width: 1100px;
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+        position: relative;
+    }
+
+    /* Back Link */
+    .aa-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #0f172a;
+        font-size: 14px;
+        font-weight: 700;
+        text-decoration: none;
+        cursor: pointer;
+        margin-bottom: 24px;
+    }
+
+    .aa-back:hover { color: #3b82f6; }
+
+    /* ═══ Stepper ═══ */
+    .aa-stepper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 32px;
+    }
+
+    .aa-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .aa-step-num {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        font-weight: 700;
+        background: #3b82f6;
+        color: #fff;
+        border: 3px solid #3b82f6;
+        transition: all 0.2s;
+    }
+
+    .aa-step-num.inactive {
+        background: #fff;
+        color: #94a3b8;
+        border-color: #d1d5db;
+    }
+
+    .aa-step-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #3b82f6;
+    }
+
+    .aa-step-label.inactive { color: #94a3b8; }
+
+    .aa-step-line {
+        flex: 1;
+        max-width: 200px;
+        height: 3px;
+        background: #d1d5db;
+        margin: 0 16px;
+        margin-bottom: 24px;
+        transition: background 0.3s;
+    }
+
+    .aa-step-line.done { background: #3b82f6; }
+
+    /* ═══ Card ═══ */
+    .aa-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 28px;
+        margin-bottom: 24px;
+    }
+
+    .aa-card-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0 0 4px;
+    }
+
+    .aa-card-subtitle {
+        font-size: 14px;
+        color: #64748b;
+        margin: 0 0 24px;
+    }
+
+    /* ═══ Fields ═══ */
+    .aa-field {
+        margin-bottom: 20px;
+    }
+
+    .aa-label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 6px;
+    }
+
+    /* Entity Select */
+    .aa-select-wrap {
+        position: relative;
+    }
+
+    .aa-select {
+        width: 100%;
+        padding: 10px 40px 10px 14px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 14px;
+        color: #111827;
+        background: #fff;
+        outline: none;
+        appearance: none;
+        cursor: pointer;
+        transition: border-color 0.15s;
+    }
+
+    .aa-select:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+    }
+
+    .aa-select-chevron {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+        color: #94a3b8;
+    }
+
+    /* ═══ User Search / Multi-Select Dropdown ═══ */
+    .aa-user-select-wrap {
+        position: relative;
+        z-index: 100;
+    }
+
+    .aa-user-search-box {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 14px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        background: #fff;
+        cursor: text;
+        transition: border-color 0.15s;
+    }
+
+    .aa-user-search-box:focus-within {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+    }
+
+    .aa-search-icon {
+        color: #94a3b8;
+        flex-shrink: 0;
+    }
+
+    .aa-user-search-input {
+        flex: 1;
+        border: none;
+        outline: none;
+        font-size: 14px;
+        padding: 10px 0;
+        background: transparent;
+        color: #111827;
+    }
+
+    .aa-user-search-input::placeholder { color: #9CA3AF; }
+
+    .aa-selected-badge {
+        padding: 3px 10px;
+        border-radius: 12px;
+        background: #eff6ff;
+        color: #3b82f6;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    /* Dropdown */
+    .aa-user-dropdown {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.12);
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 200;
+    }
+
+    .aa-dropdown-loading,
+    .aa-dropdown-empty {
+        padding: 20px;
+        text-align: center;
+        font-size: 14px;
+        color: #94a3b8;
+    }
+
+    .aa-user-option {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 16px;
+        cursor: pointer;
+        transition: background 0.1s;
+    }
+
+    .aa-user-option:hover { background: #f8fafc; }
+    .aa-user-option.selected { background: #eff6ff; }
+
+    .aa-user-check {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .aa-user-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        flex-shrink: 0;
+    }
+
+    .aa-user-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .aa-avatar-initials {
+        font-size: 13px;
+        font-weight: 700;
+        color: #fff;
+    }
+
+    .aa-user-details {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .aa-user-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: #0f172a;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .aa-user-email {
+        font-size: 12px;
+        color: #64748b;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Selected user chips */
+    .aa-selected-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 20px;
+    }
+
+    .aa-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 10px 5px 5px;
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        background: #f8fafc;
+        font-size: 13px;
+        color: #0f172a;
+        font-weight: 500;
+    }
+
+    .aa-chip-avatar {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+        font-size: 10px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .aa-chip-remove {
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        color: #94a3b8;
+        display: flex;
+        align-items: center;
+        border-radius: 50%;
+        transition: color 0.15s;
+    }
+
+    .aa-chip-remove:hover { color: #ef4444; }
+
+    /* Info Box */
+    .aa-info-box {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 14px 16px;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 8px;
+        margin-top: 4px;
+    }
+
+    .aa-info-box svg { flex-shrink: 0; margin-top: 1px; }
+
+    .aa-info-box span {
+        font-size: 13px;
+        color: #1e40af;
+        line-height: 1.5;
+    }
+
+    /* Click-away overlay */
+    .aa-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════ */
+    /* STEP 2 — Product Access Layout                                     */
+    /* ═══════════════════════════════════════════════════════════════════ */
+
+    .aa-section-header { margin-bottom: 16px; }
+    .aa-section-header h2 { font-size: 18px; font-weight: 700; color: #0f172a; margin: 0 0 4px; }
+    .aa-section-header p { font-size: 14px; color: #64748b; margin: 0; }
+
+    .aa-access-layout {
+        display: flex;
+        gap: 0;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #fff;
+        margin-bottom: 24px;
+        min-height: 420px;
+    }
+
+    /* Left panel — products */
+    .aa-products-panel {
+        width: 270px;
+        min-width: 270px;
+        border-right: 1px solid #e2e8f0;
+        padding: 20px 0;
+    }
+
+    .aa-panel-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: #475569;
+        padding: 0 20px;
+        margin: 0 0 16px;
+    }
+
+    .aa-panel-empty {
+        padding: 20px;
+        font-size: 13px;
+        color: #94a3b8;
+    }
+
+    .aa-product-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 20px;
+        cursor: pointer;
+        font-size: 14px;
+        color: #0f172a;
+        border: 1px solid transparent;
+        margin: 0 12px 4px;
+        border-radius: 8px;
+        transition: all 0.15s;
+    }
+
+    .aa-product-row:hover { background: #f8fafc; border-color: #e2e8f0; }
+
+    .aa-product-row.checked {
+        background: #eff6ff;
+        border-color: #93c5fd;
+        font-weight: 600;
+        color: #1d4ed8;
+    }
+
+    .aa-product-row.active { border-color: #3b82f6; }
+
+    /* Checkbox */
+    .aa-checkbox {
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+        border: 2px solid #d1d5db;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: all 0.15s;
+    }
+
+    .aa-checkbox.checked {
+        background: #3b82f6;
+        border-color: #3b82f6;
+    }
+
+    /* Right panel — roles */
+    .aa-roles-panel {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+    }
+
+    .aa-roles-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 80px 20px;
+        color: #94a3b8;
+    }
+
+    .aa-roles-empty p {
+        margin: 16px 0 0;
+        font-size: 14px;
+        color: #3b82f6;
+    }
+
+    .aa-roles-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .aa-role-group { margin-bottom: 4px; }
+
+    .aa-role-group-header {
+        font-size: 15px;
+        font-weight: 700;
+        color: #0f172a;
+        padding: 8px 0;
+        border-bottom: 2px solid #e2e8f0;
+        margin-bottom: 8px;
+    }
+
+    .aa-role-none {
+        font-size: 13px;
+        color: #94a3b8;
+        padding: 8px 0;
+    }
+
+    .aa-role-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px 16px;
+        cursor: pointer;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        transition: all 0.15s;
+    }
+
+    .aa-role-row:hover { background: #f8fafc; border-color: #e2e8f0; }
+
+    .aa-role-row.checked {
+        background: #eff6ff;
+        border-color: #93c5fd;
+    }
+
+    .aa-role-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .aa-role-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: #0f172a;
+    }
+
+    .aa-role-desc {
+        font-size: 12px;
+        color: #64748b;
+        line-height: 1.4;
+    }
+
+    .aa-role-hint {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 16px;
+        background: #eff6ff;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #1e40af;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════ */
+    /* STEP 3 — Review                                                    */
+    /* ═══════════════════════════════════════════════════════════════════ */
+
+    .aa-review-section {
+        margin-bottom: 24px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .aa-review-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .aa-review-heading {
+        font-size: 14px;
+        font-weight: 700;
+        color: #475569;
+        margin: 0 0 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+    }
+
+    .aa-review-users {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .aa-review-user-chip {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #f8fafc;
+    }
+
+    .aa-review-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .aa-review-user-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: #0f172a;
+    }
+
+    .aa-review-user-email {
+        font-size: 12px;
+        color: #64748b;
+    }
+
+    .aa-review-product {
+        margin-bottom: 16px;
+    }
+
+    .aa-review-product-header {
+        margin-bottom: 8px;
+    }
+
+    .aa-review-product-badge {
+        display: inline-block;
+        padding: 5px 14px;
+        background: #dbeafe;
+        color: #1d4ed8;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .aa-review-roles {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding-left: 8px;
+    }
+
+    .aa-review-role-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: #374151;
+        padding: 6px 0;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════ */
+    /* FOOTER                                                             */
+    /* ═══════════════════════════════════════════════════════════════════ */
+
+    .aa-footer {
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+        margin-top: 8px;
+    }
+
+    .aa-btn-cancel {
+        flex: 1;
+        max-width: 400px;
+        padding: 12px 24px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        background: #fff;
+        color: #374151;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        text-align: center;
+        transition: background 0.15s;
+    }
+
+    .aa-btn-cancel:hover { background: #f9fafb; }
+
+    .aa-btn-continue {
+        flex: 1;
+        max-width: 400px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 12px 24px;
+        background: #3b82f6;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .aa-btn-continue:hover { background: #2563eb; }
+    .aa-btn-continue:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .aa-btn-confirm {
+        flex: 1;
+        max-width: 400px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 24px;
+        background: linear-gradient(90deg, #4F46E5, #7C3AED);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.2s;
+    }
+
+    .aa-btn-confirm:hover { opacity: 0.9; }
+    .aa-btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .aa-spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255,255,255,0.3);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: aa-spin 0.6s linear infinite;
+        display: inline-block;
+    }
+
+    @@keyframes aa-spin { to { transform: rotate(360deg); } }
+
+    /* ═══ Responsive ═══ */
+    @@media (max-width: 768px) {
+        .aa-access-layout { flex-direction: column; }
+        .aa-products-panel {
+            width: 100%;
+            min-width: 100%;
+            border-right: none;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .aa-footer { flex-direction: column; }
+        .aa-btn-cancel, .aa-btn-continue, .aa-btn-confirm { max-width: 100%; }
+        .aa-stepper { gap: 0; }
+        .aa-step-line { max-width: 80px; margin: 0 8px; margin-bottom: 24px; }
+    }
+</style>
+
+@code {
+    // ═══ Step state ═══
+    private int _currentStep = 1;
+    private bool _isSubmitting;
+
+    // ═══ Step 1 state ═══
+    private List<AssignAccessEntityDto> _entities = new();
+    private string _selectedEntityId = "";
+    private string _userSearch = "";
+    private bool _showUserDropdown;
+    private bool _isLoadingUsers;
+    private List<AssignAccessUserDto> _allUsers = new();
+    private List<AssignAccessUserDto> _selectedUsers = new();
+
+    private List<AssignAccessUserDto> _filteredUsers =>
+        string.IsNullOrWhiteSpace(_userSearch)
+            ? _allUsers
+            : _allUsers.Where(u =>
+                u.FullName.Contains(_userSearch, StringComparison.OrdinalIgnoreCase) ||
+                u.Email.Contains(_userSearch, StringComparison.OrdinalIgnoreCase))
+              .ToList();
+
+    // ═══ Step 2 state ═══
+    private List<AssignAccessProductDto> _products = new();
+    private List<AssignAccessRoleDto> _allRoles = new();
+    private HashSet<Guid> _selectedProductIds = new();
+    private Guid? _activeProductId;
+    private HashSet<ProductRoleKey> _selectedRoleKeys = new();
+
+    // ═══ Lifecycle ═══
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadEntities();
+        await LoadUsers(null);
+    }
+
+    // ═══ Data loading ═══
+    private async Task LoadEntities()
+    {
+        try
+        {
+            _entities = await Http.GetFromJsonAsync<List<AssignAccessEntityDto>>("api/users/access/entities") ?? new();
+        }
+        catch
+        {
+            _entities = new();
+        }
+    }
+
+    private async Task LoadUsers(Guid? entityId)
+    {
+        _isLoadingUsers = true;
+        StateHasChanged();
+        try
+        {
+            var url = "api/users/access/users";
+            var queryParts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(_userSearch))
+                queryParts.Add($"search={Uri.EscapeDataString(_userSearch)}");
+            if (entityId.HasValue)
+                queryParts.Add($"entityId={entityId}");
+            if (queryParts.Any())
+                url += "?" + string.Join("&", queryParts);
+
+            _allUsers = await Http.GetFromJsonAsync<List<AssignAccessUserDto>>(url) ?? new();
+        }
+        catch
+        {
+            _allUsers = new();
+        }
+        finally
+        {
+            _isLoadingUsers = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadProducts()
+    {
+        try
+        {
+            _products = await Http.GetFromJsonAsync<List<AssignAccessProductDto>>("api/users/access/products") ?? new();
+        }
+        catch
+        {
+            _products = new();
+        }
+    }
+
+    private async Task LoadRoles()
+    {
+        try
+        {
+            _allRoles = await Http.GetFromJsonAsync<List<AssignAccessRoleDto>>("api/users/access/roles") ?? new();
+        }
+        catch
+        {
+            _allRoles = new();
+        }
+    }
+
+    // ═══ Step 1 handlers ═══
+    private async Task OnEntityChanged(ChangeEventArgs e)
+    {
+        _selectedEntityId = e.Value?.ToString() ?? "";
+        Guid? entityId = Guid.TryParse(_selectedEntityId, out var eid) ? eid : null;
+        await LoadUsers(entityId);
+    }
+
+    private async Task OnUserSearchKeyUp(KeyboardEventArgs e)
+    {
+        Guid? entityId = Guid.TryParse(_selectedEntityId, out var eid) ? eid : null;
+        await LoadUsers(entityId);
+    }
+
+    private void ToggleUserDropdown()
+    {
+        _showUserDropdown = true;
+    }
+
+    private void ToggleUser(AssignAccessUserDto user)
+    {
+        var existing = _selectedUsers.FirstOrDefault(u => u.Id == user.Id);
+        if (existing != null)
+            _selectedUsers.Remove(existing);
+        else
+            _selectedUsers.Add(user);
+    }
+
+    private void RemoveUser(AssignAccessUserDto user)
+    {
+        _selectedUsers.RemoveAll(u => u.Id == user.Id);
+    }
+
+    // ═══ Step transitions ═══
+    private async Task GoToStep2()
+    {
+        if (!_selectedUsers.Any()) return;
+        await LoadProducts();
+        await LoadRoles();
+        _currentStep = 2;
+    }
+
+    private void GoToStep3()
+    {
+        if (!_selectedRoleKeys.Any()) return;
+        _currentStep = 3;
+    }
+
+    // ═══ Step 2 handlers ═══
+    private void ToggleProduct(Guid productId)
+    {
+        if (_selectedProductIds.Contains(productId))
+        {
+            _selectedProductIds.Remove(productId);
+            _selectedRoleKeys.RemoveWhere(k => k.ProductId == productId);
+        }
+        else
+        {
+            _selectedProductIds.Add(productId);
+        }
+        _activeProductId = productId;
+    }
+
+    private void ToggleRole(ProductRoleKey key)
+    {
+        if (!_selectedRoleKeys.Remove(key))
+            _selectedRoleKeys.Add(key);
+    }
+
+    // ═══ Step 3 — Submit ═══
+    private async Task SubmitAssignment()
+    {
+        _isSubmitting = true;
+        StateHasChanged();
+
+        try
+        {
+            var request = new AssignAccessRequest
+            {
+                UserIds = _selectedUsers.Select(u => u.Id).ToList(),
+                Assignments = _selectedRoleKeys.Select(k => new ProductRoleAssignment
+                {
+                    ProductId = k.ProductId,
+                    RoleId = k.RoleId
+                }).ToList()
+            };
+
+            var response = await Http.PostAsJsonAsync("api/users/access/assign", request);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<AssignAccessResponse>();
+                Snackbar.Add(result?.Message ?? $"Successfully assigned access to {_selectedUsers.Count} user(s)", Severity.Success);
+                Nav.NavigateTo("/admin/users");
+            }
+            else
+            {
+                var errorBody = await response.Content.ReadAsStringAsync();
+                Snackbar.Add($"Failed to assign access: {response.StatusCode}", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    // ═══ Navigation ═══
+    private void NavigateBack()
+    {
+        Nav.NavigateTo("/admin/users");
+    }
+
+    // ═══ Helper record for tracking product + role selections ═══
+    private record ProductRoleKey(Guid ProductId, Guid RoleId);
+
+    // ═══ Local DTO references (remove if importing from Shared) ═══
+    public class AssignAccessEntityDto
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = "";
+    }
+
+    public class AssignAccessUserDto
+    {
+        public Guid Id { get; set; }
+        public string Email { get; set; } = "";
+        public string FirstName { get; set; } = "";
+        public string LastName { get; set; } = "";
+        public string? AvatarUrl { get; set; }
+        public string FullName => string.IsNullOrWhiteSpace(FirstName) && string.IsNullOrWhiteSpace(LastName)
+            ? Email : $"{FirstName} {LastName}".Trim();
+        public string Initials
+        {
+            get
+            {
+                var f = FirstName?.Length > 0 ? FirstName[0].ToString().ToUpper() : "";
+                var l = LastName?.Length > 0 ? LastName[0].ToString().ToUpper() : "";
+                return string.IsNullOrEmpty(f + l) ? (Email.Length > 0 ? Email[..1].ToUpper() : "?") : f + l;
+            }
+        }
+    }
+
+    public class AssignAccessProductDto
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = "";
+        public string Code { get; set; } = "";
+    }
+
+    public class AssignAccessRoleDto
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = "";
+        public string DisplayName { get; set; } = "";
+        public string? Description { get; set; }
+        public Guid? ProductId { get; set; }
+        public bool IsSystemRole { get; set; }
+    }
+
+    public class AssignAccessRequest
+    {
+        public List<Guid> UserIds { get; set; } = new();
+        public List<ProductRoleAssignment> Assignments { get; set; } = new();
+    }
+
+    public class ProductRoleAssignment
+    {
+        public Guid ProductId { get; set; }
+        public Guid RoleId { get; set; }
+    }
+
+    public class AssignAccessResponse
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = "";
+        public int AssignedCount { get; set; }
+        public int SkippedDuplicateCount { get; set; }
+    }
+}
