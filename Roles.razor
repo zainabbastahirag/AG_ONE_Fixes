@@ -96,7 +96,13 @@
                         {
                             <tr @onclick="@(() => StartEditRole(role.Id))" style="cursor:pointer;">
                                 <td class="col-check" @onclick:stopPropagation="true"><input type="checkbox" /></td>
-                                <td class="col-role"><span class="rl-role-name">@role.DisplayName</span></td>
+                                <td class="col-role">
+                                    <span class="rl-role-name">@role.DisplayName</span>
+                                    @if (role.IsSystemRole)
+                                    {
+                                        <span class="rl-system-badge">System</span>
+                                    }
+                                </td>
                                 <td class="col-desc rl-desc-text">@(role.Description ?? "—")</td>
                                 <td class="col-product"><span class="rl-badge @GetProductColor(role.ProductName)">@(role.ProductName ?? "AG ONE")</span></td>
                                 <td class="col-users rl-users-val">@role.UserCount</td>
@@ -153,15 +159,22 @@ else
         @if (_wizardStep == 1)
         {
             <!-- Step 1: General -->
+            @if (_isViewOnly)
+            {
+                <div class="rw-readonly-banner">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" /><circle cx="12" cy="16" r="1" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
+                    This is a system role and cannot be edited. You can only view its permissions.
+                </div>
+            }
             <div class="rw-card">
                 <div class="rw-form-row">
                     <div class="rw-field">
                         <label class="rw-label">Role Name</label>
-                        <input type="text" class="rw-input" @bind="_formName" placeholder="E.g Content Editor, Team Lead" />
+                        <input type="text" class="rw-input" @bind="_formName" placeholder="E.g Content Editor, Team Lead" readonly="@_isViewOnly" />
                     </div>
                     <div class="rw-field">
                         <label class="rw-label">Description</label>
-                        <input type="text" class="rw-input" @bind="_formDescription" placeholder="Describe this role" />
+                        <input type="text" class="rw-input" @bind="_formDescription" placeholder="Describe this role" readonly="@_isViewOnly" />
                     </div>
                 </div>
             </div>
@@ -224,10 +237,10 @@ else
                                             {
                                                 <tr>
                                                     <td class="rw-m-resource">@row.Resource</td>
-                                                    <td class="rw-m-check"><input type="checkbox" checked="@IsPermSelected(row.CreateId)" @onchange="() => TogglePerm(row.CreateId)" disabled="@(row.CreateId == null)" /></td>
-                                                    <td class="rw-m-check"><input type="checkbox" checked="@IsPermSelected(row.ReadId)" @onchange="() => TogglePerm(row.ReadId)" disabled="@(row.ReadId == null)" /></td>
-                                                    <td class="rw-m-check"><input type="checkbox" checked="@IsPermSelected(row.UpdateId)" @onchange="() => TogglePerm(row.UpdateId)" disabled="@(row.UpdateId == null)" /></td>
-                                                    <td class="rw-m-check"><input type="checkbox" checked="@IsPermSelected(row.DeleteId)" @onchange="() => TogglePerm(row.DeleteId)" disabled="@(row.DeleteId == null)" /></td>
+                                                    <td class="rw-m-check"><input type="checkbox" checked="@IsPermSelected(row.CreateId)" @onchange="() => TogglePerm(row.CreateId)" disabled="@(row.CreateId == null || _isViewOnly)" /></td>
+                                                    <td class="rw-m-check"><input type="checkbox" checked="@IsPermSelected(row.ReadId)" @onchange="() => TogglePerm(row.ReadId)" disabled="@(row.ReadId == null || _isViewOnly)" /></td>
+                                                    <td class="rw-m-check"><input type="checkbox" checked="@IsPermSelected(row.UpdateId)" @onchange="() => TogglePerm(row.UpdateId)" disabled="@(row.UpdateId == null || _isViewOnly)" /></td>
+                                                    <td class="rw-m-check"><input type="checkbox" checked="@IsPermSelected(row.DeleteId)" @onchange="() => TogglePerm(row.DeleteId)" disabled="@(row.DeleteId == null || _isViewOnly)" /></td>
                                                 </tr>
                                             }
                                         }
@@ -244,12 +257,14 @@ else
             </div>
 
             <div class="rw-footer">
-                <button class="rw-btn-back" @onclick="BackToList">Cancel</button>
-                <button class="rw-btn-next" @onclick="@(() => _wizardStep = 2)" disabled="@(string.IsNullOrWhiteSpace(_formName))">
-                    Next
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6" /></svg>
-                </button>
-            </div>
+                <button class="rw-btn-back" @onclick="BackToList">@(_isViewOnly ? "Back to Roles" : "Cancel")</button>
+                @if (!_isViewOnly)
+                {
+                    <button class="rw-btn-next" @onclick="@(() => _wizardStep = 2)" disabled="@(string.IsNullOrWhiteSpace(_formName))">
+                        Next
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6" /></svg>
+                    </button>
+                }
         }
         else
         {
@@ -306,13 +321,16 @@ else
 
             <div class="rw-footer">
                 <button class="rw-btn-back" @onclick="@(() => _wizardStep = 1)">Back</button>
-                <button class="rw-btn-confirm" @onclick="SaveRole" disabled="@_saving">
-                    @if (_saving)
-                    {
-                        <span class="rw-spinner"></span>
-                    }
-                    @(_editingRoleId.HasValue ? "Confirm & Update Role" : "Confirm & Create Role")
-                </button>
+                @if (!_isViewOnly)
+                {
+                    <button class="rw-btn-confirm" @onclick="SaveRole" disabled="@_saving">
+                        @if (_saving)
+                        {
+                            <span class="rw-spinner"></span>
+                        }
+                        @(_editingRoleId.HasValue ? "Confirm & Update Role" : "Confirm & Create Role")
+                    </button>
+                }
             </div>
         }
     </div>
@@ -463,6 +481,10 @@ else
     .rl-users-val { font-weight: 600; color: #475569; }
 
     .rl-empty-row { text-align: center; padding: 48px 16px !important; color: #94a3b8; }
+
+    .rl-system-badge { display: inline-block; padding: 2px 8px; background: #f1f5f9; color: #64748b; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; margin-left: 8px; vertical-align: middle; }
+    .rw-readonly-banner { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #fefce8; border: 1px solid #fde68a; border-radius: 8px; font-size: 13px; color: #92400e; margin-bottom: 16px; }
+    .rw-input[readonly] { background: #f9fafb; color: #9ca3af; cursor: not-allowed; }
 
     /* Product Badge */
     .rl-badge {
@@ -887,6 +909,7 @@ else
     private Guid? _selectedProductId;
     private HashSet<Guid> _selectedPermissions = new();
     private bool _saving;
+    private bool _isViewOnly;
 
     private IEnumerable<RoleListItemDto> FilteredRoles => _roles
         .Where(r => _productFilter == null || r.ProductId == _productFilter || r.ProductId == null)
@@ -969,6 +992,7 @@ else
         _formDescription = null;
         _selectedProductId = null;
         _selectedPermissions.Clear();
+        _isViewOnly = false;
     }
 
     private async Task StartEditRole(Guid roleId) { await LoadAndEditRole(roleId); }
@@ -985,6 +1009,7 @@ else
                 _formDescription = detail.Description;
                 _selectedProductId = detail.ProductId;
                 _selectedPermissions = detail.PermissionIds.ToHashSet();
+                _isViewOnly = detail.IsSystemRole;
                 _view = "wizard";
                 _wizardStep = 1;
                 return;
@@ -992,15 +1017,17 @@ else
         }
         catch { }
 
+        var fallbackRole = _roles.FirstOrDefault(r => r.Id == roleId);
         _editingRoleId = roleId;
-        _formName = _roles.FirstOrDefault(r => r.Id == roleId)?.DisplayName ?? "";
-        _formDescription = _roles.FirstOrDefault(r => r.Id == roleId)?.Description;
+        _formName = fallbackRole?.DisplayName ?? "";
+        _formDescription = fallbackRole?.Description;
         _selectedProductId = null;
+        _isViewOnly = fallbackRole?.IsSystemRole == true;
         _view = "wizard";
         _wizardStep = 1;
     }
 
-    private void BackToList() { _view = "list"; _editingRoleId = null; _selectedProductId = null; }
+    private void BackToList() { _view = "list"; _editingRoleId = null; _selectedProductId = null; _isViewOnly = false; }
 
     private void SelectProduct(Guid pid) { _selectedProductId = pid; }
 
@@ -1109,7 +1136,7 @@ else
     private class ReviewPermRow { public string Resource { get; set; } = ""; public List<string> Actions { get; set; } = new(); }
 
     public class RoleListItemDto { public Guid Id { get; set; } public string DisplayName { get; set; } = ""; public string? Description { get; set; } public Guid? ProductId { get; set; } public string? ProductName { get; set; } public bool IsSystemRole { get; set; } public int UserCount { get; set; } }
-    public class RoleDetailDto { public Guid Id { get; set; } public string DisplayName { get; set; } = ""; public string? Description { get; set; } public Guid? ProductId { get; set; } public List<Guid> PermissionIds { get; set; } = new(); }
+    public class RoleDetailDto { public Guid Id { get; set; } public string DisplayName { get; set; } = ""; public string? Description { get; set; } public Guid? ProductId { get; set; } public bool IsSystemRole { get; set; } public List<Guid> PermissionIds { get; set; } = new(); }
     public class ProductPermissionMatrixDto { public Guid ProductId { get; set; } public string ProductName { get; set; } = ""; public List<PermissionGroupMatrixDto> Groups { get; set; } = new(); }
     public class PermissionGroupMatrixDto { public string GroupName { get; set; } = ""; public List<PermissionRowDto> Rows { get; set; } = new(); }
     public class PermissionRowDto { public string Resource { get; set; } = ""; public Guid? CreateId { get; set; } public Guid? ReadId { get; set; } public Guid? UpdateId { get; set; } public Guid? DeleteId { get; set; } }
