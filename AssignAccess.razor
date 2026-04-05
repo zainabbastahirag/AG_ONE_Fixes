@@ -1127,6 +1127,10 @@
 </style>
 
 @code {
+    // ═══ Query param ═══
+    [SupplyParameterFromQuery(Name = "userId")]
+    public string? PreselectedUserId { get; set; }
+
     // ═══ Step state ═══
     private int _currentStep = 1;
     private bool _isSubmitting;
@@ -1155,11 +1159,57 @@
     private Guid? _activeProductId;
     private HashSet<ProductRoleKey> _selectedRoleKeys = new();
 
+    // ═══ Existing roles (for pre-checking) ═══
+    private List<ExistingUserRole> _existingRoles = new();
+
     // ═══ Lifecycle ═══
     protected override async Task OnInitializedAsync()
     {
         await LoadEntities();
         await LoadUsers(null);
+
+        // If userId passed via query string, pre-select user and jump to Step 2
+        if (Guid.TryParse(PreselectedUserId, out var uid))
+        {
+            var user = _allUsers.FirstOrDefault(u => u.Id == uid);
+            if (user != null)
+            {
+                _selectedUsers.Add(user);
+                await LoadProducts();
+                await LoadRoles();
+                await LoadExistingRolesForUser(uid);
+                _currentStep = 2;
+            }
+        }
+    }
+
+    private async Task LoadExistingRolesForUser(Guid userId)
+    {
+        try
+        {
+            _existingRoles = await Http.GetFromJsonAsync<List<ExistingUserRole>>($"api/users/{userId}/roles") ?? new();
+        }
+        catch
+        {
+            _existingRoles = new();
+        }
+
+        // Auto-check: for each existing role, select the product and the role
+        foreach (var er in _existingRoles)
+        {
+            var productId = er.ProductId ?? Guid.Empty;
+            _selectedProductIds.Add(productId);
+
+            var matchedRole = _allRoles.FirstOrDefault(r => r.Id == er.RoleId);
+            if (matchedRole != null)
+            {
+                var roleProductId = matchedRole.ProductId ?? Guid.Empty;
+                _selectedRoleKeys.Add(new ProductRoleKey(roleProductId, matchedRole.Id));
+            }
+        }
+
+        if (_selectedProductIds.Any())
+            _activeProductId = _selectedProductIds.First();
     }
 
     // ═══ Data loading ═══
@@ -1409,5 +1459,18 @@
         public string Message { get; set; } = "";
         public int AssignedCount { get; set; }
         public int SkippedDuplicateCount { get; set; }
+    }
+
+    public class ExistingUserRole
+    {
+        public Guid Id { get; set; }
+        public Guid RoleId { get; set; }
+        public string RoleName { get; set; } = "";
+        public string RoleDisplayName { get; set; } = "";
+        public Guid? ProductId { get; set; }
+        public string? ProductName { get; set; }
+        public int Priority { get; set; }
+        public bool IsSystemRole { get; set; }
+        public List<string> Permissions { get; set; } = new();
     }
 }
