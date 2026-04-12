@@ -19,8 +19,8 @@ Upload your CV (PDF) or enter your details manually → AI extracts key info →
 git clone <repo-url>
 cd VidCV/VidCV.Web
 
-# 2. Update connection string in appsettings.json
-#    Default: Server=.;Database=VidCV;Trusted_Connection=True;TrustServerCertificate=True
+# 2. Default uses LocalDB — no config change needed if you have SQL Server LocalDB
+#    Connection: Server=(localdb)\MSSQLLocalDB;Database=VidCV;Trusted_Connection=True
 
 # 3. Run (DB auto-creates + seeds templates)
 dotnet run
@@ -89,6 +89,31 @@ dotnet publish -c Release -o ./publish
 - **FFmpeg not found?** Ensure `C:\ffmpeg\bin` is in system PATH and IIS was restarted
 - **DB connection failed?** Verify SQL Server is running and the connection string is correct
 - **Large file upload fails?** The `web.config` already allows up to 50MB
+
+### LocalDB "Network-related error" Fix
+
+If you get `A network-related or instance-specific error` when using LocalDB:
+
+```cmd
+# 1. Make sure LocalDB instance is running
+sqllocaldb start MSSQLLocalDB
+
+# 2. If that fails, recreate the instance
+sqllocaldb stop MSSQLLocalDB
+sqllocaldb delete MSSQLLocalDB
+sqllocaldb create MSSQLLocalDB
+sqllocaldb start MSSQLLocalDB
+
+# 3. Verify it's running
+sqllocaldb info MSSQLLocalDB
+```
+
+The app auto-creates the `VidCV` database on first run — you do NOT need to create it manually in SSMS.
+
+For **IIS deployment** (production), switch the connection string to your full SQL Server:
+```json
+"Server=YOUR_SERVER;Database=VidCV;Trusted_Connection=True;TrustServerCertificate=True"
+```
 
 ## Project Structure
 
