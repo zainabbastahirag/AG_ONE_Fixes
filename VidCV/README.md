@@ -8,7 +8,8 @@ Upload your CV (PDF) or enter your details manually → AI extracts key info →
 
 - **.NET 8** — Razor Pages (server-side rendered)
 - **EF Core 8** — Code-first with SQL Server, auto-migration on startup
-- **FFmpeg** — Video generation (slide-based MP4 with animated text)
+- **Ollama AI** — Free local AI for script generation (llama3.2) — no API key needed
+- **FFmpeg** — Video rendering with animated slides, transitions, gradient accents
 - **PdfPig** — PDF text extraction (no paid APIs)
 - **IIS** — Production deployment with .NET 8 Hosting Bundle
 
@@ -154,12 +155,33 @@ VidCV.Web/
 └── web.config                   # IIS configuration
 ```
 
+## AI Setup (Optional but Recommended)
+
+Install **Ollama** for AI-powered script generation (completely free, runs locally):
+
+```bash
+# Windows: Download from https://ollama.com/download
+# Then pull the model:
+ollama pull llama3.2
+ollama serve
+```
+
+The app connects to `http://localhost:11434` by default. Configure in `appsettings.json`:
+```json
+"AI": {
+    "OllamaUrl": "http://localhost:11434",
+    "Model": "llama3.2"
+}
+```
+
+**Without Ollama:** The app works perfectly — it falls back to a smart template-based script generator. Ollama just makes the scripts more compelling and personalized.
+
 ## How It Works
 
-1. **Upload CV** → PdfPig extracts text → regex + heuristics parse sections
-2. **Generate Script** → AI-free script generator creates professional intro text
+1. **Upload CV** → PdfPig extracts text → regex + heuristics parse sections (name, email, skills, etc.)
+2. **AI Script** → Ollama AI writes a compelling professional narrative (falls back to smart templates if AI unavailable)
 3. **Generate Slides** → Creates slide sequence: Intro → About → Experience → Skills → Education → Contact
-4. **Render Video** → FFmpeg renders each slide as animated MP4 segments → concatenates into final HD video
+4. **Render Video** → FFmpeg renders each slide with animated text, fade-ins, accent lines, decorative elements, smooth transitions → concatenates into final HD video
 5. **Download** → User gets the MP4 file directly
 
 ## License

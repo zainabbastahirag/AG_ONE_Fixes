@@ -4,91 +4,72 @@ namespace VidCV.Web.Services;
 
 public class ScriptGeneratorService
 {
-    public string GenerateScript(CvProfile profile)
+    private readonly AiScriptService _ai;
+
+    public ScriptGeneratorService(AiScriptService ai)
     {
-        var sections = new List<string>();
-
-        var greeting = !string.IsNullOrWhiteSpace(profile.JobTitle)
-            ? $"Hi, I'm {profile.FullName}, a {profile.JobTitle}."
-            : $"Hi, I'm {profile.FullName}.";
-        sections.Add(greeting);
-
-        if (!string.IsNullOrWhiteSpace(profile.Summary))
-        {
-            var summary = Truncate(profile.Summary, 200);
-            sections.Add(summary);
-        }
-
-        if (!string.IsNullOrWhiteSpace(profile.Experience))
-        {
-            var exp = Truncate(profile.Experience, 250);
-            sections.Add($"With experience in: {exp}");
-        }
-
-        if (!string.IsNullOrWhiteSpace(profile.Skills))
-        {
-            var topSkills = profile.Skills
-                .Split(new[] { ',', ';', '|', '\n', '•', '·' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(s => s.Trim())
-                .Where(s => s.Length > 1 && s.Length < 40)
-                .Take(6)
-                .ToList();
-
-            if (topSkills.Count > 0)
-                sections.Add($"My key skills include {string.Join(", ", topSkills)}.");
-        }
-
-        if (!string.IsNullOrWhiteSpace(profile.Education))
-        {
-            var edu = Truncate(profile.Education, 150);
-            sections.Add($"Education: {edu}");
-        }
-
-        sections.Add("I'm passionate about delivering great results and always open to new opportunities. Let's connect!");
-
-        return string.Join("\n\n", sections);
+        _ai = ai;
     }
 
-    public List<VideoSlide> GenerateSlides(CvProfile profile, VideoTemplate template)
+    public async Task<string> GenerateScriptAsync(CvProfile profile)
     {
+        return await _ai.GenerateScriptAsync(profile);
+    }
+
+    public List<VideoSlide> GenerateSlides(CvProfile profile, string script, VideoTemplate template)
+    {
+        var paragraphs = script
+            .Split(new[] { "\n\n", "\r\n\r\n" }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(p => p.Trim())
+            .Where(p => p.Length > 10)
+            .ToList();
+
         var slides = new List<VideoSlide>();
 
+        // Slide 1 — Intro (name + title)
         slides.Add(new VideoSlide
         {
             Order = 1,
             Title = profile.FullName,
             Subtitle = profile.JobTitle ?? "Professional",
-            Duration = 4,
+            Content = paragraphs.FirstOrDefault() ?? "",
+            Duration = 5,
             Type = SlideType.Intro
         });
 
-        if (!string.IsNullOrWhiteSpace(profile.Summary))
+        // Slide 2 — About / Summary
+        var aboutText = paragraphs.Count > 1 ? paragraphs[1] : profile.Summary ?? "";
+        if (!string.IsNullOrWhiteSpace(aboutText))
         {
             slides.Add(new VideoSlide
             {
                 Order = 2,
                 Title = "About Me",
-                Content = Truncate(profile.Summary, 180),
-                Duration = 5,
-                Type = SlideType.Content
-            });
-        }
-
-        if (!string.IsNullOrWhiteSpace(profile.Experience))
-        {
-            slides.Add(new VideoSlide
-            {
-                Order = 3,
-                Title = "Experience",
-                Content = Truncate(profile.Experience, 200),
+                Content = Truncate(aboutText, 220),
                 Duration = 6,
                 Type = SlideType.Content
             });
         }
 
-        if (!string.IsNullOrWhiteSpace(profile.Skills))
+        // Slide 3 — Experience
+        var expText = paragraphs.Count > 2 ? paragraphs[2] : profile.Experience ?? "";
+        if (!string.IsNullOrWhiteSpace(expText))
         {
-            var topSkills = profile.Skills
+            slides.Add(new VideoSlide
+            {
+                Order = 3,
+                Title = "Experience",
+                Content = Truncate(expText, 220),
+                Duration = 6,
+                Type = SlideType.Content
+            });
+        }
+
+        // Slide 4 — Skills
+        var skillsRaw = profile.Skills ?? "";
+        if (!string.IsNullOrWhiteSpace(skillsRaw))
+        {
+            var topSkills = skillsRaw
                 .Split(new[] { ',', ';', '|', '\n', '•', '·' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(s => s.Trim())
                 .Where(s => s.Length > 1 && s.Length < 40)
@@ -100,7 +81,7 @@ public class ScriptGeneratorService
                 slides.Add(new VideoSlide
                 {
                     Order = 4,
-                    Title = "Skills",
+                    Title = "Skills & Expertise",
                     Content = string.Join("  •  ", topSkills),
                     Duration = 5,
                     Type = SlideType.Skills
@@ -108,25 +89,28 @@ public class ScriptGeneratorService
             }
         }
 
-        if (!string.IsNullOrWhiteSpace(profile.Education))
+        // Slide 5 — Education (if available)
+        var eduText = paragraphs.Count > 3 ? paragraphs[3] : profile.Education ?? "";
+        if (!string.IsNullOrWhiteSpace(eduText))
         {
             slides.Add(new VideoSlide
             {
                 Order = 5,
                 Title = "Education",
-                Content = Truncate(profile.Education, 180),
-                Duration = 4,
+                Content = Truncate(eduText, 200),
+                Duration = 5,
                 Type = SlideType.Content
             });
         }
 
+        // Slide 6 — Contact / CTA
         slides.Add(new VideoSlide
         {
-            Order = 6,
+            Order = slides.Count + 1,
             Title = "Let's Connect!",
             Subtitle = profile.Email,
             Content = profile.LinkedInUrl ?? "",
-            Duration = 4,
+            Duration = 5,
             Type = SlideType.Contact
         });
 

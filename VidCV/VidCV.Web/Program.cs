@@ -56,7 +56,9 @@ builder.Services.AddDbContext<AppDbContext>((sp, options) =>
     options.UseSqlServer(cs, sql => sql.EnableRetryOnFailure(3));
 });
 
+builder.Services.AddHttpClient();
 builder.Services.AddScoped<CvParserService>();
+builder.Services.AddScoped<AiScriptService>();
 builder.Services.AddScoped<ScriptGeneratorService>();
 builder.Services.AddScoped<VideoGeneratorService>();
 

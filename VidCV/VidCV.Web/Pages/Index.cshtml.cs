@@ -119,14 +119,15 @@ public class IndexModel : PageModel
             var template = await _db.VideoTemplates.FindAsync(TemplateId)
                            ?? await _db.VideoTemplates.FirstAsync(t => t.IsActive);
 
-            var script = _scriptGen.GenerateScript(profile);
-            profile.VideoScript = script;
             profile.Status = VideoStatus.Processing;
-
             _db.CvProfiles.Add(profile);
             await _db.SaveChangesAsync();
 
-            var slides = _scriptGen.GenerateSlides(profile, template);
+            var script = await _scriptGen.GenerateScriptAsync(profile);
+            profile.VideoScript = script;
+            await _db.SaveChangesAsync();
+
+            var slides = _scriptGen.GenerateSlides(profile, script, template);
             var videoUrl = await _videoGen.GenerateVideoAsync(profile, slides, template);
 
             profile.VideoUrl = videoUrl;
