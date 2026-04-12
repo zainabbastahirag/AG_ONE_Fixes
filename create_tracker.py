@@ -69,6 +69,25 @@ TEAM_LIGHT = {
     "Pulse":   "FCE7F3",
 }
 
+# ─── external / outsource projects ────────────────────────────────────
+EXTERNAL_PROJECTS = {
+    "Form 2": {
+        "client": "External",
+        "color": "7C3AED",
+        "light": "EDE9FE",
+        "members": [],
+        "lead": "",
+        "start": "",
+        "end": "",
+        "status": "Active",
+        "description": "",
+        "notes": "",
+    },
+}
+
+EXTERNAL_COLOR = "7C3AED"
+EXTERNAL_LIGHT = "EDE9FE"
+
 # Teams currently in Sprint 7
 CURRENT_SPRINT_MAP = {
     "AG ONE":   7,
@@ -467,7 +486,7 @@ ws1.column_dimensions["F"].width = 36
 ws1.column_dimensions["H"].width = 28
 
 # ───────────────────────────────────────────────────────────────────────
-# SHEET 2 — RESOURCE ALLOCATION MATRIX
+# SHEET 2 — RESOURCE ALLOCATION MATRIX (internal + external)
 # ───────────────────────────────────────────────────────────────────────
 ws2 = wb.create_sheet("Resource Allocation")
 ws2.sheet_properties.tabColor = BLUE
@@ -475,33 +494,64 @@ ws2.sheet_properties.tabColor = BLUE
 all_members_set = set()
 for info in TEAMS.values():
     all_members_set.update(info["members"])
+for ep in EXTERNAL_PROJECTS.values():
+    all_members_set.update(ep["members"])
 all_members = sorted(all_members_set, key=str.lower)
 
-COLS2 = ["#", "Member"] + [t for t in TEAMS.keys()] + ["Total Teams", "Availability %", "Notes"]
+internal_names = list(TEAMS.keys())
+external_names = list(EXTERNAL_PROJECTS.keys())
+all_team_names = internal_names + [f"⬡ {n}" for n in external_names]
+
+COLS2 = ["#", "Member"] + all_team_names + ["Internal", "External", "Total", "Availability %", "Notes"]
 max_c2 = len(COLS2)
-add_title_block(ws2, "Resource Allocation Matrix — 2026", "Shows which member belongs to which team  •  Shared resources highlighted", max_c2)
+add_title_block(ws2, "Resource Allocation Matrix — 2026", "Internal teams + External / Outsource projects  •  Shared & external resources highlighted", max_c2)
 style_header_row(ws2, 3, max_c2, BLUE)
 for i, h in enumerate(COLS2, 1):
     ws2.cell(row=3, column=i, value=h)
+ext_header_start = len(internal_names) + 3
+for ei in range(len(external_names)):
+    hcell = ws2.cell(row=3, column=ext_header_start + ei)
+    hcell.fill = PatternFill(start_color=EXTERNAL_COLOR, end_color=EXTERNAL_COLOR, fill_type="solid")
 
 r = 4
 for idx, member in enumerate(all_members, 1):
     ws2.cell(row=r, column=1, value=idx)
     ws2.cell(row=r, column=2, value=member)
-    team_count = 0
-    for ti, team in enumerate(TEAMS.keys()):
-        col = ti + 3
+    internal_count = 0
+    external_count = 0
+    col = 3
+    for team in internal_names:
         if member in TEAMS[team]["members"]:
             ws2.cell(row=r, column=col, value="✓")
             ws2.cell(row=r, column=col).font = Font(name="Aptos", bold=True, size=11, color=TEAM_COLORS[team])
             ws2.cell(row=r, column=col).fill = PatternFill(start_color=TEAM_LIGHT[team], end_color=TEAM_LIGHT[team], fill_type="solid")
-            team_count += 1
+            internal_count += 1
         else:
             ws2.cell(row=r, column=col, value="")
-    ws2.cell(row=r, column=max_c2 - 2, value=team_count)
-    avail = 100 if team_count <= 1 else round(100 / team_count)
+        col += 1
+    for ep_name in external_names:
+        ep = EXTERNAL_PROJECTS[ep_name]
+        if member in ep["members"]:
+            ws2.cell(row=r, column=col, value="✓")
+            ws2.cell(row=r, column=col).font = Font(name="Aptos", bold=True, size=11, color=ep["color"])
+            ws2.cell(row=r, column=col).fill = PatternFill(start_color=ep["light"], end_color=ep["light"], fill_type="solid")
+            external_count += 1
+        else:
+            ws2.cell(row=r, column=col, value="")
+        col += 1
+
+    total_count = internal_count + external_count
+    ws2.cell(row=r, column=max_c2 - 4, value=internal_count)
+    ws2.cell(row=r, column=max_c2 - 3, value=external_count)
+    ws2.cell(row=r, column=max_c2 - 2, value=total_count)
+    avail = 100 if total_count <= 1 else round(100 / total_count)
     ws2.cell(row=r, column=max_c2 - 1, value=f"{avail}%")
-    ws2.cell(row=r, column=max_c2, value="Shared" if team_count > 1 else "")
+    notes = []
+    if internal_count > 1:
+        notes.append("Shared")
+    if external_count > 0:
+        notes.append("External")
+    ws2.cell(row=r, column=max_c2, value=" + ".join(notes) if notes else "")
 
     for c in range(1, max_c2 + 1):
         cell = ws2.cell(row=r, column=c)
@@ -510,9 +560,12 @@ for idx, member in enumerate(all_members, 1):
         else:
             cell.border = thin_border
             cell.alignment = Alignment(horizontal="center", vertical="center")
-    if team_count > 1:
+    if total_count > 1:
         ws2.cell(row=r, column=2).font = Font(name="Aptos", bold=True, size=10, color=RED)
         ws2.cell(row=r, column=max_c2).font = Font(name="Aptos", bold=True, size=10, color=RED)
+    if external_count > 0:
+        ws2.cell(row=r, column=max_c2 - 3).font = Font(name="Aptos", bold=True, size=10, color=EXTERNAL_COLOR)
+        ws2.cell(row=r, column=max_c2).font = Font(name="Aptos", bold=True, size=10, color=EXTERNAL_COLOR)
     r += 1
 
 ws2.freeze_panes = "C4"
@@ -875,7 +928,69 @@ for col_letter in ["C", "E", "G", "I"]:
     ws6.column_dimensions[col_letter].width = 16
 
 # ───────────────────────────────────────────────────────────────────────
-# SHEET 7 — LEGEND & INSTRUCTIONS
+# SHEET 7 — EXTERNAL / OUTSOURCE PROJECTS
+# ───────────────────────────────────────────────────────────────────────
+ws_ext = wb.create_sheet("External Projects")
+ws_ext.sheet_properties.tabColor = EXTERNAL_COLOR
+
+COLS_EXT = ["#", "Project Name", "Client / Partner", "Assigned Resources",
+            "Role / Responsibility", "Allocation %", "Start Date", "End Date",
+            "Current Phase", "Status", "Key Deliverables", "Notes / Risk"]
+max_ext = len(COLS_EXT)
+add_title_block(ws_ext, "External / Outsource Projects — 2026",
+                "Track resources assigned to external projects, outsourced work, and partner engagements", max_ext)
+style_header_row(ws_ext, 3, max_ext, EXTERNAL_COLOR)
+for i, h in enumerate(COLS_EXT, 1):
+    ws_ext.cell(row=3, column=i, value=h)
+
+r = 4
+for eidx, (ep_name, ep) in enumerate(EXTERNAL_PROJECTS.items(), 1):
+    ws_ext.cell(row=r, column=1, value=eidx)
+    ws_ext.cell(row=r, column=2, value=ep_name)
+    ws_ext.cell(row=r, column=2).font = Font(name="Aptos", bold=True, size=11, color=WHITE)
+    ws_ext.cell(row=r, column=2).fill = PatternFill(start_color=ep["color"], end_color=ep["color"], fill_type="solid")
+    ws_ext.cell(row=r, column=3, value=ep.get("client", ""))
+    ws_ext.cell(row=r, column=4, value=", ".join(ep["members"]) if ep["members"] else "")
+    ws_ext.cell(row=r, column=5, value="")
+    ws_ext.cell(row=r, column=6, value="")
+    ws_ext.cell(row=r, column=7, value=ep.get("start", ""))
+    ws_ext.cell(row=r, column=8, value=ep.get("end", ""))
+    ws_ext.cell(row=r, column=9, value="")
+    ws_ext.cell(row=r, column=10, value=ep.get("status", ""))
+    ws_ext.cell(row=r, column=11, value=ep.get("description", ""))
+    ws_ext.cell(row=r, column=12, value=ep.get("notes", ""))
+
+    for c in range(1, max_ext + 1):
+        cell = ws_ext.cell(row=r, column=c)
+        if c != 2:
+            style_data_cell(cell, r, center=(c in [1, 6, 7, 8, 10]))
+        else:
+            cell.border = thin_border
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+    if ep.get("status") == "Active":
+        ws_ext.cell(row=r, column=10).fill = PatternFill(start_color=LIGHT_GREEN, end_color=LIGHT_GREEN, fill_type="solid")
+        ws_ext.cell(row=r, column=10).font = Font(name="Aptos", bold=True, size=10, color="065F46")
+    r += 1
+
+# Pre-fill 9 more blank rows for future external projects
+for extra in range(9):
+    ws_ext.cell(row=r, column=1, value=eidx + extra + 1)
+    for c in range(1, max_ext + 1):
+        cell = ws_ext.cell(row=r, column=c)
+        style_data_cell(cell, r, center=(c in [1, 6, 7, 8, 10]))
+    r += 1
+
+ws_ext.freeze_panes = "C4"
+auto_width(ws_ext)
+ws_ext.column_dimensions["B"].width = 22
+ws_ext.column_dimensions["C"].width = 20
+ws_ext.column_dimensions["D"].width = 30
+ws_ext.column_dimensions["E"].width = 24
+ws_ext.column_dimensions["K"].width = 34
+ws_ext.column_dimensions["L"].width = 30
+
+# ───────────────────────────────────────────────────────────────────────
+# SHEET 8 — LEGEND & INSTRUCTIONS
 # ───────────────────────────────────────────────────────────────────────
 ws7 = wb.create_sheet("How To Use")
 ws7.sheet_properties.tabColor = MED_GRAY
@@ -885,12 +1000,13 @@ add_title_block(ws7, "How To Use This Tracker", "Quick guide for all stakeholder
 
 instructions = [
     ("Sheet", "Purpose", "Update Frequency", "Who Updates"),
-    ("Team Overview", "See all 7 teams, current sprint, status at a glance", "Every sprint", "Engineering Manager"),
-    ("Resource Allocation", "View who belongs to which team, spot shared resources", "When team changes", "Engineering Manager"),
+    ("Team Overview", "See all 7 internal teams, current sprint, status at a glance", "Every sprint", "Engineering Manager"),
+    ("Resource Allocation", "Internal + external assignments per member, shared & outsource flags", "When team changes", "Engineering Manager"),
     ("Project Roadmap", "Track project start/end, achievements, next targets, alignment", "Every sprint", "Tech Leads"),
     ("Sprint Tracker", "Detailed sprint goals, outcomes, tech lead feedback, blockers", "Every sprint", "Tech Leads"),
     ("Member Performance", "Individual progress, ratings, achievements", "Every sprint", "Tech Leads"),
     ("2026 Targets", "Quarterly milestones and year-end goals per team", "Quarterly", "Engineering Manager"),
+    ("External Projects", "Track resources on external / outsource / partner projects", "When assignments change", "Engineering Manager"),
 ]
 
 style_header_row(ws7, 3, max_c7, NAVY)
