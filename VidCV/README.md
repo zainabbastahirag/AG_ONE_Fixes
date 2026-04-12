@@ -92,27 +92,38 @@ dotnet publish -c Release -o ./publish
 
 ### LocalDB "Network-related error" Fix
 
-If you get `A network-related or instance-specific error` when using LocalDB:
+If you get `Named Pipes Provider, error: 40` when using LocalDB:
 
+**Step 1:** Make sure LocalDB is running:
 ```cmd
-# 1. Make sure LocalDB instance is running
 sqllocaldb start MSSQLLocalDB
+sqllocaldb info MSSQLLocalDB
+```
+You should see `State: Running` and an `Instance pipe name`.
 
-# 2. If that fails, recreate the instance
+**Step 2:** The app has a **built-in auto-fix** — on startup it detects the LocalDB pipe name and retries the connection automatically. Just `dotnet run` and check the console for:
+```
+[VidCV] LocalDB pipe resolved: np:\\.\pipe\LOCALDB#xxxxx\tsql\query
+```
+
+**Step 3:** If auto-fix doesn't work, copy the pipe name from `sqllocaldb info` and use it directly:
+```json
+"DefaultConnection": "Data Source=np:\\\\.\\pipe\\LOCALDB#YOUR_ID\\tsql\\query;Initial Catalog=VidCV;Integrated Security=True;Encrypt=False"
+```
+
+**Step 4:** If nothing works, recreate the instance:
+```cmd
 sqllocaldb stop MSSQLLocalDB
 sqllocaldb delete MSSQLLocalDB
 sqllocaldb create MSSQLLocalDB
 sqllocaldb start MSSQLLocalDB
-
-# 3. Verify it's running
-sqllocaldb info MSSQLLocalDB
 ```
 
-The app auto-creates the `VidCV` database on first run — you do NOT need to create it manually in SSMS.
+The app auto-creates the `VidCV` database on first run — you do NOT need to create it in SSMS.
 
-For **IIS deployment** (production), switch the connection string to your full SQL Server:
+For **IIS deployment** (production), switch to your full SQL Server:
 ```json
-"Server=YOUR_SERVER;Database=VidCV;Trusted_Connection=True;TrustServerCertificate=True"
+"Data Source=YOUR_SERVER;Initial Catalog=VidCV;Integrated Security=True;Encrypt=True;Trust Server Certificate=True"
 ```
 
 ## Project Structure
