@@ -1147,11 +1147,19 @@ ws_rd.column_dimensions["G"].width = 28
 ws_rd.column_dimensions["H"].width = 14
 
 # ───────────────────────────────────────────────────────────────────────
-# SHEETS 9–15 — PER-PRODUCT RELEASE TABS
+# SHEET 9 — RELEASE HISTORY (all products, grouped by product)
 # ───────────────────────────────────────────────────────────────────────
-COLS_PT = ["#", "Version", "Release Name", "Type", "Date", "Sprint",
-           "Status", "Highlights / What's Included"]
-max_pt = len(COLS_PT)
+ws_rh = wb.create_sheet("Release History")
+ws_rh.sheet_properties.tabColor = "0284C7"
+
+COLS_RH = ["#", "Product", "Version", "Release Name", "Type", "Date",
+           "Sprint", "Status", "Highlights / What's Included"]
+max_rh = len(COLS_RH)
+add_title_block(ws_rh, "Release History — All Products 2026",
+                "Every release grouped by product: Released ✅ + Upcoming 📋  •  Scroll down for each team", max_rh)
+
+r = 3
+global_idx = 0
 
 for product in TEAMS.keys():
     tc = TEAM_COLORS[product]
@@ -1161,154 +1169,84 @@ for product in TEAMS.keys():
     planned = [x for x in prod_releases if "Planned" in x["status"]]
     hotfixes = [x for x in released if x["type"] == "Hotfix"]
 
-    tab_name = f"Rel-{product}"
-    ws_pt = wb.create_sheet(tab_name)
-    ws_pt.sheet_properties.tabColor = tc
+    # Product group header
+    ws_rh.merge_cells(start_row=r, start_column=1, end_row=r, end_column=max_rh)
+    stats = (f"{product}  —  Released: {len(released)}  •  Hotfixes: {len(hotfixes)}  •  "
+             f"Planned: {len(planned)}  •  Latest: {released[-1]['version'] if released else '—'}  •  "
+             f"Next: {planned[0]['version'] if planned else '—'}")
+    ws_rh.cell(row=r, column=1, value=stats)
+    ws_rh.cell(row=r, column=1).font = Font(name="Aptos", bold=True, size=11, color=WHITE)
+    ws_rh.cell(row=r, column=1).fill = PatternFill(start_color=tc, end_color=tc, fill_type="solid")
+    ws_rh.cell(row=r, column=1).alignment = Alignment(horizontal="left", vertical="center")
+    ws_rh.cell(row=r, column=1).border = thin_border
+    for c in range(2, max_rh + 1):
+        ws_rh.cell(row=r, column=c).fill = PatternFill(start_color=tc, end_color=tc, fill_type="solid")
+        ws_rh.cell(row=r, column=c).border = thin_border
+    ws_rh.row_dimensions[r].height = 30
+    r += 1
 
-    add_title_block(ws_pt, f"{product} — Release History & Roadmap 2026",
-                    f"All releases for {product}  •  Lead: {TEAMS[product]['lead']}  •  Team: {', '.join(TEAMS[product]['members'])}", max_pt)
+    # Column headers for this group
+    style_header_row(ws_rh, r, max_rh, "475569")
+    for i, h in enumerate(COLS_RH, 1):
+        ws_rh.cell(row=r, column=i, value=h)
+    r += 1
 
-    # Summary stats banner
-    r = 3
-    ws_pt.merge_cells(start_row=r, start_column=1, end_row=r, end_column=max_pt)
-    stats_text = (f"Released: {len(released)}  •  Hotfixes: {len(hotfixes)}  •  "
-                  f"Planned: {len(planned)}  •  Latest: {released[-1]['version'] if released else '—'}  •  "
-                  f"Next: {planned[0]['version'] + ' (' + planned[0]['date'] + ')' if planned else '—'}")
-    banner = ws_pt.cell(row=r, column=1, value=stats_text)
-    banner.font = Font(name="Aptos", bold=True, size=11, color=tc)
-    banner.fill = PatternFill(start_color=tl, end_color=tl, fill_type="solid")
-    banner.alignment = Alignment(horizontal="center", vertical="center")
-    banner.border = thin_border
-    for c in range(2, max_pt + 1):
-        ws_pt.cell(row=r, column=c).fill = PatternFill(start_color=tl, end_color=tl, fill_type="solid")
-        ws_pt.cell(row=r, column=c).border = thin_border
-    ws_pt.row_dimensions[r].height = 30
+    # All releases for this product (released first, then planned)
+    for rel in prod_releases:
+        global_idx += 1
+        rt_colors = RELEASE_TYPE_COLORS.get(rel["type"], ("6B7280", "F3F4F6", "374151"))
+        is_released = "Released" in rel["status"]
 
-    # Released section header
-    r = 4
-    ws_pt.merge_cells(start_row=r, start_column=1, end_row=r, end_column=max_pt)
-    ws_pt.cell(row=r, column=1, value="✅  RELEASED")
-    ws_pt.cell(row=r, column=1).font = Font(name="Aptos", bold=True, size=12, color="065F46")
-    ws_pt.cell(row=r, column=1).fill = PatternFill(start_color=LIGHT_GREEN, end_color=LIGHT_GREEN, fill_type="solid")
-    ws_pt.cell(row=r, column=1).alignment = Alignment(horizontal="left", vertical="center")
-    ws_pt.cell(row=r, column=1).border = thin_border
-    for c in range(2, max_pt + 1):
-        ws_pt.cell(row=r, column=c).fill = PatternFill(start_color=LIGHT_GREEN, end_color=LIGHT_GREEN, fill_type="solid")
-        ws_pt.cell(row=r, column=c).border = thin_border
+        ws_rh.cell(row=r, column=1, value=global_idx)
+        ws_rh.cell(row=r, column=2, value=rel["product"])
+        ws_rh.cell(row=r, column=3, value=rel["version"])
+        ws_rh.cell(row=r, column=3).font = Font(name="Aptos", bold=True, size=10, color=DARK_GRAY)
+        ws_rh.cell(row=r, column=4, value=rel["name"])
+        ws_rh.cell(row=r, column=5, value=rel["type"])
+        ws_rh.cell(row=r, column=5).font = Font(name="Aptos", bold=True, size=10, color=rt_colors[2])
+        ws_rh.cell(row=r, column=5).fill = PatternFill(start_color=rt_colors[1], end_color=rt_colors[1], fill_type="solid")
+        ws_rh.cell(row=r, column=6, value=rel["date"])
+        ws_rh.cell(row=r, column=7, value=rel["sprint"])
+        ws_rh.cell(row=r, column=8, value=rel["status"])
+        ws_rh.cell(row=r, column=9, value=rel["highlights"])
 
-    r = 5
-    style_header_row(ws_pt, r, max_pt, tc)
-    for i, h in enumerate(COLS_PT, 1):
-        ws_pt.cell(row=r, column=i, value=h)
-    r = 6
+        for c in range(1, max_rh + 1):
+            cell = ws_rh.cell(row=r, column=c)
+            if c not in [5]:
+                style_data_cell(cell, r, center=(c not in [4, 9]))
+            else:
+                cell.border = thin_border
+                cell.alignment = Alignment(horizontal="center", vertical="center")
 
-    if released:
-        for idx, rel in enumerate(released, 1):
-            rt_colors = RELEASE_TYPE_COLORS.get(rel["type"], ("6B7280", "F3F4F6", "374151"))
-            ws_pt.cell(row=r, column=1, value=idx)
-            ws_pt.cell(row=r, column=2, value=rel["version"])
-            ws_pt.cell(row=r, column=2).font = Font(name="Aptos", bold=True, size=11, color=DARK_GRAY)
-            ws_pt.cell(row=r, column=3, value=rel["name"])
-            ws_pt.cell(row=r, column=4, value=rel["type"])
-            ws_pt.cell(row=r, column=4).font = Font(name="Aptos", bold=True, size=10, color=rt_colors[2])
-            ws_pt.cell(row=r, column=4).fill = PatternFill(start_color=rt_colors[1], end_color=rt_colors[1], fill_type="solid")
-            ws_pt.cell(row=r, column=5, value=rel["date"])
-            ws_pt.cell(row=r, column=6, value=rel["sprint"])
-            ws_pt.cell(row=r, column=7, value=rel["status"])
-            ws_pt.cell(row=r, column=7).font = Font(name="Aptos", bold=True, size=10, color="065F46")
-            ws_pt.cell(row=r, column=7).fill = PatternFill(start_color=LIGHT_GREEN, end_color=LIGHT_GREEN, fill_type="solid")
-            ws_pt.cell(row=r, column=8, value=rel["highlights"])
+        # Status styling
+        status_cell = ws_rh.cell(row=r, column=8)
+        if is_released:
+            status_cell.font = Font(name="Aptos", bold=True, size=10, color="065F46")
+            status_cell.fill = PatternFill(start_color=LIGHT_GREEN, end_color=LIGHT_GREEN, fill_type="solid")
+        else:
+            status_cell.font = Font(name="Aptos", size=10, italic=True, color=MED_GRAY)
+            status_cell.fill = PatternFill(start_color=LIGHT_GRAY, end_color=LIGHT_GRAY, fill_type="solid")
 
-            for c in range(1, max_pt + 1):
-                cell = ws_pt.cell(row=r, column=c)
-                if c not in [4, 7]:
-                    style_data_cell(cell, r, center=(c not in [3, 8]))
-                    if c == 2:
-                        cell.font = Font(name="Aptos", bold=True, size=11, color=DARK_GRAY)
-                else:
-                    cell.border = thin_border
-                    cell.alignment = Alignment(horizontal="center", vertical="center")
-            ws_pt.row_dimensions[r].height = 36
-            r += 1
-    else:
-        ws_pt.merge_cells(start_row=r, start_column=1, end_row=r, end_column=max_pt)
-        ws_pt.cell(row=r, column=1, value="No releases yet")
-        ws_pt.cell(row=r, column=1).font = Font(name="Aptos", size=10, italic=True, color=MED_GRAY)
-        ws_pt.cell(row=r, column=1).alignment = Alignment(horizontal="center", vertical="center")
-        ws_pt.cell(row=r, column=1).border = thin_border
-        for c in range(2, max_pt + 1):
-            ws_pt.cell(row=r, column=c).border = thin_border
+        ws_rh.row_dimensions[r].height = 30
         r += 1
 
-    # Planned / Upcoming section
-    r += 1
-    ws_pt.merge_cells(start_row=r, start_column=1, end_row=r, end_column=max_pt)
-    ws_pt.cell(row=r, column=1, value="📋  UPCOMING / PLANNED")
-    ws_pt.cell(row=r, column=1).font = Font(name="Aptos", bold=True, size=12, color="0369A1")
-    ws_pt.cell(row=r, column=1).fill = PatternFill(start_color="E0F2FE", end_color="E0F2FE", fill_type="solid")
-    ws_pt.cell(row=r, column=1).alignment = Alignment(horizontal="left", vertical="center")
-    ws_pt.cell(row=r, column=1).border = thin_border
-    for c in range(2, max_pt + 1):
-        ws_pt.cell(row=r, column=c).fill = PatternFill(start_color="E0F2FE", end_color="E0F2FE", fill_type="solid")
-        ws_pt.cell(row=r, column=c).border = thin_border
-
-    r += 1
-    style_header_row(ws_pt, r, max_pt, "0284C7")
-    for i, h in enumerate(COLS_PT, 1):
-        ws_pt.cell(row=r, column=i, value=h)
-    r += 1
-
-    if planned:
-        for idx, rel in enumerate(planned, 1):
-            rt_colors = RELEASE_TYPE_COLORS.get(rel["type"], ("6B7280", "F3F4F6", "374151"))
-            ws_pt.cell(row=r, column=1, value=idx)
-            ws_pt.cell(row=r, column=2, value=rel["version"])
-            ws_pt.cell(row=r, column=2).font = Font(name="Aptos", bold=True, size=11, color=DARK_GRAY)
-            ws_pt.cell(row=r, column=3, value=rel["name"])
-            ws_pt.cell(row=r, column=4, value=rel["type"])
-            ws_pt.cell(row=r, column=4).font = Font(name="Aptos", bold=True, size=10, color=rt_colors[2])
-            ws_pt.cell(row=r, column=4).fill = PatternFill(start_color=rt_colors[1], end_color=rt_colors[1], fill_type="solid")
-            ws_pt.cell(row=r, column=5, value=rel["date"])
-            ws_pt.cell(row=r, column=6, value=rel["sprint"])
-            ws_pt.cell(row=r, column=7, value=rel["status"])
-            ws_pt.cell(row=r, column=7).font = Font(name="Aptos", size=10, italic=True, color=MED_GRAY)
-            ws_pt.cell(row=r, column=7).fill = PatternFill(start_color=LIGHT_GRAY, end_color=LIGHT_GRAY, fill_type="solid")
-            ws_pt.cell(row=r, column=8, value=rel["highlights"])
-
-            for c in range(1, max_pt + 1):
-                cell = ws_pt.cell(row=r, column=c)
-                if c not in [4, 7]:
-                    style_data_cell(cell, r, center=(c not in [3, 8]))
-                    if c == 2:
-                        cell.font = Font(name="Aptos", bold=True, size=11, color=DARK_GRAY)
-                else:
-                    cell.border = thin_border
-                    cell.alignment = Alignment(horizontal="center", vertical="center")
-            ws_pt.row_dimensions[r].height = 36
-            r += 1
-    else:
-        ws_pt.merge_cells(start_row=r, start_column=1, end_row=r, end_column=max_pt)
-        ws_pt.cell(row=r, column=1, value="No releases planned yet")
-        ws_pt.cell(row=r, column=1).font = Font(name="Aptos", size=10, italic=True, color=MED_GRAY)
-        ws_pt.cell(row=r, column=1).alignment = Alignment(horizontal="center", vertical="center")
-        ws_pt.cell(row=r, column=1).border = thin_border
-        for c in range(2, max_pt + 1):
-            ws_pt.cell(row=r, column=c).border = thin_border
+    # 3 blank rows for future entries per product
+    for _ in range(3):
+        global_idx += 1
+        ws_rh.cell(row=r, column=1, value="")
+        ws_rh.cell(row=r, column=2, value=product)
+        for c in range(1, max_rh + 1):
+            cell = ws_rh.cell(row=r, column=c)
+            style_data_cell(cell, r, center=(c not in [4, 9]))
+        ws_rh.cell(row=r, column=2).font = Font(name="Aptos", size=10, italic=True, color=MED_GRAY)
         r += 1
 
-    # Blank rows for future additions
-    r += 1
-    for extra in range(5):
-        ws_pt.cell(row=r, column=1, value="")
-        for c in range(1, max_pt + 1):
-            cell = ws_pt.cell(row=r, column=c)
-            style_data_cell(cell, r, center=(c not in [3, 8]))
-        r += 1
+    r += 1  # gap between products
 
-    ws_pt.freeze_panes = "A6"
-    auto_width(ws_pt)
-    ws_pt.column_dimensions["C"].width = 30
-    ws_pt.column_dimensions["H"].width = 55
+ws_rh.freeze_panes = "C4"
+auto_width(ws_rh)
+ws_rh.column_dimensions["D"].width = 30
+ws_rh.column_dimensions["I"].width = 55
 
 # ───────────────────────────────────────────────────────────────────────
 # SHEET 10 — RELEASE NAMING STANDARD & TYPES
@@ -1433,7 +1371,7 @@ instructions = [
     ("2026 Targets", "Quarterly milestones and year-end goals per team", "Quarterly", "Engineering Manager"),
     ("External Projects", "Track resources on external / outsource / partner projects", "When assignments change", "Engineering Manager"),
     ("Release Dashboard", "At-a-glance: latest release, totals, and next planned per product", "Every release", "Engineering Manager"),
-    ("Rel-[Product]", "Per-product release tab — released + upcoming with highlights (7 tabs)", "Every release", "Tech Leads"),
+    ("Release History", "All releases grouped by product — released + upcoming with highlights", "Every release", "Tech Leads"),
     ("Release Standard", "Versioning policy, naming convention, release types — share with all teams", "Reference only", "—"),
 ]
 
