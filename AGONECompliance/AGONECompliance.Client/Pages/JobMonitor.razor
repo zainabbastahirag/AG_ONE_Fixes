@@ -1,0 +1,79 @@
+@page "/activities"
+@using AGONECompliance.Client.Services
+@using AGONECompliance.Shared.DTOs
+@inject ApiService Api
+
+<div class="card">
+    <div class="card-header">
+        <h3>All Job Activity</h3>
+        <button class="btn btn-primary btn-sm" @onclick="Load">🔄 Refresh</button>
+    </div>
+
+    @if (activities == null)
+    {
+        <div class="empty-state"><div class="icon">⏳</div><p>Loading activities...</p></div>
+    }
+    else if (!activities.Any())
+    {
+        <div class="empty-state"><div class="icon">⚡</div><p>No jobs have run yet. Go to a project and click "Run Compliance Check".</p></div>
+    }
+    else
+    {
+        <!-- Stats -->
+        <div class="stat-grid" style="margin-bottom: 20px;">
+            <div class="stat-card"><div class="stat-value" style="color: var(--info);">@activities.Count(a => a.Status == "Running")</div><div class="stat-label">Running Now</div></div>
+            <div class="stat-card"><div class="stat-value" style="color: var(--success);">@activities.Count(a => a.Status == "Completed")</div><div class="stat-label">Completed</div></div>
+            <div class="stat-card"><div class="stat-value" style="color: var(--danger);">@activities.Count(a => a.Status == "Failed")</div><div class="stat-label">Failed</div></div>
+        </div>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>Project</th>
+                    <th>Job Type</th>
+                    <th>Step</th>
+                    <th>Message</th>
+                    <th>Duration</th>
+                    <th>Started</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var a in activities)
+                {
+                    <tr>
+                        <td><span class="badge @GetBadge(a.Status)">@a.Status</span></td>
+                        <td><strong>@a.ProjectName</strong></td>
+                        <td><span class="badge badge-running">@a.JobType</span></td>
+                        <td style="font-weight: 600;">@a.Step</td>
+                        <td>
+                            <span style="font-size: 12px;">@(a.Message?.Length > 80 ? a.Message[..80] + "..." : a.Message)</span>
+                            @if (!string.IsNullOrEmpty(a.ErrorDetail))
+                            {
+                                <div class="activity-error" style="margin-top: 4px; font-size: 11px;">@(a.ErrorDetail.Length > 150 ? a.ErrorDetail[..150] + "..." : a.ErrorDetail)</div>
+                            }
+                        </td>
+                        <td style="font-size: 12px;">@(a.DurationMs.HasValue ? $"{a.DurationMs}ms" : "—")</td>
+                        <td style="font-size: 11px; color: var(--text-muted);">@a.StartedAt.ToString("dd MMM HH:mm:ss")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@code {
+    List<JobActivityDto>? activities;
+
+    protected override async Task OnInitializedAsync() => await Load();
+
+    async Task Load() => activities = await Api.GetAllActivitiesAsync();
+
+    string GetBadge(string s) => s switch
+    {
+        "Completed" => "badge-completed",
+        "Running" => "badge-running",
+        "Failed" => "badge-failed",
+        _ => "badge-pending"
+    };
+}

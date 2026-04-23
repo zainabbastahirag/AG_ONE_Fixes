@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "Jkoi2sfJ6AL6NZ6pN/3O8yq9h2WjnImwtZQu5OMepzQ=",
+  "Hash": "USD+ID7+x4sOF5cLj0JSfT6bcwNvGsTIZFy38npuFH8=",
   "Source": "AGONECompliance.API",
   "BasePath": "_content/AGONECompliance.API",
   "Mode": "Default",
@@ -8047,44 +8047,6 @@
       "OriginalItemSpec": "wwwroot/css/app.css"
     },
     {
-      "Identity": "/workspace/AGONECompliance/AGONECompliance.Client/wwwroot/css/bootstrap/bootstrap.min.css",
-      "SourceId": "AGONECompliance.Client",
-      "SourceType": "Project",
-      "ContentRoot": "/workspace/AGONECompliance/AGONECompliance.Client/wwwroot/",
-      "BasePath": "/",
-      "RelativePath": "css/bootstrap/bootstrap.min.css",
-      "AssetKind": "All",
-      "AssetMode": "All",
-      "AssetRole": "Primary",
-      "AssetMergeBehavior": "PreferTarget",
-      "AssetMergeSource": "",
-      "RelatedAsset": "",
-      "AssetTraitName": "",
-      "AssetTraitValue": "",
-      "CopyToOutputDirectory": "Never",
-      "CopyToPublishDirectory": "PreserveNewest",
-      "OriginalItemSpec": "wwwroot/css/bootstrap/bootstrap.min.css"
-    },
-    {
-      "Identity": "/workspace/AGONECompliance/AGONECompliance.Client/wwwroot/css/bootstrap/bootstrap.min.css.map",
-      "SourceId": "AGONECompliance.Client",
-      "SourceType": "Project",
-      "ContentRoot": "/workspace/AGONECompliance/AGONECompliance.Client/wwwroot/",
-      "BasePath": "/",
-      "RelativePath": "css/bootstrap/bootstrap.min.css.map",
-      "AssetKind": "All",
-      "AssetMode": "All",
-      "AssetRole": "Primary",
-      "AssetMergeBehavior": "PreferTarget",
-      "AssetMergeSource": "",
-      "RelatedAsset": "",
-      "AssetTraitName": "",
-      "AssetTraitValue": "",
-      "CopyToOutputDirectory": "Never",
-      "CopyToPublishDirectory": "PreserveNewest",
-      "OriginalItemSpec": "wwwroot/css/bootstrap/bootstrap.min.css.map"
-    },
-    {
       "Identity": "/workspace/AGONECompliance/AGONECompliance.Client/wwwroot/favicon.png",
       "SourceId": "AGONECompliance.Client",
       "SourceType": "Project",
@@ -8140,25 +8102,6 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot/index.html"
-    },
-    {
-      "Identity": "/workspace/AGONECompliance/AGONECompliance.Client/wwwroot/sample-data/weather.json",
-      "SourceId": "AGONECompliance.Client",
-      "SourceType": "Project",
-      "ContentRoot": "/workspace/AGONECompliance/AGONECompliance.Client/wwwroot/",
-      "BasePath": "/",
-      "RelativePath": "sample-data/weather.json",
-      "AssetKind": "All",
-      "AssetMode": "All",
-      "AssetRole": "Primary",
-      "AssetMergeBehavior": "PreferTarget",
-      "AssetMergeSource": "",
-      "RelatedAsset": "",
-      "AssetTraitName": "",
-      "AssetTraitValue": "",
-      "CopyToOutputDirectory": "Never",
-      "CopyToPublishDirectory": "PreserveNewest",
-      "OriginalItemSpec": "wwwroot/sample-data/weather.json"
     }
   ]
 }

@@ -1,0 +1,93 @@
+@page "/"
+@using AGONECompliance.Client.Services
+@using AGONECompliance.Shared.DTOs
+@inject ApiService Api
+@inject NavigationManager Nav
+
+@if (data == null)
+{
+    <div class="empty-state"><div class="icon">⏳</div><p>Loading dashboard...</p></div>
+}
+else
+{
+    <div class="stat-grid">
+        <div class="stat-card">
+            <div class="stat-icon">📁</div>
+            <div class="stat-value">@data.TotalProjects</div>
+            <div class="stat-label">Total Projects</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">⚡</div>
+            <div class="stat-value">@data.ActiveProjects</div>
+            <div class="stat-label">Active / Processing</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-value">@data.CompliantChecks</div>
+            <div class="stat-label">Compliant Checks</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">❌</div>
+            <div class="stat-value">@data.NonCompliantChecks</div>
+            <div class="stat-label">Non-Compliant</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">📊</div>
+            <div class="stat-value">@data.OverallComplianceRate%</div>
+            <div class="stat-label">Overall Compliance Rate</div>
+            <div class="progress-bar"><div class="progress-fill" style="width: @data.OverallComplianceRate%"></div></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🔍</div>
+            <div class="stat-value">@data.TotalChecks</div>
+            <div class="stat-label">Total Checks</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3>Recent Projects</h3>
+            <button class="btn btn-primary btn-sm" @onclick='() => Nav.NavigateTo("projects")'>View All</button>
+        </div>
+        @if (data.RecentProjects.Any())
+        {
+            <table class="data-table">
+                <thead><tr><th>Project</th><th>Status</th><th>Checks</th><th>Compliance</th><th>Created</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var p in data.RecentProjects)
+                    {
+                        <tr>
+                            <td><strong>@p.Name</strong></td>
+                            <td><span class="badge @GetStatusBadge(p.Status)">@p.Status</span></td>
+                            <td>@p.CompliantCount / @p.TotalChecks</td>
+                            <td>
+                                <div class="progress-bar" style="width: 100px;"><div class="progress-fill" style="width: @p.ComplianceRate%"></div></div>
+                                <span style="font-size: 11px; color: var(--text-muted);">@p.ComplianceRate%</span>
+                            </td>
+                            <td style="font-size: 12px; color: var(--text-muted);">@p.CreatedAt.ToString("dd MMM yyyy")</td>
+                            <td><button class="btn btn-secondary btn-sm" @onclick='() => Nav.NavigateTo($"projects/{p.Id}")'>Open</button></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="empty-state"><div class="icon">📁</div><p>No projects yet. Create your first project to get started.</p></div>
+        }
+    </div>
+}
+
+@code {
+    DashboardDto? data;
+
+    protected override async Task OnInitializedAsync() => data = await Api.GetDashboardAsync();
+
+    string GetStatusBadge(string status) => status switch
+    {
+        "Completed" => "badge-completed",
+        "Processing" => "badge-running",
+        "Failed" => "badge-failed",
+        _ => "badge-pending"
+    };
+}

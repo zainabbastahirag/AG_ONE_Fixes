@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "AGONECompliance.Client",
   "resources": {
-    "hash": "sha256-aqASEDMfsikVaDSgwcnRQ1yKeJM3QeT2LGgfszCs7zU=",
+    "hash": "sha256-9vGHHUflcuRoMyMZ3bE154RMDvM+GGSMbK5NjKkNxnk=",
     "jsModuleNative": {
       "dotnet.native.8.0.25.cniublu8a9.js": "sha256-A16ka545FHaB+QXjyJ4exXh7XpBAAIFnX8YkC4xAng8="
     },
@@ -212,12 +212,12 @@
       "mscorlib.wasm": "sha256-ovgR6YJeXMcsAhvGJVdyjhD5pU34EEAc0BGQYTUAyNk=",
       "netstandard.wasm": "sha256-90+pPOP/3NxK0buBFJlcvDw0r6Nk/i3+oM9dt2x+LPM=",
       "System.Private.CoreLib.wasm": "sha256-IXKG8p3ppN4zPjJOxht5wSXCcbFNPH6InVm7fsThBPI=",
-      "AGONECompliance.Shared.wasm": "sha256-i5pPNSVulKOS/Svz6n0HjHeh9BA1Tgl+y493qYo7V+U=",
-      "AGONECompliance.Client.wasm": "sha256-RbBrVITqFE1IQcnp1eLog6SM1xzSaEbFZHytzWlwClc="
+      "AGONECompliance.Shared.wasm": "sha256-HKsqhXxOBZnMaEahbQzwu3iiRIxldRaRmDFDOqCTYKc=",
+      "AGONECompliance.Client.wasm": "sha256-OZhMod0n7QO0HpnEqhT+10Rw4GJUd28zFNbUKClMyfM="
     },
     "pdb": {
-      "AGONECompliance.Shared.pdb": "sha256-ymN3TxXONlAT+FvLoLcdGSFy5ZfeUumdXnQBx0MO4nY=",
-      "AGONECompliance.Client.pdb": "sha256-Yix/haFdClK3Ps+hNnhnBN5D6ZMXbXqo6zWXMFkvYgo="
+      "AGONECompliance.Shared.pdb": "sha256-uL5Xo5sZULaiuVQ7tvgBLUFKnRxGRA6iyS+NiYoSins=",
+      "AGONECompliance.Client.pdb": "sha256-sehQH0pXevWmHZaG9KvHZXjIRyctDj/pugPoWK1zUTk="
     }
   },
   "cacheBootResources": true,

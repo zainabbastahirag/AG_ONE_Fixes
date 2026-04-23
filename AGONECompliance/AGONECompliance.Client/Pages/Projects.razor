@@ -1,0 +1,92 @@
+@page "/projects"
+@using AGONECompliance.Client.Services
+@using AGONECompliance.Shared.DTOs
+@inject ApiService Api
+@inject NavigationManager Nav
+
+<div class="card" style="margin-bottom: 20px;">
+    <div class="card-header">
+        <h3>All Projects</h3>
+        <button class="btn btn-primary" @onclick="() => showCreate = true">+ New Project</button>
+    </div>
+
+    @if (projects == null)
+    {
+        <div class="empty-state"><div class="icon">⏳</div><p>Loading...</p></div>
+    }
+    else if (!projects.Any())
+    {
+        <div class="empty-state"><div class="icon">📁</div><p>No projects. Click "New Project" to start.</p></div>
+    }
+    else
+    {
+        <table class="data-table">
+            <thead>
+                <tr><th>Project Name</th><th>Status</th><th>Documents</th><th>Compliant</th><th>Non-Compliant</th><th>Rate</th><th>Created</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var p in projects)
+                {
+                    <tr>
+                        <td><strong>@p.Name</strong><br><span style="font-size:11px; color:var(--text-muted);">@p.Description</span></td>
+                        <td><span class="badge @GetBadge(p.Status)">@p.Status</span></td>
+                        <td>@p.DocumentCount</td>
+                        <td><span style="color: var(--success); font-weight: 700;">@p.CompliantCount</span></td>
+                        <td><span style="color: var(--danger); font-weight: 700;">@p.NonCompliantCount</span></td>
+                        <td>
+                            <div class="progress-bar" style="width: 80px;"><div class="progress-fill" style="width: @p.ComplianceRate%"></div></div>
+                            <span style="font-size: 11px;">@p.ComplianceRate%</span>
+                        </td>
+                        <td style="font-size: 12px; color: var(--text-muted);">@p.CreatedAt.ToString("dd MMM")</td>
+                        <td>
+                            <button class="btn btn-secondary btn-sm" @onclick='() => Nav.NavigateTo($"projects/{p.Id}")'>Open</button>
+                            <button class="btn btn-primary btn-sm" @onclick='() => Nav.NavigateTo($"projects/{p.Id}/report")'>Report</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@if (showCreate)
+{
+    <div class="modal-overlay" @onclick="() => showCreate = false">
+        <div class="modal-box" @onclick:stopPropagation>
+            <h3>Create New Project</h3>
+            <div class="form-group">
+                <label>Project Name *</label>
+                <input class="form-input" @bind="newName" placeholder="e.g. Equities IPO - Company ABC" />
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea class="form-input" rows="3" @bind="newDesc" placeholder="Brief description..."></textarea>
+            </div>
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button class="btn btn-secondary" @onclick="() => showCreate = false">Cancel</button>
+                <button class="btn btn-primary" @onclick="CreateProject" disabled="@creating">
+                    @(creating ? "Creating..." : "Create Project")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    List<ProjectSummaryDto>? projects;
+    bool showCreate, creating;
+    string newName = "", newDesc = "";
+
+    protected override async Task OnInitializedAsync() => projects = await Api.GetProjectsAsync();
+
+    async Task CreateProject()
+    {
+        if (string.IsNullOrWhiteSpace(newName)) return;
+        creating = true;
+        var result = await Api.CreateProjectAsync(new CreateProjectRequest { Name = newName, Description = newDesc });
+        if (result != null) Nav.NavigateTo($"projects/{result.Id}");
+        creating = false;
+    }
+
+    string GetBadge(string s) => s switch { "Completed" => "badge-completed", "Processing" => "badge-running", "Failed" => "badge-failed", _ => "badge-pending" };
+}

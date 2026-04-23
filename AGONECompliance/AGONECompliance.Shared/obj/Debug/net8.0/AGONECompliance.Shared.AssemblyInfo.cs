@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("AGONECompliance.Shared")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+fbb8fe686d5cbe45d5eb8207ad1d084bf2f1af90")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+14ba33e97b40ca3ddff411ed494fa227c37876dc")]
 [assembly: System.Reflection.AssemblyProductAttribute("AGONECompliance.Shared")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AGONECompliance.Shared")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

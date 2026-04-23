@@ -1,0 +1,59 @@
+@inherits LayoutComponentBase
+
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="sidebar-logo">AC</div>
+            <h1>AGONECompliance<small>Regulatory Compliance</small></h1>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-section">Main</div>
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="icon">📊</span> Dashboard
+            </NavLink>
+            <NavLink class="nav-link" href="projects">
+                <span class="icon">📁</span> Projects
+            </NavLink>
+
+            <div class="nav-section">Monitoring</div>
+            <NavLink class="nav-link" href="activities">
+                <span class="icon">⚡</span> Job Monitor
+            </NavLink>
+        </nav>
+        <div style="padding: 16px; border-top: 1px solid var(--border);">
+            <div style="font-size: 11px; color: var(--text-muted);">AGONECompliance v1.0</div>
+            <div style="font-size: 10px; color: var(--text-muted);">Powered by GPT-4.1 + Azure</div>
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <header class="top-header">
+            <h2>@GetPageTitle()</h2>
+            <span class="header-badge">AI-Powered</span>
+        </header>
+        <main class="page-content">
+            @Body
+        </main>
+        <footer class="app-footer">
+            © 2026 AGONECompliance — Regulatory Compliance Checking System
+        </footer>
+    </div>
+</div>
+
+@code {
+    [Inject] NavigationManager Nav { get; set; } = default!;
+
+    string GetPageTitle()
+    {
+        var path = Nav.ToBaseRelativePath(Nav.Uri).ToLower();
+        return path switch
+        {
+            "" => "Dashboard",
+            "projects" => "Projects",
+            "activities" => "Job Monitor",
+            _ when path.StartsWith("projects/") && path.Contains("/report") => "Compliance Report",
+            _ when path.StartsWith("projects/") => "Project Detail",
+            _ => "AGONECompliance"
+        };
+    }
+}

@@ -17,14 +17,6 @@
       "PackagePath": "staticwebassets/css/app.css"
     },
     {
-      "Id": "/workspace/AGONECompliance/AGONECompliance.Client/wwwroot/css/bootstrap/bootstrap.min.css",
-      "PackagePath": "staticwebassets/css/bootstrap/bootstrap.min.css"
-    },
-    {
-      "Id": "/workspace/AGONECompliance/AGONECompliance.Client/wwwroot/css/bootstrap/bootstrap.min.css.map",
-      "PackagePath": "staticwebassets/css/bootstrap/bootstrap.min.css.map"
-    },
-    {
       "Id": "/workspace/AGONECompliance/AGONECompliance.Client/wwwroot/favicon.png",
       "PackagePath": "staticwebassets/favicon.png"
     },
@@ -35,10 +27,6 @@
     {
       "Id": "/workspace/AGONECompliance/AGONECompliance.Client/wwwroot/index.html",
       "PackagePath": "staticwebassets/index.html"
-    },
-    {
-      "Id": "/workspace/AGONECompliance/AGONECompliance.Client/wwwroot/sample-data/weather.json",
-      "PackagePath": "staticwebassets/sample-data/weather.json"
     },
     {
       "Id": "obj/Debug/net8.0/staticwebassets/msbuild.AGONECompliance.Client.Microsoft.AspNetCore.StaticWebAssets.props",

@@ -1,32 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AGONECompliance.Client</title>
+    <title>AGONECompliance</title>
     <base href="/" />
-    <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
-    <link rel="stylesheet" href="css/app.css" />
-    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
+    <link href="css/app.css" rel="stylesheet" />
     <link href="AGONECompliance.Client.styles.css" rel="stylesheet" />
 </head>
-
 <body>
     <div id="app">
-        <svg class="loading-progress">
-            <circle r="40%" cx="50%" cy="50%" />
-            <circle r="40%" cx="50%" cy="50%" />
-        </svg>
-        <div class="loading-progress-text"></div>
-    </div>
-
-    <div id="blazor-error-ui">
-        An unhandled error has occurred.
-        <a href="" class="reload">Reload</a>
-        <a class="dismiss">🗙</a>
+        <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;">
+            <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#4779F7,#6C3AED);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px;margin-bottom:16px;">AC</div>
+            <div style="font-size:16px;font-weight:600;color:#F1F5F9;margin-bottom:8px;">AGONECompliance</div>
+            <div style="font-size:12px;color:#64748B;">Loading application...</div>
+        </div>
     </div>
     <script src="_framework/blazor.webassembly.js"></script>
 </body>
-
 </html>

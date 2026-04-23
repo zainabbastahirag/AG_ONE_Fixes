@@ -26,16 +26,28 @@ build_property._RazorSourceGeneratorDebug =
 build_metadata.AdditionalFiles.TargetPath = QXBwLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[/workspace/AGONECompliance/AGONECompliance.Client/Pages/Counter.razor]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQ291bnRlci5yYXpvcg==
+[/workspace/AGONECompliance/AGONECompliance.Client/Pages/ComplianceReport.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQ29tcGxpYW5jZVJlcG9ydC5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[/workspace/AGONECompliance/AGONECompliance.Client/Pages/Home.razor]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXMvSG9tZS5yYXpvcg==
+[/workspace/AGONECompliance/AGONECompliance.Client/Pages/Dashboard.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRGFzaGJvYXJkLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[/workspace/AGONECompliance/AGONECompliance.Client/Pages/Weather.razor]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXMvV2VhdGhlci5yYXpvcg==
+[/workspace/AGONECompliance/AGONECompliance.Client/Pages/JobMonitor.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvSm9iTW9uaXRvci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/AGONECompliance/AGONECompliance.Client/Pages/ProjectDetail.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvUHJvamVjdERldGFpbC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/AGONECompliance/AGONECompliance.Client/Pages/Projects.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvUHJvamVjdHMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/AGONECompliance/AGONECompliance.Client/Shared/MainLayout.razor]
+build_metadata.AdditionalFiles.TargetPath = U2hhcmVkL01haW5MYXlvdXQucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
 [/workspace/AGONECompliance/AGONECompliance.Client/_Imports.razor]
