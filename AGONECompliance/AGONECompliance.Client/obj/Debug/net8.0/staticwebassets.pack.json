@@ -1,0 +1,61 @@
+{
+  "Files": [
+    {
+      "Id": "/workspace/AGONECompliance/AGONECompliance.Client/bin/Debug/net8.0/wwwroot/_framework/blazor.webassembly.js",
+      "PackagePath": "staticwebassets/_framework/blazor.webassembly.js"
+    },
+    {
+      "Id": "/workspace/AGONECompliance/AGONECompliance.Client/obj/Debug/net8.0/compressed/4ttwhdswho.gz",
+      "PackagePath": "staticwebassets/_framework/blazor.webassembly.js.gz"
+    },
+    {
+      "Id": "/workspace/AGONECompliance/AGONECompliance.Client/obj/Debug/net8.0/scopedcss/bundle/AGONECompliance.Client.styles.css",
+      "PackagePath": "staticwebassets/AGONECompliance.Client.styles.css"
+    },
+    {
+      "Id": "/workspace/AGONECompliance/AGONECompliance.Client/wwwroot/css/app.css",
+      "PackagePath": "staticwebassets/css/app.css"
+    },
+    {
+      "Id": "/workspace/AGONECompliance/AGONECompliance.Client/wwwroot/css/bootstrap/bootstrap.min.css",
+      "PackagePath": "staticwebassets/css/bootstrap/bootstrap.min.css"
+    },
+    {
+      "Id": "/workspace/AGONECompliance/AGONECompliance.Client/wwwroot/css/bootstrap/bootstrap.min.css.map",
+      "PackagePath": "staticwebassets/css/bootstrap/bootstrap.min.css.map"
+    },
+    {
+      "Id": "/workspace/AGONECompliance/AGONECompliance.Client/wwwroot/favicon.png",
+      "PackagePath": "staticwebassets/favicon.png"
+    },
+    {
+      "Id": "/workspace/AGONECompliance/AGONECompliance.Client/wwwroot/icon-192.png",
+      "PackagePath": "staticwebassets/icon-192.png"
+    },
+    {
+      "Id": "/workspace/AGONECompliance/AGONECompliance.Client/wwwroot/index.html",
+      "PackagePath": "staticwebassets/index.html"
+    },
+    {
+      "Id": "/workspace/AGONECompliance/AGONECompliance.Client/wwwroot/sample-data/weather.json",
+      "PackagePath": "staticwebassets/sample-data/weather.json"
+    },
+    {
+      "Id": "obj/Debug/net8.0/staticwebassets/msbuild.AGONECompliance.Client.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj/Debug/net8.0/staticwebassets/msbuild.build.AGONECompliance.Client.props",
+      "PackagePath": "build\\AGONECompliance.Client.props"
+    },
+    {
+      "Id": "obj/Debug/net8.0/staticwebassets/msbuild.buildMultiTargeting.AGONECompliance.Client.props",
+      "PackagePath": "buildMultiTargeting\\AGONECompliance.Client.props"
+    },
+    {
+      "Id": "obj/Debug/net8.0/staticwebassets/msbuild.buildTransitive.AGONECompliance.Client.props",
+      "PackagePath": "buildTransitive\\AGONECompliance.Client.props"
+    }
+  ],
+  "ElementsToRemove": []
+}
