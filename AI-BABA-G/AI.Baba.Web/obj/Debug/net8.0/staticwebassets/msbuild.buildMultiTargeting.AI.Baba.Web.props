@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="../build/AI.Baba.Web.props" />
-</Project>
