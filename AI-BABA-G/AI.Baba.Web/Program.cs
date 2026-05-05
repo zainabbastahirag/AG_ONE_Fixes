@@ -4,6 +4,7 @@ using AI.Baba.Web.Models;
 using AI.Baba.Web.Services;
 using AspNetCoreRateLimit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -12,18 +13,79 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddHttpClient();
 
-// ── DB: SQL Server with EF Core (auto-migrates on startup) ──────────────
+// ── DB: EF Core ─────────────────────────────────────────────────────────
+//   Provider auto-detect:
+//     * If the connection string starts with "Data Source=...sqlite" or
+//       "Filename=" or env Database__Provider=sqlite → SQLite (zero-infra
+//       default — works on any single-container deploy out of the box).
+//     * Otherwise → SQL Server (used by docker-compose with the sqlserver
+//       service or any explicit ConnectionStrings:BabaDb).
+var explicitProvider = builder.Configuration["Database:Provider"]?.Trim().ToLowerInvariant();
 var sqlConn = builder.Configuration.GetConnectionString("BabaDb")
-    ?? builder.Configuration["Database:ConnectionString"]
-    ?? "Server=(localdb)\\MSSQLLocalDB;Database=AIBabaG;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=True";
-builder.Services.AddDbContext<BabaDbContext>(opt =>
+    ?? builder.Configuration["Database:ConnectionString"];
+
+bool useSqlite;
+string finalConn;
+if (explicitProvider == "sqlite")
 {
-    opt.UseSqlServer(sqlConn, sql =>
+    useSqlite = true;
+    finalConn = sqlConn ?? "Data Source=/app/data/baba.db";
+}
+else if (explicitProvider == "sqlserver")
+{
+    useSqlite = false;
+    finalConn = sqlConn ?? "Server=(localdb)\\MSSQLLocalDB;Database=AIBabaG;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=True";
+}
+else if (!string.IsNullOrWhiteSpace(sqlConn) &&
+    (sqlConn.Contains("Server=", StringComparison.OrdinalIgnoreCase) ||
+     sqlConn.Contains("Data Source=tcp:", StringComparison.OrdinalIgnoreCase)) &&
+    !sqlConn.Contains(".db", StringComparison.OrdinalIgnoreCase))
+{
+    useSqlite = false; finalConn = sqlConn;
+}
+else
+{
+    // Default: zero-infra SQLite file. Persists across restarts when /app/data
+    // is mounted as a volume; safe to use in production for small/medium loads.
+    useSqlite = true;
+    finalConn = sqlConn ?? "Data Source=/app/data/baba.db";
+}
+
+if (useSqlite)
+{
+    var path = ExtractSqlitePath(finalConn);
+    if (!string.IsNullOrEmpty(path))
     {
-        sql.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(8), errorNumbersToAdd: null);
-        sql.CommandTimeout(60);
+        var dir = Path.GetDirectoryName(path);
+        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+        {
+            try { Directory.CreateDirectory(dir); } catch { /* best effort */ }
+        }
+    }
+    builder.Services.AddDbContext<BabaDbContext>(opt => opt.UseSqlite(finalConn));
+}
+else
+{
+    builder.Services.AddDbContext<BabaDbContext>(opt =>
+    {
+        opt.UseSqlServer(finalConn, sql =>
+        {
+            sql.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(8), errorNumbersToAdd: null);
+            sql.CommandTimeout(60);
+        });
     });
-});
+}
+
+static string? ExtractSqlitePath(string conn)
+{
+    foreach (var part in conn.Split(';', StringSplitOptions.RemoveEmptyEntries))
+    {
+        var kv = part.Split('=', 2, StringSplitOptions.TrimEntries);
+        if (kv.Length == 2 && (kv[0].Equals("Data Source", StringComparison.OrdinalIgnoreCase) || kv[0].Equals("Filename", StringComparison.OrdinalIgnoreCase)))
+            return kv[1];
+    }
+    return null;
+}
 
 // ── Services ─────────────────────────────────────────────────────────────
 builder.Services.AddScoped<AuthService>();
@@ -61,6 +123,20 @@ builder.Services.AddAuthorization();
 builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
     p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
 
+// ── Forwarded headers (Cloudflare, NGINX, ALB, etc.) ─────────────────────
+//   When a CDN / proxy fronts the app, the original client IP and HTTPS
+//   info are in X-Forwarded-* headers. Without this, every request appears
+//   to come from the proxy IP — which makes the IP rate-limiter share a
+//   bucket across all users and (worst case) reject normal traffic.
+builder.Services.Configure<ForwardedHeadersOptions>(o =>
+{
+    o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost;
+    // Trust any proxy hop. If you need to lock this down, set
+    // ForwardedHeadersOptions:KnownProxies in config.
+    o.KnownNetworks.Clear();
+    o.KnownProxies.Clear();
+});
+
 // ── Rate limiting ────────────────────────────────────────────────────────
 builder.Services.AddMemoryCache();
 builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
@@ -79,16 +155,21 @@ _ = Task.Run(async () =>
     var db = scope.ServiceProvider.GetRequiredService<BabaDbContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     var attempts = 0;
+    var providerName = db.Database.ProviderName ?? string.Empty;
+    var isSqlServer = providerName.Contains("SqlServer", StringComparison.OrdinalIgnoreCase);
     while (true)
     {
         try
         {
-            if (db.Database.GetMigrations().Any())
+            // The bundled migrations target SQL Server (nvarchar(max), uniqueidentifier).
+            // For SQLite (and any non-SQL-Server provider), use EnsureCreatedAsync to
+            // build the schema directly from the model — no migration mismatch.
+            if (isSqlServer && db.Database.GetMigrations().Any())
                 await db.Database.MigrateAsync();
             else
                 await db.Database.EnsureCreatedAsync();
             SeedPresets(db);
-            logger.LogInformation("Database ready and seeded.");
+            logger.LogInformation("Database ready ({Provider}) and seeded.", providerName);
             return;
         }
         catch (Exception ex)
@@ -140,6 +221,10 @@ app.Use(async (ctx, next) =>
         throw;
     }
 });
+
+// IMPORTANT: UseForwardedHeaders must run BEFORE the rate limiter / auth
+// so they see the real client IP rather than the proxy address.
+app.UseForwardedHeaders();
 
 app.UseStaticFiles();
 app.UseRouting();
