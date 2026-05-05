@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="AI BABA-G">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#1A1B2E"/>
+      <stop offset="100%" stop-color="#0A0B14"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F2C870"/>
+      <stop offset="60%" stop-color="#D4A853"/>
+      <stop offset="100%" stop-color="#8B7335"/>
+    </linearGradient>
+    <linearGradient id="violet" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4779F7"/>
+      <stop offset="100%" stop-color="#6C3AED"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="180" height="180" rx="40" fill="url(#bg)"/>
+  <circle cx="90" cy="84" r="62" fill="url(#violet)" opacity="0.14"/>
+  <circle cx="90" cy="84" r="40" fill="url(#gold)" opacity="0.18"/>
+  <circle cx="90" cy="56" r="6" fill="url(#gold)" filter="url(#glow)"/>
+  <text x="90" y="118" text-anchor="middle" font-family="'Cinzel', 'Times New Roman', serif" font-size="74" font-weight="700" fill="url(#gold)" filter="url(#glow)">G</text>
+  <circle cx="90" cy="90" r="80" fill="none" stroke="url(#gold)" stroke-opacity="0.4" stroke-width="2"/>
+</svg>

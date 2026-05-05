@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="AI BABA-G">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#1A1B2E"/>
+      <stop offset="100%" stop-color="#0A0B14"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F2C870"/>
+      <stop offset="60%" stop-color="#D4A853"/>
+      <stop offset="100%" stop-color="#8B7335"/>
+    </linearGradient>
+    <linearGradient id="violet" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4779F7"/>
+      <stop offset="100%" stop-color="#6C3AED"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1.6" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+  <!-- mystical aura -->
+  <circle cx="32" cy="30" r="22" fill="url(#violet)" opacity="0.12"/>
+  <circle cx="32" cy="30" r="14" fill="url(#gold)" opacity="0.18"/>
+  <!-- third-eye dot -->
+  <circle cx="32" cy="20" r="2.4" fill="url(#gold)" filter="url(#glow)"/>
+  <!-- letter G monogram -->
+  <g transform="translate(32 38)" text-anchor="middle" font-family="'Cinzel', 'Times New Roman', serif" font-weight="700" filter="url(#glow)">
+    <text x="0" y="0" font-size="22" fill="url(#gold)" letter-spacing="-1">G</text>
+  </g>
+  <!-- subtle ring -->
+  <circle cx="32" cy="32" r="28" fill="none" stroke="url(#gold)" stroke-opacity="0.45" stroke-width="1.2"/>
+  <!-- twin stars -->
+  <g fill="url(#gold)" opacity="0.8">
+    <polygon points="10,12 11,14 13,15 11,16 10,18 9,16 7,15 9,14"/>
+    <polygon points="54,46 55,48 57,49 55,50 54,52 53,50 51,49 53,48"/>
+  </g>
+</svg>
