@@ -1,0 +1,13 @@
+bin/
+obj/
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+.vs/
+.idea/
+*.user
+appsettings.*.local.json
+node_modules/
+.env
+.env.*
