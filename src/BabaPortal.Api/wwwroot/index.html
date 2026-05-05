@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>BABA · AI Fun Portal</title>
+  <meta name="description" content="BABA - your memory-aware AI companion with a 3D lip-syncing avatar. Persistent memory, custom personalities, voice interruption, and real-time chat." />
+  <link rel="stylesheet" href="/css/app.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%237c3aed'/%3E%3Ctext x='32' y='42' text-anchor='middle' font-family='sans-serif' font-weight='800' font-size='28' fill='white'%3EB%3C/text%3E%3C/svg%3E" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#chat" data-route="chat">
+      <span class="brand-orb"></span>
+      <span class="brand-text">BABA</span>
+      <span class="brand-tag">AI Fun Portal</span>
+    </a>
+    <nav class="nav">
+      <a href="#chat" data-route="chat">Chat</a>
+      <a href="#avatars" data-route="avatars">Avatars</a>
+      <a href="#personalities" data-route="personalities">Personalities</a>
+      <a href="#memory" data-route="memory">Memory</a>
+      <a href="#about" data-route="about">About</a>
+      <a href="#terms" data-route="terms">Terms</a>
+    </nav>
+    <div class="auth-area" id="authArea"></div>
+  </header>
+
+  <main id="view"></main>
+
+  <!-- ============== Templates ============== -->
+
+  <template id="tpl-chat">
+    <section class="chat-page">
+      <aside class="sidebar">
+        <button class="primary-btn" id="newChatBtn">+ New chat</button>
+        <div class="sidebar-section">
+          <div class="sidebar-title">Personality</div>
+          <select id="personalitySelect"></select>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-title">Avatar</div>
+          <select id="avatarSelect"></select>
+        </div>
+        <div class="sidebar-section sidebar-history">
+          <div class="sidebar-title">Recent</div>
+          <ul id="conversationList"></ul>
+        </div>
+        <div class="sidebar-foot">
+          <label class="toggle">
+            <input type="checkbox" id="continuousMode" />
+            <span>Continuous voice mode</span>
+          </label>
+        </div>
+      </aside>
+
+      <section class="stage">
+        <div class="avatar-wrap">
+          <canvas id="avatarCanvas"></canvas>
+          <div class="avatar-status" id="avatarStatus">idle</div>
+        </div>
+        <div class="messages" id="messages"></div>
+        <form class="composer" id="composer">
+          <button type="button" class="mic-btn" id="micBtn" title="Press to talk">
+            <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
+          </button>
+          <textarea id="msgInput" rows="1" placeholder="Talk to BABA…"></textarea>
+          <button type="submit" id="sendBtn" class="primary-btn">Send</button>
+          <button type="button" id="stopBtn" class="danger-btn" hidden>Stop</button>
+        </form>
+        <div class="hint" id="guestHint" hidden>
+          You're chatting as a <strong>guest</strong>. <a href="#auth" data-route="auth">Sign up</a> so BABA can remember you, save chats, and adopt your custom personality.
+        </div>
+      </section>
+    </section>
+  </template>
+
+  <template id="tpl-auth">
+    <section class="auth-page">
+      <div class="auth-card">
+        <div class="auth-tabs">
+          <button data-tab="login" class="active">Sign in</button>
+          <button data-tab="register">Create account</button>
+        </div>
+        <form id="loginForm" class="auth-form active">
+          <h2>Welcome back</h2>
+          <label>Username or email <input name="usernameOrEmail" required /></label>
+          <label>Password <input name="password" type="password" required /></label>
+          <button class="primary-btn" type="submit">Sign in</button>
+          <p class="auth-msg" id="loginMsg"></p>
+        </form>
+        <form id="registerForm" class="auth-form">
+          <h2>Join BABA</h2>
+          <p class="muted">Sign up to unlock persistent memory, saved chats, custom personalities, and avatars.</p>
+          <label>Username <input name="username" required minlength="2" maxlength="64" /></label>
+          <label>Email <input name="email" type="email" required /></label>
+          <label>Display name <input name="displayName" /></label>
+          <label>Password <input name="password" type="password" required minlength="6" /></label>
+          <button class="primary-btn" type="submit">Create account</button>
+          <p class="auth-msg" id="registerMsg"></p>
+        </form>
+      </div>
+    </section>
+  </template>
+
+  <template id="tpl-memory">
+    <section class="memory-page">
+      <header class="page-head">
+        <h1>BABA's Memory of You</h1>
+        <p class="muted">These are the long-term facts BABA recalls during your chats. Add, remove, or edit anytime.</p>
+      </header>
+      <div class="memory-add">
+        <input id="memoryInput" placeholder="e.g. I'm allergic to peanuts. I love retro synthwave. My dog's name is Pixel." />
+        <select id="memoryKind">
+          <option value="fact">Fact</option>
+          <option value="preference">Preference</option>
+          <option value="event">Event</option>
+        </select>
+        <button class="primary-btn" id="memoryAddBtn">Remember this</button>
+      </div>
+      <ul class="memory-list" id="memoryList"></ul>
+      <p id="memoryGate" class="gate" hidden>Sign up to give BABA a memory. <a href="#auth" data-route="auth">Create account</a>.</p>
+    </section>
+  </template>
+
+  <template id="tpl-personalities">
+    <section class="lib-page">
+      <header class="page-head">
+        <h1>Personalities</h1>
+        <p class="muted">Pick a preset or design a custom one. Your custom personalities are private unless you mark them public.</p>
+      </header>
+      <div class="lib-grid" id="personalityGrid"></div>
+      <div class="lib-create" id="personalityCreate">
+        <h2>Create custom personality</h2>
+        <label>Name <input id="pName" /></label>
+        <label>Tagline <input id="pTagline" /></label>
+        <label>Voice
+          <select id="pVoice">
+            <option value="default">default</option>
+            <option value="calm">calm</option>
+            <option value="energetic">energetic</option>
+            <option value="deep">deep</option>
+          </select>
+        </label>
+        <label>System prompt
+          <textarea id="pPrompt" rows="5" placeholder="You are…"></textarea>
+        </label>
+        <label class="row"><input type="checkbox" id="pPublic" /> Share with the community</label>
+        <button class="primary-btn" id="pCreateBtn">Save personality</button>
+        <p id="pGate" class="gate" hidden>Sign up to design your own. <a href="#auth" data-route="auth">Create account</a>.</p>
+      </div>
+    </section>
+  </template>
+
+  <template id="tpl-avatars">
+    <section class="lib-page">
+      <header class="page-head">
+        <h1>Avatar Marketplace</h1>
+        <p class="muted">Pick a 3D robot, a photo-based billboard avatar from your own picture, or a uploaded GLB model. Custom voice cloning slots in here too.</p>
+      </header>
+      <div class="lib-grid" id="avatarGrid"></div>
+      <div class="lib-create">
+        <h2>Create your avatar</h2>
+        <label>Name <input id="aName" /></label>
+        <label>Type
+          <select id="aKind">
+            <option value="robot">Robot (3D)</option>
+            <option value="photo">Photo billboard</option>
+            <option value="glb">GLB model URL</option>
+          </select>
+        </label>
+        <label>Primary color <input id="aColor" type="color" value="#7c3aed" /></label>
+        <label id="aImageRow">Photo URL or upload
+          <input id="aImageUrl" placeholder="https://…" />
+          <input id="aImageFile" type="file" accept="image/*" />
+        </label>
+        <label id="aModelRow" hidden>GLB URL <input id="aModelUrl" placeholder="https://…/avatar.glb" /></label>
+        <label class="row"><input type="checkbox" id="aPublic" /> Share with the community</label>
+        <button class="primary-btn" id="aCreateBtn">Save avatar</button>
+        <p id="aGate" class="gate" hidden>Sign up to upload your own avatar. <a href="#auth" data-route="auth">Create account</a>.</p>
+      </div>
+    </section>
+  </template>
+
+  <template id="tpl-about">
+    <section class="prose-page">
+      <h1>About BABA</h1>
+      <p>BABA is an AI fun-portal companion that <strong>remembers you</strong>. Unlike a regular chatbot, BABA has a persistent, vector-indexed long-term memory tied to your account. The more you chat, the more it adapts.</p>
+      <h2>What makes BABA different</h2>
+      <ul>
+        <li><strong>Persistent SQLite memory.</strong> Everything is stored on disk via EF Core, not in server RAM. Tables auto-create at startup.</li>
+        <li><strong>Vector recall.</strong> Each memory is embedded and recalled by cosine similarity to the current message.</li>
+        <li><strong>Memory-aware prompting.</strong> Top-K relevant memories are quietly injected into the system prompt.</li>
+        <li><strong>Personality adoption.</strong> Build, save, and switch between custom personalities.</li>
+        <li><strong>Real-time streaming.</strong> Replies stream token-by-token via Server-Sent Events for ChatGPT-like feel.</li>
+        <li><strong>3D avatar with viseme lip-sync.</strong> Three.js renders BABA with phoneme-driven mouth shapes and facial expressions.</li>
+        <li><strong>Voice in & out.</strong> Web Speech API for speech-to-text, SpeechSynthesis for TTS, plus continuous conversation mode and interrupt.</li>
+        <li><strong>Avatar marketplace.</strong> Robots, photo billboards from your own picture, or GLB uploads.</li>
+        <li><strong>Scalable.</strong> Async streaming, indexed queries, IP rate limiting, lightweight SQLite footprint.</li>
+      </ul>
+      <h2>How memory works</h2>
+      <p>When you say things like <em>"remember that…"</em> or <em>"my favorite…"</em>, BABA stores it as a memory. You can also add memories manually on the Memory page. Each one is converted to a 256-dim embedding (or higher when an Ollama embedding model is available) and indexed in SQLite. On every reply, BABA fetches the top-6 most relevant memories using cosine similarity and weaves them in.</p>
+      <h2>Privacy</h2>
+      <p>Your data lives in a single SQLite file alongside the server. You can delete any memory at any time. Guest users are anonymous and have no memory.</p>
+    </section>
+  </template>
+
+  <template id="tpl-terms">
+    <section class="prose-page">
+      <h1>Terms & Conditions</h1>
+      <p>Last updated: today.</p>
+      <h2>1. Acceptance</h2>
+      <p>By using BABA you agree to these terms. If you don't, please don't use the service.</p>
+      <h2>2. Account</h2>
+      <p>You must provide accurate info on signup. You're responsible for keeping your password safe.</p>
+      <h2>3. Acceptable use</h2>
+      <ul>
+        <li>No illegal content, hate speech, harassment, or sexual content involving minors.</li>
+        <li>No attempts to disrupt, scrape, or overload the service.</li>
+        <li>Don't store other people's private data in BABA's memory without their consent.</li>
+      </ul>
+      <h2>4. AI output disclaimer</h2>
+      <p>BABA's responses are AI-generated and may be inaccurate. Don't rely on them for medical, legal, or financial advice.</p>
+      <h2>5. Memory & data</h2>
+      <p>You can delete your memories any time from the Memory page. Account deletion removes all associated data on disk.</p>
+      <h2>6. Liability</h2>
+      <p>The service is provided "as is" without warranties of any kind.</p>
+      <h2>7. Changes</h2>
+      <p>These terms may be updated. Continued use means acceptance of the new terms.</p>
+    </section>
+  </template>
+
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>
