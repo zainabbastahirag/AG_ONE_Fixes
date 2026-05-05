@@ -70,16 +70,29 @@ export class VoiceIO {
         this._enqueue(text);
     }
 
-    /// Streaming: tokens arrive incrementally; flush by sentence so TTS pace stays natural.
+    /// Streaming: tokens arrive incrementally; flush by sentence/clause so the
+    /// user hears the first words in milliseconds — like a live phone call.
     pushStreamingText(piece) {
         if (!piece) return;
         this._buffer += piece;
         this.onSpeakChunk(piece);
-        const m = this._buffer.match(/[^.!?\n]*[.!?\n]+/);
-        if (m) {
-            const sentence = m[0];
-            this._buffer = this._buffer.slice(sentence.length);
-            this._enqueue(sentence.trim());
+
+        // First clause: flush as soon as we have ~24 chars + a sentence terminator.
+        // Subsequent clauses: also flush on commas/semicolons/dashes to stay snappy.
+        while (true) {
+            const text = this._buffer;
+            // Sentence-end first
+            let cut = text.search(/[.!?\n]/);
+            if (cut >= 0) cut += 1;
+            else if (text.length >= 60) {
+                // Long unterminated clause — flush at a comma/dash/semicolon if present.
+                const c = text.search(/[,;—–]/);
+                if (c >= 0 && c >= 24) cut = c + 1;
+            }
+            if (cut < 0 || cut === 0) break;
+            const clause = text.slice(0, cut).trim();
+            this._buffer = text.slice(cut);
+            if (clause) this._enqueue(clause);
         }
     }
 

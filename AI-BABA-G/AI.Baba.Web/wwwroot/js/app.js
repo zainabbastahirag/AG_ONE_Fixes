@@ -164,7 +164,7 @@ async function askBaba() {
     if (!prompt) return;
 
     input.value = '';
-    setBabaText('Thinking...');
+    showTypingDots();
     showWave(true);
     state.voice?.stopSpeaking();
     state.avatar3d?.stopSpeaking();
@@ -222,15 +222,18 @@ async function streamingAsk(prompt) {
     state.abortController = new AbortController();
     const headers = { 'Content-Type': 'application/json' };
     if (state.token) headers['Authorization'] = 'Bearer ' + state.token;
+
+    // Show typing dots immediately so the user sees instant activity.
+    showTypingDots();
+
     const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal: state.abortController.signal });
     if (!res.ok || !res.body) {
         setBabaText(`Connection failed (${res.status}).`);
         return;
     }
 
-    setBabaText('');
     const babaTextEl = document.getElementById('babaText');
-    babaTextEl.classList.add('cursor-blink');
+    let firstToken = true;
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
@@ -249,7 +252,14 @@ async function streamingAsk(prompt) {
                 else if (line.startsWith('data:')) data += line.slice(5).trimStart();
             }
             data = data.replace(/\\n/g, '\n');
-            if (evt === 'token') {
+            if (evt === 'ack') {
+                showTypingDots(); // server confirmed it's working on it
+            } else if (evt === 'token') {
+                if (firstToken) {
+                    firstToken = false;
+                    setBabaText('');
+                    babaTextEl.classList.add('cursor-blink');
+                }
                 full += data;
                 babaTextEl.textContent = full;
                 state.voice?.pushStreamingText(data);
@@ -262,6 +272,12 @@ async function streamingAsk(prompt) {
     }
     babaTextEl.classList.remove('cursor-blink');
     state.voice?.flushStreaming();
+}
+
+function showTypingDots() {
+    const el = document.getElementById('babaText');
+    if (!el) return;
+    el.innerHTML = '<span class="typing-dots"><span></span><span></span><span></span></span>';
 }
 
 // ───────────────────────────────────────────────────────────────
@@ -391,6 +407,34 @@ document.getElementById('newChatBtn')?.addEventListener('click', () => {
     setBabaText('A fresh canvas, seeker. What is on your mind?');
 });
 
+// Mobile drawer panels
+function setupMobileDrawers() {
+    const left = document.querySelector('.panel-left');
+    const right = document.querySelector('.panel-right');
+    const backdrop = document.getElementById('panelBackdrop');
+    const closeAll = () => {
+        left?.classList.remove('open');
+        right?.classList.remove('open');
+        backdrop?.classList.remove('open');
+    };
+    document.getElementById('menuLeftBtn')?.addEventListener('click', () => {
+        right?.classList.remove('open');
+        left?.classList.toggle('open');
+        backdrop?.classList.toggle('open', left?.classList.contains('open'));
+    });
+    document.getElementById('menuRightBtn')?.addEventListener('click', () => {
+        left?.classList.remove('open');
+        right?.classList.toggle('open');
+        backdrop?.classList.toggle('open', right?.classList.contains('open'));
+    });
+    backdrop?.addEventListener('click', closeAll);
+    // Close drawer after picking a card on mobile
+    [left, right].forEach(p => p?.addEventListener('click', e => {
+        const card = e.target.closest('.avatar-card, .mindset-card, #newChatBtn, .conv-list li:not(.conv-empty)');
+        if (card && window.matchMedia('(max-width: 900px)').matches) closeAll();
+    }));
+}
+
 // ───────────────────────────────────────────────────────────────
 //  Init
 // ───────────────────────────────────────────────────────────────
@@ -403,4 +447,5 @@ window.addEventListener('load', () => {
     wireTopicTags();
     renderAuthPill();
     loadConversations();
+    setupMobileDrawers();
 });
