@@ -1,0 +1,101 @@
+@{ ViewData["Title"] = "Avatars"; Layout = "_PortalLayout"; }
+<section class="portal-page">
+    <h1>Avatar Marketplace</h1>
+    <p class="muted">Pick from the five sage emoji avatars, switch on the 3D Robot, or create your own — including a photo-based billboard from your own picture or a GLB model URL.</p>
+
+    <div class="grid" id="avatarGrid"></div>
+
+    <h2>Create your avatar</h2>
+    <label>Name <input id="aName" /></label>
+    <label>Type
+        <select id="aKind">
+            <option value="emoji">Emoji preset</option>
+            <option value="robot">3D Robot</option>
+            <option value="photo">Photo billboard</option>
+            <option value="glb">GLB model URL</option>
+        </select>
+    </label>
+    <label id="aEmojiRow">Emoji <input id="aEmoji" placeholder="🧙‍♂️" maxlength="4" /></label>
+    <label>Primary color <input id="aColor" type="color" value="#D4A853" /></label>
+    <label id="aImageRow" hidden>Photo URL or upload
+        <input id="aImageUrl" placeholder="https://…" />
+        <input id="aImageFile" type="file" accept="image/*" />
+    </label>
+    <label id="aModelRow" hidden>GLB URL <input id="aModelUrl" placeholder="https://…/avatar.glb" /></label>
+    <label class="row"><input type="checkbox" id="aPublic" /> Share with the community</label>
+    <button class="primary" id="aCreateBtn">Save avatar</button>
+    <p class="gate" id="aGate" hidden>Sign up first to create avatars. <a asp-controller="Home" asp-action="Auth">Create account</a>.</p>
+</section>
+@section Scripts {
+<script>
+    const token = localStorage.getItem('baba_token');
+    const gate = document.getElementById('aGate');
+    if (!token) { gate.hidden = false; document.getElementById('aCreateBtn').disabled = true; }
+
+    function syncFields() {
+        const k = document.getElementById('aKind').value;
+        document.getElementById('aEmojiRow').hidden = k !== 'emoji';
+        document.getElementById('aImageRow').hidden = k !== 'photo';
+        document.getElementById('aModelRow').hidden = k !== 'glb';
+    }
+    document.getElementById('aKind').addEventListener('change', syncFields); syncFields();
+
+    let dataUrl = '';
+    document.getElementById('aImageFile').addEventListener('change', () => {
+        const f = aImageFile.files?.[0]; if (!f) return;
+        const reader = new FileReader(); reader.onload = () => { dataUrl = reader.result; aImageUrl.value = dataUrl; }; reader.readAsDataURL(f);
+    });
+
+    async function call(path, opts={}) {
+        const headers = new Headers(opts.headers || {});
+        if (token) headers.set('Authorization', 'Bearer ' + token);
+        if (opts.body && !headers.has('Content-Type')) headers.set('Content-Type','application/json');
+        const r = await fetch(path, { ...opts, headers });
+        if (!r.ok) throw new Error(r.statusText);
+        return r.status === 204 ? null : r.json();
+    }
+    async function refresh() {
+        const grid = document.getElementById('avatarGrid'); grid.innerHTML='';
+        const items = await call('/api/avatars');
+        for (const a of items) {
+            const card = document.createElement('div');
+            card.className = 'card ' + (a.preset ? 'preset' : (a.mine ? 'mine' : ''));
+            const tag = a.preset ? 'preset' : a.mine ? 'yours' : 'community';
+            const swatch = a.imageUrl
+                ? `<div class="swatch" style="background-size:cover;background-position:center;background-image:url('${a.imageUrl}')"></div>`
+                : `<div class="swatch" style="background:${a.primaryColor}">${a.emoji||''}</div>`;
+            card.innerHTML = `
+                ${swatch}
+                <div class="title"></div>
+                <div class="sub">${a.kind} · ${tag}</div>
+                <div class="actions">
+                    <button class="primary use">Use</button>
+                    ${a.mine ? '<button class="ghost del">Delete</button>' : ''}
+                </div>`;
+            card.querySelector('.title').textContent = a.name;
+            card.querySelector('.use').onclick = () => { localStorage.setItem('baba_avatar', a.id); location.href = '/'; };
+            const del = card.querySelector('.del');
+            if (del) del.onclick = async () => { await call('/api/avatars/' + a.id, { method: 'DELETE' }); refresh(); };
+            grid.appendChild(card);
+        }
+    }
+    document.getElementById('aCreateBtn').addEventListener('click', async () => {
+        if (!token) return;
+        const k = document.getElementById('aKind').value;
+        const body = {
+            name: aName.value.trim(),
+            kind: k,
+            emoji: k === 'emoji' ? (aEmoji.value || '✨') : null,
+            imageUrl: k === 'photo' ? (aImageUrl.value || dataUrl) : null,
+            modelUrl: k === 'glb' ? aModelUrl.value.trim() : null,
+            primaryColor: aColor.value,
+            isPublic: aPublic.checked,
+        };
+        if (!body.name) { alert('Name required'); return; }
+        await call('/api/avatars', { method:'POST', body: JSON.stringify(body) });
+        aName.value=''; aImageUrl.value=''; aModelUrl.value=''; aPublic.checked=false; aEmoji.value=''; dataUrl='';
+        refresh();
+    });
+    refresh();
+</script>
+}

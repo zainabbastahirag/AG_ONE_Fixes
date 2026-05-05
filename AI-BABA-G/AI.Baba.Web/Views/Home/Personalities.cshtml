@@ -1,0 +1,101 @@
+@{ ViewData["Title"] = "Personalities"; Layout = "_PortalLayout"; }
+<section class="portal-page">
+    <h1>Personalities</h1>
+    <p class="muted">Pick one of the five preset Baba-G personas, or design your own. Custom personalities can be private or shared with the community.</p>
+
+    <div class="grid" id="personalityGrid"></div>
+
+    <h2>Create custom personality</h2>
+    <label>Name <input id="pName" placeholder="e.g. The Astronaut" /></label>
+    <label>Tagline <input id="pTagline" placeholder="One-line description" /></label>
+    <label>Avatar preset
+        <select id="pAvatarKey">
+            <option value="">— none —</option>
+            <option value="sage">🧙‍♂️ Sage</option>
+            <option value="philosopher">🤔 Philosopher</option>
+            <option value="healer">🙏 Healer</option>
+            <option value="elder">👳 Elder</option>
+            <option value="storyteller">📖 Storyteller</option>
+        </select>
+    </label>
+    <label>Mindset
+        <select id="pMindsetKey">
+            <option value="">— none —</option>
+            <option value="balanced">⚖️ Balanced</option>
+            <option value="logical">🧩 Logical</option>
+            <option value="spiritual">🪷 Spiritual</option>
+            <option value="motivational">🔥 Motivational</option>
+            <option value="creative">🎨 Creative</option>
+        </select>
+    </label>
+    <label>Voice
+        <select id="pVoice">
+            <option value="default">default</option>
+            <option value="calm">calm</option>
+            <option value="energetic">energetic</option>
+            <option value="deep">deep</option>
+        </select>
+    </label>
+    <label>System prompt <textarea id="pPrompt" rows="5" placeholder="You are AI Baba-G as ..."></textarea></label>
+    <label class="row"><input type="checkbox" id="pPublic" /> Share with the community</label>
+    <button class="primary" id="pCreateBtn">Save personality</button>
+    <p class="gate" id="pGate" hidden>Sign up first to create your own. <a asp-controller="Home" asp-action="Auth">Create account</a>.</p>
+</section>
+@section Scripts {
+<script>
+    const token = localStorage.getItem('baba_token');
+    const gate = document.getElementById('pGate');
+    if (!token) { gate.hidden = false; document.getElementById('pCreateBtn').disabled = true; }
+    async function call(path, opts={}) {
+        const headers = new Headers(opts.headers || {});
+        if (token) headers.set('Authorization', 'Bearer ' + token);
+        if (opts.body && !headers.has('Content-Type')) headers.set('Content-Type','application/json');
+        const r = await fetch(path, { ...opts, headers });
+        if (!r.ok) throw new Error(r.statusText);
+        return r.status === 204 ? null : r.json();
+    }
+    async function refresh() {
+        const grid = document.getElementById('personalityGrid'); grid.innerHTML='';
+        const items = await call('/api/personalities');
+        for (const p of items) {
+            const card = document.createElement('div');
+            card.className = 'card ' + (p.preset ? 'preset' : (p.mine ? 'mine' : ''));
+            const tag = p.preset ? 'preset' : p.mine ? 'yours' : 'community';
+            card.innerHTML = `
+                <div class="title"></div>
+                <div class="sub"></div>
+                <div class="sub">voice: ${p.voice||'default'} · ${tag}</div>
+                <div class="actions">
+                    <button class="primary use">Use</button>
+                    ${p.mine ? '<button class="ghost del">Delete</button>' : ''}
+                </div>`;
+            card.querySelector('.title').textContent = p.name;
+            card.querySelector('.sub').textContent = p.tagline || '';
+            card.querySelector('.use').onclick = () => {
+                localStorage.setItem('baba_personality', p.id);
+                location.href = '/';
+            };
+            const del = card.querySelector('.del');
+            if (del) del.onclick = async () => { await call('/api/personalities/' + p.id, { method: 'DELETE' }); refresh(); };
+            grid.appendChild(card);
+        }
+    }
+    document.getElementById('pCreateBtn').addEventListener('click', async () => {
+        if (!token) return;
+        const body = {
+            name: pName.value.trim(),
+            tagline: pTagline.value.trim(),
+            voice: pVoice.value,
+            avatarKey: pAvatarKey.value || null,
+            mindsetKey: pMindsetKey.value || null,
+            systemPrompt: pPrompt.value.trim(),
+            isPublic: pPublic.checked,
+        };
+        if (!body.name || !body.systemPrompt) { alert('Name + system prompt required.'); return; }
+        await call('/api/personalities', { method:'POST', body: JSON.stringify(body) });
+        pName.value=''; pTagline.value=''; pPrompt.value=''; pPublic.checked=false;
+        refresh();
+    });
+    refresh();
+</script>
+}

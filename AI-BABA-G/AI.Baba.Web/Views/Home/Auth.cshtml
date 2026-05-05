@@ -1,0 +1,67 @@
+@{ ViewData["Title"] = "Sign in"; Layout = "_PortalLayout"; }
+<section class="portal-page" style="max-width:480px">
+    <h1>Welcome, seeker</h1>
+    <p class="muted">Sign in to unlock persistent memory, saved chats, custom personalities, and avatars.</p>
+
+    <div class="auth-tabs">
+        <button data-tab="login" class="active">Sign in</button>
+        <button data-tab="register">Create account</button>
+    </div>
+
+    <form id="loginForm" class="auth-form active">
+        <label>Username or email <input name="usernameOrEmail" required /></label>
+        <label>Password <input name="password" type="password" required /></label>
+        <button class="primary" type="submit">Sign in</button>
+        <p class="auth-msg" id="loginMsg"></p>
+    </form>
+
+    <form id="registerForm" class="auth-form">
+        <label>Username <input name="username" required minlength="2" maxlength="64" /></label>
+        <label>Email <input name="email" type="email" required /></label>
+        <label>Display name <input name="displayName" /></label>
+        <label>Password <input name="password" type="password" required minlength="6" /></label>
+        <button class="primary" type="submit">Create account</button>
+        <p class="auth-msg" id="registerMsg"></p>
+    </form>
+</section>
+@section Scripts {
+<script>
+    const tabs = document.querySelectorAll('.auth-tabs button');
+    const forms = { login: document.getElementById('loginForm'), register: document.getElementById('registerForm') };
+    tabs.forEach(t => t.addEventListener('click', () => {
+        tabs.forEach(x => x.classList.remove('active')); t.classList.add('active');
+        Object.values(forms).forEach(f => f.classList.remove('active'));
+        forms[t.dataset.tab].classList.add('active');
+    }));
+    function save(token, user) {
+        localStorage.setItem('baba_token', token);
+        localStorage.setItem('baba_user', JSON.stringify(user));
+    }
+    forms.login.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const fd = new FormData(forms.login);
+        const msg = document.getElementById('loginMsg'); msg.textContent = ''; msg.classList.remove('ok');
+        try {
+            const r = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.fromEntries(fd)) });
+            const data = await r.json();
+            if (!r.ok) throw new Error(data.error || 'Failed');
+            save(data.token, data.user);
+            msg.textContent = 'Welcome back!'; msg.classList.add('ok');
+            setTimeout(() => location.href = '/', 400);
+        } catch (err) { msg.textContent = err.message; }
+    });
+    forms.register.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const fd = new FormData(forms.register);
+        const msg = document.getElementById('registerMsg'); msg.textContent = ''; msg.classList.remove('ok');
+        try {
+            const r = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.fromEntries(fd)) });
+            const data = await r.json();
+            if (!r.ok) throw new Error(data.error || 'Failed');
+            save(data.token, data.user);
+            msg.textContent = 'Account created. BABA will remember you now.'; msg.classList.add('ok');
+            setTimeout(() => location.href = '/', 500);
+        } catch (err) { msg.textContent = err.message; }
+    });
+</script>
+}
