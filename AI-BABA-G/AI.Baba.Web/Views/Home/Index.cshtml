@@ -20,6 +20,7 @@
 <body>
     <!-- TOP NAV -->
     <nav class="top-nav">
+        <button class="menu-btn" id="menuLeftBtn" type="button" aria-label="Open avatar panel">☰</button>
         <div class="nav-brand"><span class="nav-icon">🌍</span> AI GUIDE</div>
         <div class="nav-center">
             <h1 class="main-title">AI BABA-G</h1>
@@ -33,8 +34,10 @@
             <span id="authPill" class="auth-pill"></span>
             <span class="lang-badge">🌐 EN</span>
             <button class="icon-btn" title="Settings" onclick="toggle3D()">⚙️</button>
+            <button class="menu-btn" id="menuRightBtn" type="button" aria-label="Open mindset panel">⚙</button>
         </div>
     </nav>
+    <div class="panel-backdrop" id="panelBackdrop"></div>
 
     <!-- MAIN LAYOUT -->
     <main class="app-grid">
