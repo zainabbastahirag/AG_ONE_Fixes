@@ -1,8 +1,8 @@
 // ═══════════════════════════════════════════════════════════════
 //  AI BABA-G — Frontend Logic (ES module)
-//  Integrates persistent memory, vector recall, SSE streaming,
-//  3D avatar with viseme lip-sync, custom personalities, and
-//  ChatGPT-style interrupt with the existing mystical UI.
+//  Persistent memory, vector recall, SSE streaming, 3D avatar with
+//  viseme lip-sync, custom personalities, and ChatGPT-style interrupt
+//  with the existing mystical UI.
 // ═══════════════════════════════════════════════════════════════
 import { Avatar3D } from './avatar.js';
 import { VoiceIO } from './voice.js';
@@ -19,7 +19,9 @@ const state = {
     avatar3d: null,
     voice: null,
     abortController: null,
-    isSpeakingTts: false,
+    inFlight: false,
+    voiceProfile: localStorage.getItem('baba_voice_profile') || 'guru',
+    autoSpeak: localStorage.getItem('baba_autospeak') !== '0',
 };
 
 function saveAuth() {
@@ -62,10 +64,27 @@ window.selectAvatar = function (el) {
     check.textContent = '✓';
     img.appendChild(check);
 
-    // update central avatar figure
-    const figureMap = { sage: '🧙‍♂️', philosopher: '🤔', healer: '🙏', elder: '👳', storyteller: '📖' };
+    const figureMap = {
+        sage: '🧙‍♂️', philosopher: '🤔', healer: '🙏', elder: '👳', storyteller: '📖',
+        designer: '🎨', developer: '💻', pm: '📋', marketing: '📣', sales: '💼', hr: '🤝',
+    };
     const fig = document.getElementById('avatarFigure');
     if (fig && !state.use3D) fig.textContent = figureMap[state.currentAvatar] || '🧙‍♂️';
+
+    // Map avatars → recommended voice profile (user can still override).
+    const profileMap = {
+        sage: 'guru', elder: 'guru', philosopher: 'expert', healer: 'gentle',
+        storyteller: 'expert', designer: 'gentle', developer: 'expert',
+        pm: 'expert', marketing: 'gentle', sales: 'expert', hr: 'gentle',
+    };
+    const sel = document.getElementById('voiceSelect');
+    if (sel && !sel.dataset.userPicked) {
+        const recommended = profileMap[state.currentAvatar];
+        if (recommended) {
+            sel.value = recommended;
+            state.voiceProfile = recommended;
+        }
+    }
 };
 
 window.selectMindset = function (el) {
@@ -85,41 +104,48 @@ window.selectMindset = function (el) {
 //  Voice (STT + TTS)
 // ───────────────────────────────────────────────────────────────
 function initVoice() {
+    if (state.voice) return;
     state.voice = new VoiceIO({
-        onPartial: (t) => { document.getElementById('chatInput').value = t; },
+        onPartial: (t) => {
+            const inp = document.getElementById('chatInput');
+            if (inp) inp.value = t;
+        },
         onFinal: (t) => {
-            document.getElementById('chatInput').value = t;
-            if (t.toLowerCase().includes('hey baba')) {
-                document.getElementById('chatInput').value = t.replace(/hey baba/gi, '').trim();
-            }
-            if (document.getElementById('chatInput').value.trim()) askBaba();
+            const inp = document.getElementById('chatInput');
+            if (!inp) return;
+            inp.value = t;
+            if (inp.value.trim()) askBaba();
         },
         onSpeakChunk: (chunk) => { state.avatar3d?.speakText(chunk); },
+        onSpeakingStart: () => {
+            // Visual cue that bot is now speaking; mic is auto-paused inside VoiceIO.
+            document.getElementById('listeningText')?.classList.remove('visible');
+        },
         onSpeakingDone: () => {
             showWave(false);
-            document.getElementById('listeningText').classList.remove('visible');
-            if (state.voice?.continuous) {
-                document.getElementById('listeningText').classList.add('visible');
+            if (state.voice?.continuous && !state.voice?.userMutedMic) {
+                document.getElementById('listeningText')?.classList.add('visible');
             }
         },
         getRate: () => parseFloat(document.getElementById('speedRange')?.value || '1'),
+        getProfile: () => state.voiceProfile,
     });
 }
 
 window.toggleVoice = function () {
-    if (!state.voice) initVoice();
+    initVoice();
     if (!state.voice.supported()) {
-        alert('Voice input not supported in this browser. Use Chrome.');
+        alert('Voice input is not supported in this browser. Please use Chrome, Edge, or Safari.');
         return;
     }
     if (state.voice.listening) {
         state.voice.stopListening();
-        document.getElementById('micBtn').classList.remove('recording');
-        document.getElementById('listeningText').classList.remove('visible');
+        document.getElementById('micBtn')?.classList.remove('recording');
+        document.getElementById('listeningText')?.classList.remove('visible');
     } else {
         state.voice.startListening();
-        document.getElementById('micBtn').classList.add('recording');
-        document.getElementById('listeningText').classList.add('visible');
+        document.getElementById('micBtn')?.classList.add('recording');
+        document.getElementById('listeningText')?.classList.add('visible');
         state.avatar3d?.setListening(true);
     }
 };
@@ -139,13 +165,17 @@ window.toggle3D = function () {
 };
 
 window.stopAll = function () {
-    if (state.abortController) { state.abortController.abort(); state.abortController = null; }
+    if (state.abortController) {
+        try { state.abortController.abort(); } catch (_) { }
+        state.abortController = null;
+    }
     state.voice?.stopSpeaking();
     state.avatar3d?.stopSpeaking();
     document.getElementById('avatarFigure')?.classList.remove('speaking');
     document.getElementById('askBtn').hidden = false;
     document.getElementById('stopBtn').hidden = true;
     showWave(false);
+    state.inFlight = false;
 };
 
 window.onInputKey = function (e) {
@@ -157,17 +187,21 @@ window.onInputKey = function (e) {
 //  Ask Baba  — chooses streaming SSE or legacy /api/ask
 // ───────────────────────────────────────────────────────────────
 async function askBaba() {
-    if (state.abortController) return;
-    if (!state.voice) initVoice();
+    if (state.inFlight) return;                 // hard guard against double-submits
+    initVoice();
     const input = document.getElementById('chatInput');
     const prompt = input.value.trim();
     if (!prompt) return;
 
     input.value = '';
-    showTypingDots();
-    showWave(true);
+    state.inFlight = true;
+
+    // Stop any in-flight TTS so the new question takes priority (interrupt).
     state.voice?.stopSpeaking();
     state.avatar3d?.stopSpeaking();
+
+    showTypingDots();
+    showWave(true);
 
     state.streaming = document.getElementById('streamMode')?.checked ?? true;
 
@@ -181,12 +215,16 @@ async function askBaba() {
             await legacyAsk(prompt);
         }
     } catch (err) {
-        if (err.name !== 'AbortError') {
+        if (err?.name !== 'AbortError') {
             console.error(err);
-            setBabaText('The connection to wisdom was lost. Please try again.');
+            const msg = String(err?.message || '').slice(0, 200);
+            setBabaText(msg
+                ? `I'm having trouble reaching the wisdom servers (${msg}). Please try again in a moment.`
+                : 'The connection to wisdom was lost. Please try again.');
         }
     } finally {
         state.abortController = null;
+        state.inFlight = false;
         document.getElementById('askBtn').hidden = false;
         document.getElementById('stopBtn').hidden = true;
         showWave(false);
@@ -203,12 +241,13 @@ async function legacyAsk(prompt) {
             mindset: state.currentMindset
         })
     });
-    const data = await res.json();
-    if (data.success) {
+    let data; try { data = await res.json(); } catch (_) { data = {}; }
+    if (res.ok && data.success) {
         setBabaText(data.response);
-        state.voice?.speak(data.response);
+        if (state.autoSpeak) state.voice?.speak(data.response);
     } else {
-        setBabaText('Something went wrong... try again, seeker.');
+        const err = data?.error || `Server returned ${res.status}.`;
+        setBabaText(err);
     }
 }
 
@@ -223,12 +262,27 @@ async function streamingAsk(prompt) {
     const headers = { 'Content-Type': 'application/json' };
     if (state.token) headers['Authorization'] = 'Bearer ' + state.token;
 
-    // Show typing dots immediately so the user sees instant activity.
     showTypingDots();
 
-    const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal: state.abortController.signal });
+    let res;
+    try {
+        res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal: state.abortController.signal });
+    } catch (e) {
+        if (e?.name === 'AbortError') return;
+        setBabaText('Could not reach the server. Please check your connection and try again.');
+        return;
+    }
+
     if (!res.ok || !res.body) {
-        setBabaText(`Connection failed (${res.status}).`);
+        // Try to surface a friendly error from JSON-shaped responses.
+        let friendly = `Connection failed (${res.status}).`;
+        try {
+            const j = await res.clone().json();
+            if (j?.error) friendly = j.error;
+        } catch (_) { }
+        if (res.status === 429) friendly = 'You\'re asking very quickly. Please wait a moment and try again.';
+        if (res.status === 503) friendly = 'The service is starting up. Please try again in a few seconds.';
+        setBabaText(friendly);
         return;
     }
 
@@ -253,7 +307,7 @@ async function streamingAsk(prompt) {
             }
             data = data.replace(/\\n/g, '\n');
             if (evt === 'ack') {
-                showTypingDots(); // server confirmed it's working on it
+                showTypingDots();
             } else if (evt === 'token') {
                 if (firstToken) {
                     firstToken = false;
@@ -262,7 +316,8 @@ async function streamingAsk(prompt) {
                 }
                 full += data;
                 babaTextEl.textContent = full;
-                state.voice?.pushStreamingText(data);
+                scrollBubbleToEnd();
+                if (state.autoSpeak) state.voice?.pushStreamingText(data);
             } else if (evt === 'meta') {
                 try { const m = JSON.parse(data); if (m.conversationId) { state.conversationId = m.conversationId; loadConversations(); } } catch (_) { }
             } else if (evt === 'error') {
@@ -271,7 +326,7 @@ async function streamingAsk(prompt) {
         }
     }
     babaTextEl.classList.remove('cursor-blink');
-    state.voice?.flushStreaming();
+    if (state.autoSpeak) state.voice?.flushStreaming();
 }
 
 function showTypingDots() {
@@ -280,12 +335,19 @@ function showTypingDots() {
     el.innerHTML = '<span class="typing-dots"><span></span><span></span><span></span></span>';
 }
 
+function scrollBubbleToEnd() {
+    const bubble = document.getElementById('speechBubble');
+    if (!bubble) return;
+    bubble.scrollTop = bubble.scrollHeight;
+}
+
 // ───────────────────────────────────────────────────────────────
 //  UI helpers
 // ───────────────────────────────────────────────────────────────
 function setBabaText(text) {
     const el = document.getElementById('babaText');
     if (el) { el.classList.remove('cursor-blink'); el.textContent = text; }
+    scrollBubbleToEnd();
 }
 
 function showWave(show) {
@@ -392,14 +454,27 @@ function wireTopicTags() {
 }
 
 document.getElementById('speedRange')?.addEventListener('input', (e) => {
-    document.getElementById('speedVal').textContent = parseFloat(e.target.value).toFixed(1) + 'x';
+    const v = parseFloat(e.target.value).toFixed(1);
+    const el = document.getElementById('speedVal');
+    if (el) el.textContent = v + 'x';
 });
 
 document.getElementById('continuousMode')?.addEventListener('change', (e) => {
-    if (!state.voice) initVoice();
-    state.voice.setContinuous(e.target.checked);
-    if (e.target.checked) document.getElementById('listeningText').classList.add('visible');
-    else document.getElementById('listeningText').classList.remove('visible');
+    initVoice();
+    state.voice.setContinuous(e.target.checked, { wakeWord: false });
+    document.getElementById('listeningText')?.classList.toggle('visible', !!e.target.checked);
+});
+
+document.getElementById('voiceSelect')?.addEventListener('change', (e) => {
+    state.voiceProfile = e.target.value;
+    e.target.dataset.userPicked = '1';
+    localStorage.setItem('baba_voice_profile', state.voiceProfile);
+});
+
+document.getElementById('autoSpeak')?.addEventListener('change', (e) => {
+    state.autoSpeak = !!e.target.checked;
+    localStorage.setItem('baba_autospeak', state.autoSpeak ? '1' : '0');
+    if (!state.autoSpeak) state.voice?.stopSpeaking();
 });
 
 document.getElementById('newChatBtn')?.addEventListener('click', () => {
@@ -428,7 +503,6 @@ function setupMobileDrawers() {
         backdrop?.classList.toggle('open', right?.classList.contains('open'));
     });
     backdrop?.addEventListener('click', closeAll);
-    // Close drawer after picking a card on mobile
     [left, right].forEach(p => p?.addEventListener('click', e => {
         const card = e.target.closest('.avatar-card, .mindset-card, #newChatBtn, .conv-list li:not(.conv-empty)');
         if (card && window.matchMedia('(max-width: 900px)').matches) closeAll();
@@ -440,6 +514,7 @@ function setupMobileDrawers() {
 // ───────────────────────────────────────────────────────────────
 window.addEventListener('load', () => {
     if ('speechSynthesis' in window) {
+        // Trigger voice list population (Chrome lazy-loads on demand).
         window.speechSynthesis.getVoices();
         window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
     }
@@ -448,4 +523,10 @@ window.addEventListener('load', () => {
     renderAuthPill();
     loadConversations();
     setupMobileDrawers();
+
+    // Restore persisted UI prefs
+    const sel = document.getElementById('voiceSelect');
+    if (sel && state.voiceProfile) sel.value = state.voiceProfile;
+    const auto = document.getElementById('autoSpeak');
+    if (auto) auto.checked = state.autoSpeak;
 });
