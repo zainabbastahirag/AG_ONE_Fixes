@@ -190,8 +190,21 @@ export class VoiceIO {
 
         while (true) {
             const text = this._buffer;
-            // Match end-of-sentence (., !, ?, newline, paragraph break).
-            const m = /[.!?\n](?:\s|$)/.exec(text);
+            // End-of-sentence with a trailing whitespace OR end-of-string.
+            // We also accept `.`, `?`, `!` immediately followed by a capital
+            // letter (the no-space-between-sentences case that arises if an
+            // upstream parser dropped spaces).
+            let m = /[.!?\n](?:\s|$)/.exec(text);
+            if (!m) {
+                m = /[.!?]([A-Z])/.exec(text);
+                if (m) {
+                    const cut = m.index + 1;
+                    const sentence = text.slice(0, cut).trim();
+                    this._buffer = text.slice(cut);
+                    if (sentence) this._enqueue(sentence);
+                    continue;
+                }
+            }
             if (!m) {
                 // Failsafe: if the buffer grows huge without a terminator,
                 // flush at the next clause boundary so we don't hold forever.
@@ -202,6 +215,16 @@ export class VoiceIO {
                         this._buffer = text.slice(c + 1);
                         if (clause) this._enqueue(clause);
                         continue;
+                    }
+                    // Hard fallback: split on a space near 180 chars.
+                    if (text.length > 320) {
+                        const sp = text.lastIndexOf(' ', 220);
+                        if (sp > 80) {
+                            const piece = text.slice(0, sp).trim();
+                            this._buffer = text.slice(sp + 1);
+                            if (piece) this._enqueue(piece);
+                            continue;
+                        }
                     }
                 }
                 break;

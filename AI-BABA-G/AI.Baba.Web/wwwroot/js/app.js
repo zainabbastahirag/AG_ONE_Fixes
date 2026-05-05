@@ -308,18 +308,39 @@ async function streamingAsk(prompt) {
         });
     };
 
-    while (true) {
-        const { value, done } = await reader.read();
+    let serverDone = false;
+    while (!serverDone) {
+        let chunk;
+        try {
+            chunk = await reader.read();
+        } catch (e) {
+            if (e?.name === 'AbortError') break;
+            throw e;
+        }
+        const { value, done } = chunk;
         if (done) break;
         buf += decoder.decode(value, { stream: true });
         let idx;
         while ((idx = buf.indexOf('\n\n')) >= 0) {
             const block = buf.slice(0, idx); buf = buf.slice(idx + 2);
-            let evt = 'message', data = '';
+            let evt = 'message', dataLines = [];
             for (const line of block.split('\n')) {
-                if (line.startsWith('event:')) evt = line.slice(6).trim();
-                else if (line.startsWith('data:')) data += line.slice(5).trimStart();
+                if (line.startsWith('event:')) {
+                    // 'event:' field — trim a single optional leading space + trailing CR
+                    evt = line.slice(6).replace(/^ /, '').replace(/\r$/, '');
+                } else if (line.startsWith('data:')) {
+                    // 'data:' field — per the SSE spec strip EXACTLY ONE leading space.
+                    // (The previous code used trimStart() which ate every leading space,
+                    // welding tokens like ' the' / ' however' / a literal ' ' to the
+                    // previous word and producing 'That'sverykindofyou,butIdon't...'.)
+                    let v = line.slice(5);
+                    if (v.startsWith(' ')) v = v.slice(1);
+                    if (v.endsWith('\r')) v = v.slice(0, -1);
+                    dataLines.push(v);
+                }
             }
+            // Per spec: when multiple 'data:' lines appear in one event, join with '\n'.
+            let data = dataLines.join('\n');
             data = data.replace(/\\n/g, '\n');
             if (evt === 'ack') {
                 showTypingDots();
@@ -350,6 +371,10 @@ async function streamingAsk(prompt) {
                 try { const m = JSON.parse(data); if (m.conversationId) { state.conversationId = m.conversationId; loadConversations(); } } catch (_) { }
             } else if (evt === 'error') {
                 full += `\n\n_[error: ${data}]_`; scheduleRender();
+            } else if (evt === 'done') {
+                serverDone = true;
+                try { reader.cancel(); } catch (_) { }
+                break;
             }
         }
     }
