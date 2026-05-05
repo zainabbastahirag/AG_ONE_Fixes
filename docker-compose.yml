@@ -1,6 +1,6 @@
 version: "3.9"
 
-# Run BABA + Ollama together. The portal connects to the Ollama container by name.
+# Run AI BABA-G + Ollama together. The portal connects to the Ollama container by name.
 services:
   ollama:
     image: ollama/ollama:latest

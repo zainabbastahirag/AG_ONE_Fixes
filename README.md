@@ -1,43 +1,41 @@
-# BABA · AI Fun Portal
+# AI BABA-G — Memory-Aware Mystical AI Companion
 
-> A memory-aware AI companion with a 3D lip-syncing avatar, persistent SQLite memory, vector recall, custom personalities, voice interruption, and real-time streaming chat.
+> An optimization rebuild of the existing **AI-BABA-G** portal (in `AI-BABA-G/AI.Baba.Web/`). Adds persistent SQLite memory, vector recall, real-time SSE streaming, custom personalities, an avatar marketplace, and an optional 3D Three.js avatar with viseme lip-sync — all on top of the original gold/dark mystical UI.
 
-This is a full optimization rebuild of the BABA Fun Portal. It is designed around the constraints you listed:
+## Highlights
 
-- **Persistent DB memory** — everything lives in SQLite via EF Core. Tables auto-create on startup. No data is held in server RAM.
-- **Vector memory** — every memory is embedded (Ollama embedding model when available, deterministic local fallback otherwise) and recalled by cosine similarity.
-- **"BABA remembers everything you said"** — facts, preferences, events, summaries are stored per-user. Conversation history is also persisted.
-- **Sign-up gate** — guests get a stateless chat. Memory, saved conversations, custom personalities, and avatars are unlocked by registering.
-- **Memory-aware Ollama prompt** — top-K relevant memories are injected into the system prompt before each generation, so BABA "feels" like it knows you.
-- **Personality adoption** — switch between presets (Classic, Wise Guru, Hype Buddy, Tech Tutor, Stand-up) or build your own.
-- **Quick responses** — answers stream token-by-token via Server-Sent Events, so the UI feels live.
-- **Real 3D avatar with lip sync** — Three.js robot with viseme-driven mouth shapes, blinking, idle bob, listening pulse, and emotional tilt.
-- **Voice in & out** — Web Speech API for STT, browser SpeechSynthesis for TTS, with a continuous-conversation toggle and ChatGPT-style interrupt (Esc, or just speak over BABA).
-- **User-created personalities + avatars** — including photo-based billboard avatars from your own picture, GLB model URLs, and color-themed robots.
-- **Scalability** — async streaming, indexed SQLite queries, IP rate-limiting, Docker-ready.
+- **Persistent SQLite memory** via EF Core (`AI.Baba.Web/Data/BabaDbContext.cs`). Tables auto-create at startup. Server RAM stays low — long-term state lives on disk.
+- **Vector recall** — every memory is embedded (Ollama `nomic-embed-text` when available, deterministic local fallback otherwise) and recalled by cosine similarity weighted by importance and recency.
+- **Memory-aware Ollama prompt** — top-K relevant memories are injected silently into the system prompt before each generation, so BABA "feels" like it knows you.
+- **Sign-up gate** — guests still get a beautiful chat (legacy `/api/ask` endpoint preserved). Persistent memory, saved chats, custom personalities, and custom avatars unlock by registering.
+- **Real-time SSE streaming** chat (`/api/chat/stream` and `/api/chat/guest/stream`) for ChatGPT-like token-by-token delivery.
+- **3D viseme avatar** — toggle the "robot avatar" switch in settings to swap the emoji for a Three.js robot with phoneme-driven mouth shapes, blink, idle motion, and listening pulse. Photo billboards from your own picture and GLB model URLs are also supported.
+- **Voice in & out + interrupt** — Web Speech API for STT, browser TTS, continuous-conversation mode, and ChatGPT-style interrupt with **Esc** or **Stop** button.
+- **5 preset personalities** (The Sage, The Philosopher, The Healer, The Elder, The Storyteller) plus a custom personality builder. Each maps to a preferred avatar and mindset.
+- **5 preset avatars** (the original mystical emoji line-up) + the 3D Robot, plus a creator for emoji / 3D / photo / GLB.
 - **Pages** — Chat, Auth, Memory, Personalities, Avatars, About, Terms.
+- **Scalable** — async streaming end-to-end, indexed SQLite queries, IP rate limiting, Docker-ready, drop-in PostgreSQL upgrade path (`UseSqlite` → `UseNpgsql`).
 
 ## Quick start
 
-### Option A — local dotnet
+### Local dotnet
 
 ```bash
-# install Ollama and pull models (one-time)
+# install Ollama (one-time)
 curl -fsSL https://ollama.com/install.sh | sh
 ollama pull llama3.2
 ollama pull nomic-embed-text
 
-cd src/BabaPortal.Api
+cd AI-BABA-G/AI.Baba.Web
 dotnet run --urls=http://0.0.0.0:5099
 ```
 
-Open http://localhost:5099 — sign up, then chat.
+Open http://localhost:5099. The mystical chat page loads as guest. Click the **Sign in / up** pill in the top-right to register.
 
-### Option B — Docker compose (BABA + Ollama)
+### Docker compose (BABA + Ollama in one stack)
 
 ```bash
 docker compose up --build
-# in another terminal, pull models inside the ollama container
 docker compose exec ollama ollama pull llama3.2
 docker compose exec ollama ollama pull nomic-embed-text
 ```
@@ -46,7 +44,7 @@ Open http://localhost:8080.
 
 ## Configuration
 
-`src/BabaPortal.Api/appsettings.json` (override in env vars with `__`):
+`AI-BABA-G/AI.Baba.Web/appsettings.json` (override with env vars using `__`):
 
 | Key | Default | Notes |
 |-----|---------|-------|
@@ -55,33 +53,76 @@ Open http://localhost:8080.
 | `Ollama:BaseUrl` | `http://localhost:11434` | Ollama API endpoint |
 | `Ollama:ChatModel` | `llama3.2` | Any chat model you've pulled |
 | `Ollama:EmbeddingModel` | `nomic-embed-text` | Falls back to local hash embeddings if missing |
-| `IpRateLimiting.GeneralRules` | guest 20/min, chat 60/min, auth 30/min | Tune for scale |
+| `IpRateLimiting.GeneralRules` | guest 20/min, chat 60/min, auth 30/min, ask 60/min | Tune for scale |
 
 ## Architecture
 
 ```
 Browser
- ├── Three.js avatar (viseme lip-sync, blink, idle, emotion)
+ ├── Existing mystical UI (gold/dark, Cinzel font, 5 emoji avatars + 5 mindsets)
+ ├── Optional Three.js avatar (viseme lip-sync, blink, listening pulse)
  ├── Web Speech STT  ──► sends user text
  ├── SpeechSynthesis TTS ◄── streams sentence-by-sentence from BABA
  └── SSE client       ◄── streams tokens from /api/chat/stream
 
-ASP.NET Core 8 API
+ASP.NET Core 8 API (single project: AI-BABA-G/AI.Baba.Web/)
  ├── /api/auth (register, login, me)            JWT
  ├── /api/chat/stream  (SSE, authed, memory-aware)
  ├── /api/chat/guest/stream  (SSE, no memory)
+ ├── /api/ask  (legacy, kept for backward compatibility)
  ├── /api/memory  (list, add, recall, delete)   vector recall
  ├── /api/personalities  (CRUD, presets + custom)
  └── /api/avatars  (CRUD, presets + custom)
 
-EF Core ──► SQLite (single file, auto-migrated on startup)
- ├── Users, Conversations, Messages
- ├── MemoryEntries (with embedding bytes)
- ├── Personalities, Avatars
+EF Core ──► SQLite (single file, auto-created on startup)
+ ├── Users, Conversations, ChatMessages
+ ├── MemoryEntries (with embedding bytes + dim)
+ └── Personalities, Avatars
 
 Ollama (external service)
  ├── /api/chat        (streaming chat completions)
  └── /api/embeddings  (nomic-embed-text by default)
+```
+
+## File map
+
+```
+AI-BABA-G/AI.Baba.Web/
+  Program.cs                       # DI, JWT, CORS, rate limit, EnsureCreated, seed presets
+  AI.Baba.Web.csproj               # net8.0 with EF Core / JWT / BCrypt / RateLimit deps
+  Models/
+    ChatModels.cs                  # AskRequest/AskResponse/UserMemory + new DTOs
+    Entities.cs                    # User, Conversation, ChatMessage, MemoryEntry, Personality, Avatar
+  Data/BabaDbContext.cs            # EF Core ctx + indices
+  Services/
+    AuthService.cs                 # JWT + BCrypt
+    EmbeddingService.cs            # Ollama embeddings + local hash fallback
+    MemoryService.cs               # legacy session memory + persistent vector memory
+    OllamaService.cs               # legacy Generate + new streaming chat
+  Controllers/
+    HomeController.cs              # Index, Auth, Memory, Personalities, Avatars, About, Terms
+    ApiController.cs               # legacy /api/ask, now memory-aware when authed
+    AuthController.cs              # register, login, me
+    ChatController.cs              # SSE stream for guest + authed, conversation CRUD
+    MemoryController.cs            # list/add/recall/delete
+    PersonalityController.cs
+    AvatarController.cs
+  Views/
+    Home/Index.cshtml              # original mystical UI + new auth pill, conv list, 3D toggle, footer links
+    Home/Auth.cshtml               # sign in / sign up
+    Home/Memory.cshtml             # add/list/delete persistent memories
+    Home/Personalities.cshtml      # preset + custom personality cards
+    Home/Avatars.cshtml            # marketplace + creator (emoji/robot/photo/glb)
+    Home/About.cshtml              # explains memory model & privacy
+    Home/Terms.cshtml              # T&Cs
+    Shared/_PortalLayout.cshtml    # shared layout for the new pages
+  wwwroot/
+    css/site.css                   # original gold theme + portal additions
+    js/app.js                      # ES module: SSE streaming, auth, conv history, interrupt
+    js/avatar.js                   # Three.js avatar with viseme lip-sync
+    js/voice.js                    # Web Speech STT + TTS with sentence buffering
+Dockerfile
+docker-compose.yml                 # BABA + Ollama
 ```
 
 ## Memory model
@@ -104,28 +145,9 @@ Memories that match get their `LastUsedAt` and `UseCount` bumped, so frequently 
 
 ## Voice & lip-sync
 
-The frontend pushes the streaming text to two consumers in parallel:
+The frontend pushes streaming text to two consumers in parallel:
 
-1. **The visible text bubble** (immediate display).
-2. **The voice/avatar pipeline** — characters are mapped to phoneme groups (`aa`, `e`, `i`, `o`, `u`, `pp`, `ff`, `ss`, …), each with a target mouth-open value. The avatar consumes that schedule at ~16ms ticks. When the streamed sentence ends with `.`/`!`/`?`/`\n`, the sentence is queued into `SpeechSynthesis` for natural TTS.
+1. **The speech bubble** (immediate display).
+2. **The voice/avatar pipeline** — characters are mapped to phoneme groups (`aa`, `e`, `i`, `o`, `u`, `pp`, `ff`, `ss`, …), each with a target mouth-open value. The Three.js avatar consumes that schedule at ~16 ms ticks. When the streamed sentence ends with `.`/`!`/`?`/`\n`, the sentence is queued into `SpeechSynthesis` for natural TTS.
 
 ChatGPT-style interrupt: pressing **Esc**, clicking **Stop**, or **speaking over BABA** while continuous mode is on cancels both the SSE stream and the active TTS utterance.
-
-## Pages
-
-- `#chat` — main interactive page with avatar, sidebar, composer.
-- `#auth` — sign in / sign up tabs.
-- `#memory` — list, add, and delete memories.
-- `#personalities` — preset + custom personality cards, system-prompt editor.
-- `#avatars` — marketplace + creator (robot color, photo billboard, GLB URL).
-- `#about` — explains BABA, memory model, privacy.
-- `#terms` — terms & conditions.
-
-## Notes & roadmap
-
-The rendering pipeline is intentionally pluggable so future upgrades fit cleanly:
-
-- **Custom voice cloning** slot exists in the personality `Voice` field; wire it to a TTS service (e.g. Coqui XTTS) by extending `VoiceIO._enqueue`.
-- **Photo→3D avatar**: `Avatar.setAvatar({kind:'photo', imageUrl})` already works as a billboard; replace with a face-mesh reconstruction pipeline (e.g. PIFu / DECA) when needed.
-- **GLB blendshape lip-sync**: `_buildGlb` loads the model; once a GLB has ARKit blendshapes, swap `mouth.scale.y` for `morphTargetInfluences`.
-- **Multi-tenant scale-out**: SQLite is durable up to thousands of concurrent users when run on SSD with WAL; for higher scale, swap `UseSqlite` for `UseNpgsql` — the EF model and queries are unchanged.
