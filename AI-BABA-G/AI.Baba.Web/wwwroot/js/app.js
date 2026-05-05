@@ -6,6 +6,7 @@
 // ═══════════════════════════════════════════════════════════════
 import { Avatar3D } from './avatar.js';
 import { VoiceIO } from './voice.js';
+import { renderMarkdown, plainText } from './format.js';
 
 const state = {
     currentAvatar: 'sage',
@@ -243,8 +244,8 @@ async function legacyAsk(prompt) {
     });
     let data; try { data = await res.json(); } catch (_) { data = {}; }
     if (res.ok && data.success) {
-        setBabaText(data.response);
-        if (state.autoSpeak) state.voice?.speak(data.response);
+        setBabaMarkdown(data.response);
+        if (state.autoSpeak) state.voice?.speak(plainText(data.response));
     } else {
         const err = data?.error || `Server returned ${res.status}.`;
         setBabaText(err);
@@ -292,7 +293,21 @@ async function streamingAsk(prompt) {
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
     let buf = '';
-    let full = '';
+    let full = '';            // raw markdown accumulated
+    let spokenSoFar = '';     // plain text already pushed to TTS
+
+    let renderScheduled = false;
+    const scheduleRender = () => {
+        if (renderScheduled) return;
+        renderScheduled = true;
+        requestAnimationFrame(() => {
+            renderScheduled = false;
+            babaTextEl.innerHTML = renderMarkdown(full);
+            babaTextEl.classList.add('cursor-blink');
+            scrollBubbleToEnd();
+        });
+    };
+
     while (true) {
         const { value, done } = await reader.read();
         if (done) break;
@@ -311,21 +326,37 @@ async function streamingAsk(prompt) {
             } else if (evt === 'token') {
                 if (firstToken) {
                     firstToken = false;
-                    setBabaText('');
-                    babaTextEl.classList.add('cursor-blink');
+                    babaTextEl.innerHTML = '';
+                    babaTextEl.classList.add('formatted');
                 }
                 full += data;
-                babaTextEl.textContent = full;
-                scrollBubbleToEnd();
-                if (state.autoSpeak) state.voice?.pushStreamingText(data);
+                scheduleRender();
+
+                if (state.autoSpeak) {
+                    // Feed the TTS only NEW plain-text since last push, so it
+                    // never speaks markdown punctuation like '**', '###', '`'.
+                    const plainAll = plainText(full);
+                    if (plainAll.length > spokenSoFar.length && plainAll.startsWith(spokenSoFar)) {
+                        const delta = plainAll.slice(spokenSoFar.length);
+                        spokenSoFar = plainAll;
+                        if (delta) state.voice?.pushStreamingText(delta);
+                    } else if (plainAll !== spokenSoFar) {
+                        // Rare: plainText collapsed earlier whitespace; resync
+                        // without re-speaking what we already spoke.
+                        spokenSoFar = plainAll;
+                    }
+                }
             } else if (evt === 'meta') {
                 try { const m = JSON.parse(data); if (m.conversationId) { state.conversationId = m.conversationId; loadConversations(); } } catch (_) { }
             } else if (evt === 'error') {
-                full += `\n[error: ${data}]`; babaTextEl.textContent = full;
+                full += `\n\n_[error: ${data}]_`; scheduleRender();
             }
         }
     }
+    // Final render without the typing cursor.
+    babaTextEl.innerHTML = renderMarkdown(full) || babaTextEl.innerHTML;
     babaTextEl.classList.remove('cursor-blink');
+    scrollBubbleToEnd();
     if (state.autoSpeak) state.voice?.flushStreaming();
 }
 
@@ -346,7 +377,20 @@ function scrollBubbleToEnd() {
 // ───────────────────────────────────────────────────────────────
 function setBabaText(text) {
     const el = document.getElementById('babaText');
-    if (el) { el.classList.remove('cursor-blink'); el.textContent = text; }
+    if (el) {
+        el.classList.remove('cursor-blink', 'formatted');
+        el.textContent = text;
+    }
+    scrollBubbleToEnd();
+}
+
+function setBabaMarkdown(text) {
+    const el = document.getElementById('babaText');
+    if (el) {
+        el.classList.remove('cursor-blink');
+        el.innerHTML = renderMarkdown(text);
+        el.classList.add('formatted');
+    }
     scrollBubbleToEnd();
 }
 
@@ -435,7 +479,8 @@ async function loadConversation(id) {
             if (card) window.selectMindset(card);
         }
         const last = c.messages?.[c.messages.length - 1];
-        setBabaText(last?.role === 'assistant' ? last.content : 'Continuing our conversation, seeker...');
+        if (last?.role === 'assistant') setBabaMarkdown(last.content);
+        else setBabaText('Continuing our conversation, seeker...');
         loadConversations();
     } catch (e) { console.warn(e); }
 }
