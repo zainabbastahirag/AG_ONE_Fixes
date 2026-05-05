@@ -12,11 +12,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddHttpClient();
 
-// ── DB (auto-creates on startup) ─────────────────────────────────────────
+// ── DB: SQL Server with EF Core (auto-migrates on startup) ──────────────
+var sqlConn = builder.Configuration.GetConnectionString("BabaDb")
+    ?? builder.Configuration["Database:ConnectionString"]
+    ?? "Server=(localdb)\\MSSQLLocalDB;Database=AIBabaG;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=True";
 builder.Services.AddDbContext<BabaDbContext>(opt =>
 {
-    var path = builder.Configuration["Database:Path"] ?? Path.Combine(AppContext.BaseDirectory, "baba.db");
-    opt.UseSqlite($"Data Source={path};Cache=Shared;Pooling=True");
+    opt.UseSqlServer(sqlConn, sql =>
+    {
+        sql.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(8), errorNumbersToAdd: null);
+        sql.CommandTimeout(60);
+    });
 });
 
 // ── Services ─────────────────────────────────────────────────────────────
@@ -63,18 +69,65 @@ builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>()
 
 var app = builder.Build();
 
-// ── Auto-create DB & seed presets ────────────────────────────────────────
-using (var scope = app.Services.CreateScope())
+// ── Auto-create / migrate DB & seed presets in the background ───────────
+//   Runs migrations the moment SQL Server becomes reachable. The web host
+//   keeps serving (static pages work without the DB; API calls that need
+//   the DB will simply return a clean error until migrations finish).
+_ = Task.Run(async () =>
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<BabaDbContext>();
-    db.Database.EnsureCreated();
-    SeedPresets(db);
-}
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    var attempts = 0;
+    while (true)
+    {
+        try
+        {
+            if (db.Database.GetMigrations().Any())
+                await db.Database.MigrateAsync();
+            else
+                await db.Database.EnsureCreatedAsync();
+            SeedPresets(db);
+            logger.LogInformation("Database ready and seeded.");
+            return;
+        }
+        catch (Exception ex)
+        {
+            attempts++;
+            var wait = TimeSpan.FromSeconds(Math.Min(30, Math.Pow(2, attempts)));
+            logger.LogWarning("Database not ready ({Msg}); retry {N} in {S}s.", ex.Message, attempts, wait.TotalSeconds);
+            await Task.Delay(wait);
+        }
+    }
+});
 
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
 }
+
+// Friendly JSON error for unhandled API exceptions (e.g. database not yet up).
+app.Use(async (ctx, next) =>
+{
+    try { await next(); }
+    catch (Exception ex)
+    {
+        var log = ctx.RequestServices.GetRequiredService<ILogger<Program>>();
+        log.LogError(ex, "Unhandled error on {Path}", ctx.Request.Path);
+        if (ctx.Request.Path.StartsWithSegments("/api") && !ctx.Response.HasStarted)
+        {
+            ctx.Response.StatusCode = 503;
+            ctx.Response.ContentType = "application/json";
+            await ctx.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new
+            {
+                error = "Service temporarily unavailable. The database may still be starting up.",
+                detail = ex.GetType().Name
+            }));
+            return;
+        }
+        throw;
+    }
+});
 
 app.UseStaticFiles();
 app.UseRouting();

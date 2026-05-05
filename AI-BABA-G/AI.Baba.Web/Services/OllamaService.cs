@@ -21,6 +21,9 @@ public class OllamaService
 
     public string BaseUrl => _config["Ollama:BaseUrl"] ?? "http://localhost:11434";
     public string ChatModel => _config["Ollama:ChatModel"] ?? _config["Ollama:Model"] ?? "llama3.2";
+    public string KeepAlive => _config["Ollama:KeepAlive"] ?? "30m";
+    public int NumPredict => int.TryParse(_config["Ollama:NumPredict"], out var n) ? n : 220;
+    public double Temperature => double.TryParse(_config["Ollama:Temperature"], out var t) ? t : 0.7;
 
     /// Legacy non-streaming generate kept for /api/ask compatibility.
     public async Task<string> GenerateAsync(string systemPrompt, string userPrompt, CancellationToken ct = default)
@@ -36,7 +39,8 @@ public class OllamaService
                 system = systemPrompt,
                 prompt = userPrompt,
                 stream = false,
-                options = new { temperature = 0.7, top_p = 0.9, num_predict = 300 }
+                keep_alive = KeepAlive,
+                options = new { temperature = Temperature, top_p = 0.9, num_predict = NumPredict, num_ctx = 2048 }
             };
 
             var response = await client.PostAsync(
@@ -73,8 +77,9 @@ public class OllamaService
         {
             model = model ?? ChatModel,
             stream = true,
+            keep_alive = KeepAlive,
             messages = messages.Select(m => new { role = m.Role, content = m.Content }).ToArray(),
-            options = new { temperature = 0.7, num_predict = 512 }
+            options = new { temperature = Temperature, num_predict = NumPredict, top_p = 0.9, num_ctx = 2048 }
         };
 
         var (resp, stream, errorMessage) = await TryOpenStreamAsync(body, ct);

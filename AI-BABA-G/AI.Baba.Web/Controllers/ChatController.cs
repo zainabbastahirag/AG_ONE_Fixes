@@ -30,6 +30,7 @@ public class ChatController : ControllerBase
     public async Task GuestStream([FromBody] GuestStreamChatRequest req, CancellationToken ct)
     {
         await PrepareSseAsync();
+        await SendSseAsync("ack", "thinking"); // instant feedback for the UI
         var sysPrompt = await ResolvePersonalityPromptAsync(req.PersonalityId, req.Avatar, req.Mindset, userName: null, history: string.Empty, ct);
         sysPrompt += "\n\nNOTE: this user is a guest and is NOT signed in, so you have no long-term memory of them. Gently invite them to sign up if they ask you to remember anything.";
 
@@ -47,6 +48,7 @@ public class ChatController : ControllerBase
     public async Task Stream([FromBody] StreamChatRequest req, CancellationToken ct)
     {
         await PrepareSseAsync();
+        await SendSseAsync("ack", "thinking"); // instant feedback for the UI
         var userId = GetUserId();
         if (userId is null) { Response.StatusCode = StatusCodes.Status401Unauthorized; return; }
 
@@ -174,8 +176,12 @@ public class ChatController : ControllerBase
     private async Task PrepareSseAsync()
     {
         Response.Headers.Append("Content-Type", "text/event-stream");
-        Response.Headers.Append("Cache-Control", "no-cache");
+        Response.Headers.Append("Cache-Control", "no-cache, no-transform");
         Response.Headers.Append("X-Accel-Buffering", "no");
+        Response.Headers.Append("Connection", "keep-alive");
+        // Disable response buffering so each chunk reaches the client immediately.
+        var feature = HttpContext.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpResponseBodyFeature>();
+        feature?.DisableBuffering();
         await Response.Body.FlushAsync();
     }
 
