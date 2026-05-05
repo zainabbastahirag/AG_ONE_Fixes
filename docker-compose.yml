@@ -1,0 +1,31 @@
+version: "3.9"
+
+# Run BABA + Ollama together. The portal connects to the Ollama container by name.
+services:
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    restart: unless-stopped
+
+  baba:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      Ollama__BaseUrl: http://ollama:11434
+      Ollama__ChatModel: llama3.2
+      Ollama__EmbeddingModel: nomic-embed-text
+      Database__Path: /data/baba.db
+      Jwt__Key: change_me_to_a_long_random_string_at_least_32_characters_long
+    volumes:
+      - baba_data:/data
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+volumes:
+  ollama:
+  baba_data:
