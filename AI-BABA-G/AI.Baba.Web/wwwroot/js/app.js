@@ -5,8 +5,9 @@
 //  with the existing mystical UI.
 // ═══════════════════════════════════════════════════════════════
 import { Avatar3D } from './avatar.js';
-import { VoiceIO } from './voice.js';
+import { VoiceIO, unlockTTS } from './voice.js';
 import { renderMarkdown, plainText } from './format.js';
+import { initWorkspaces, setWorkspace, workspaceForAvatar } from './workspaces.js';
 
 const state = {
     currentAvatar: 'sage',
@@ -68,6 +69,7 @@ window.selectAvatar = function (el) {
     const figureMap = {
         sage: '🧙‍♂️', philosopher: '🤔', healer: '🙏', elder: '👳', storyteller: '📖',
         designer: '🎨', developer: '💻', pm: '📋', marketing: '📣', sales: '💼', hr: '🤝',
+        astrologer: '🔮',
     };
     const fig = document.getElementById('avatarFigure');
     if (fig && !state.use3D) fig.textContent = figureMap[state.currentAvatar] || '🧙‍♂️';
@@ -77,6 +79,7 @@ window.selectAvatar = function (el) {
         sage: 'guru', elder: 'guru', philosopher: 'expert', healer: 'gentle',
         storyteller: 'expert', designer: 'gentle', developer: 'expert',
         pm: 'expert', marketing: 'gentle', sales: 'expert', hr: 'gentle',
+        astrologer: 'guru',
     };
     const sel = document.getElementById('voiceSelect');
     if (sel && !sel.dataset.userPicked) {
@@ -86,6 +89,9 @@ window.selectAvatar = function (el) {
             state.voiceProfile = recommended;
         }
     }
+
+    // Swap the workspace below the bubble to match the role.
+    setWorkspace(workspaceForAvatar(state.currentAvatar));
 };
 
 window.selectMindset = function (el) {
@@ -119,7 +125,6 @@ function initVoice() {
         },
         onSpeakChunk: (chunk) => { state.avatar3d?.speakText(chunk); },
         onSpeakingStart: () => {
-            // Visual cue that bot is now speaking; mic is auto-paused inside VoiceIO.
             document.getElementById('listeningText')?.classList.remove('visible');
         },
         onSpeakingDone: () => {
@@ -128,15 +133,43 @@ function initVoice() {
                 document.getElementById('listeningText')?.classList.add('visible');
             }
         },
+        onUnsupported: (msg) => {
+            const hint = document.getElementById('voiceHint');
+            if (hint) { hint.textContent = msg; hint.classList.add('visible'); }
+            const micBtn = document.getElementById('micBtn');
+            if (micBtn) {
+                micBtn.classList.add('disabled');
+                micBtn.setAttribute('aria-disabled', 'true');
+                micBtn.title = msg;
+            }
+        },
         getRate: () => parseFloat(document.getElementById('speedRange')?.value || '1'),
         getProfile: () => state.voiceProfile,
     });
+    // If recognition isn't supported, mark mic disabled but keep TTS available.
+    if (!state.voice.supported()) {
+        const micBtn = document.getElementById('micBtn');
+        if (micBtn) {
+            micBtn.classList.add('disabled');
+            micBtn.title = state.voice.isMobile()
+                ? 'Voice input unavailable on this browser. You can still type — the bot will speak its reply.'
+                : 'Voice input is not supported in this browser.';
+        }
+    }
 }
 
-window.toggleVoice = function () {
+window.toggleVoice = function (ev) {
+    // CRITICAL: this must run synchronously inside the user-gesture handler.
+    // No async work before .startListening() — Safari/iOS will silently
+    // reject mic permission otherwise.
     initVoice();
+    unlockTTS();
     if (!state.voice.supported()) {
-        alert('Voice input is not supported in this browser. Please use Chrome, Edge, or Safari.');
+        const hint = document.getElementById('voiceHint');
+        const msg = state.voice.isMobile()
+            ? 'Voice input is unavailable on this browser. Please type — the bot will speak its reply.'
+            : 'Voice input is not supported in this browser. Please use Chrome, Edge, or Samsung Internet.';
+        if (hint) { hint.textContent = msg; hint.classList.add('visible'); }
         return;
     }
     if (state.voice.listening) {
@@ -144,10 +177,12 @@ window.toggleVoice = function () {
         document.getElementById('micBtn')?.classList.remove('recording');
         document.getElementById('listeningText')?.classList.remove('visible');
     } else {
-        state.voice.startListening();
-        document.getElementById('micBtn')?.classList.add('recording');
-        document.getElementById('listeningText')?.classList.add('visible');
-        state.avatar3d?.setListening(true);
+        const ok = state.voice.startListening();
+        if (ok) {
+            document.getElementById('micBtn')?.classList.add('recording');
+            document.getElementById('listeningText')?.classList.add('visible');
+            state.avatar3d?.setListening(true);
+        }
     }
 };
 
@@ -584,7 +619,6 @@ function setupMobileDrawers() {
 // ───────────────────────────────────────────────────────────────
 window.addEventListener('load', () => {
     if ('speechSynthesis' in window) {
-        // Trigger voice list population (Chrome lazy-loads on demand).
         window.speechSynthesis.getVoices();
         window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
     }
@@ -593,6 +627,34 @@ window.addEventListener('load', () => {
     renderAuthPill();
     loadConversations();
     setupMobileDrawers();
+
+    // Mic button — bind synchronously to both pointer/touch events so iOS
+    // and Android receive the user-gesture token when permission is asked.
+    const micBtn = document.getElementById('micBtn');
+    if (micBtn) {
+        const handler = (e) => { e.preventDefault(); window.toggleVoice(e); };
+        micBtn.addEventListener('click', handler);
+        micBtn.addEventListener('touchend', handler, { passive: false });
+    }
+    // Make the ASK button also unlock TTS so the first reply speaks on iOS.
+    document.getElementById('askBtn')?.addEventListener('click', () => unlockTTS());
+
+    // Workspaces — driven by avatar selection. Each workspace's "send"
+    // routes through the existing chat flow so replies stream into the
+    // bubble and speak out loud just like a normal turn.
+    const wsRoot = document.getElementById('workspace');
+    if (wsRoot) {
+        initWorkspaces({
+            root: wsRoot,
+            ask: (prompt) => {
+                const inp = document.getElementById('chatInput');
+                if (inp) inp.value = prompt;
+                askBaba();
+            },
+            setBubbleText: setBabaText,
+            setBubbleMarkdown: setBabaMarkdown,
+        });
+    }
 
     // Restore persisted UI prefs
     const sel = document.getElementById('voiceSelect');
