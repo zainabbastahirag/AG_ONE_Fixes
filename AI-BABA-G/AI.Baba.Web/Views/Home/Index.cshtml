@@ -164,8 +164,86 @@
             </div>
         </section>
 
-        <!-- RIGHT: MINDSET + SETTINGS -->
+        <!-- RIGHT: MINDSET + SETTINGS + CONTEXTUAL PANES -->
         <aside class="panel panel-right">
+            <!-- Astrology context: zodiac wheel + quick insight -->
+            <div class="context-pane astrology" data-context="astrology">
+                <div class="panel-title"><span>✦</span> ZODIAC WHEEL <span>✦</span></div>
+                <div class="zodiac-wheel" aria-label="Zodiac wheel"></div>
+                <div class="zw-insight">
+                    <p class="muted-tip">Tap a sign to peek at its day.</p>
+                </div>
+            </div>
+
+            <!-- Developer context: quick prompts -->
+            <div class="context-pane dev" data-context="dev">
+                <div class="panel-title"><span>✦</span> CODE QUICK PROMPTS <span>✦</span></div>
+                <div class="ctx-chips">
+                    <button class="ctx-chip" data-prompt="Show me the standard project structure for a small REST API in this language with a code example." type="button">REST API skeleton</button>
+                    <button class="ctx-chip" data-prompt="Give me a clean unit-test starter file for the language and framework I'm using above. Include 3 example tests and how to run them." type="button">Test starter</button>
+                    <button class="ctx-chip" data-prompt="Write a regex cheatsheet for common patterns (email, URL, slug, ISO date) with one-line explanations." type="button">Regex cheatsheet</button>
+                    <button class="ctx-chip" data-prompt="Summarize the SOLID principles with a tiny code example for each in this language." type="button">SOLID cheatsheet</button>
+                    <button class="ctx-chip" data-prompt="Show me a minimal Dockerfile for an app written in this language, with comments explaining each line." type="button">Dockerfile starter</button>
+                </div>
+            </div>
+
+            <!-- Designer context -->
+            <div class="context-pane design" data-context="design">
+                <div class="panel-title"><span>✦</span> DESIGN INSPIRATIONS <span>✦</span></div>
+                <div class="ctx-chips">
+                    <button class="ctx-chip" data-prompt="Suggest 3 well-balanced color palettes for a calm, premium B2B SaaS — return them as named palettes with hex codes." type="button">Calm SaaS palettes</button>
+                    <button class="ctx-chip" data-prompt="Show me 5 popular Google-Fonts pairings (display + body) suitable for a modern startup, with a one-line use case for each." type="button">Type pairings</button>
+                    <button class="ctx-chip" data-prompt="Give me an accessibility checklist for a landing-page hero section." type="button">A11y checklist</button>
+                    <button class="ctx-chip" data-prompt="List 8 concrete principles of strong information hierarchy with a one-line justification each." type="button">Hierarchy 101</button>
+                </div>
+            </div>
+
+            <!-- PM context -->
+            <div class="context-pane pm" data-context="pm">
+                <div class="panel-title"><span>✦</span> PM PLAYBOOK <span>✦</span></div>
+                <div class="ctx-chips">
+                    <button class="ctx-chip" data-prompt="Give me 5 questions a PM should ask before committing to a deadline." type="button">Pre-deadline questions</button>
+                    <button class="ctx-chip" data-prompt="Explain the RICE prioritization framework with a worked example." type="button">RICE worked example</button>
+                    <button class="ctx-chip" data-prompt="What does a great weekly status update look like? Give me a 5-line template." type="button">Status template</button>
+                    <button class="ctx-chip" data-prompt="Draft a one-page PRD template for a new feature, with section headings." type="button">PRD template</button>
+                </div>
+            </div>
+
+            <!-- Marketing context -->
+            <div class="context-pane marketing" data-context="marketing">
+                <div class="panel-title"><span>✦</span> GROWTH IDEAS <span>✦</span></div>
+                <div class="ctx-chips">
+                    <button class="ctx-chip" data-prompt="List 10 high-leverage growth experiments for an early-stage SaaS, ordered by speed-to-result." type="button">10 growth experiments</button>
+                    <button class="ctx-chip" data-prompt="Write 5 strong landing-page hero headline patterns with one example each." type="button">Hero headlines</button>
+                    <button class="ctx-chip" data-prompt="What is the AIDA copy framework? Show a 4-line example for a fictional fitness app." type="button">AIDA example</button>
+                    <button class="ctx-chip" data-prompt="Give me a 30-day content calendar outline (4 themes, 2 posts/week)." type="button">Content calendar</button>
+                </div>
+            </div>
+
+            <!-- Sales context -->
+            <div class="context-pane sales" data-context="sales">
+                <div class="panel-title"><span>✦</span> SALES PLAYBOOK <span>✦</span></div>
+                <div class="ctx-chips">
+                    <button class="ctx-chip" data-prompt="Show me the SPIN selling framework with a 3-question example for a SaaS deal." type="button">SPIN example</button>
+                    <button class="ctx-chip" data-prompt="Give me 5 strong opening lines for a cold call that don't sound like cold calls." type="button">Cold-call openers</button>
+                    <button class="ctx-chip" data-prompt="What are 5 negotiation pitfalls and how to avoid each?" type="button">Negotiation traps</button>
+                    <button class="ctx-chip" data-prompt="Draft a 3-message LinkedIn outreach sequence — short, friendly, value-first." type="button">LinkedIn sequence</button>
+                </div>
+            </div>
+
+            <!-- HR context -->
+            <div class="context-pane hr" data-context="hr">
+                <div class="panel-title"><span>✦</span> PEOPLE TOOLS <span>✦</span></div>
+                <div class="ctx-chips">
+                    <button class="ctx-chip" data-prompt="Write a 5-question employee-engagement survey with rationale per question." type="button">Engagement survey</button>
+                    <button class="ctx-chip" data-prompt="Give me a step-by-step structure for delivering tough feedback (SBI model) with an example." type="button">SBI feedback model</button>
+                    <button class="ctx-chip" data-prompt="Draft a 1:1 meeting template (15 minutes) — questions and agenda." type="button">1:1 template</button>
+                    <button class="ctx-chip" data-prompt="What does psychological safety look like in practice? Give 5 concrete behaviors." type="button">Psych safety</button>
+                </div>
+            </div>
+
+            <!-- Default mindset section (chat mode) -->
+            <div class="mindset-section">
             <div class="panel-title"><span>✦</span> CHOOSE MINDSET <span>✦</span></div>
             <div class="mindset-list">
                 <div class="mindset-card active" data-mindset="balanced" onclick="selectMindset(this)">
@@ -190,6 +268,7 @@
                     <div class="mindset-info"><strong>Creative</strong><small>Innovative & imaginative</small></div>
                 </div>
             </div>
+            </div><!-- /.mindset-section -->
 
             <div class="settings-section">
                 <div class="settings-title">🎚️ VOICE & SETTINGS</div>
@@ -241,5 +320,16 @@
     </footer>
 
     <script type="module" src="/js/app.js" asp-append-version="true"></script>
+    <script>
+        // Wire the right-panel quick-prompt chips to populate and send.
+        document.addEventListener('click', (e) => {
+            const chip = e.target.closest('.ctx-chip');
+            if (!chip) return;
+            const inp = document.getElementById('chatInput');
+            if (!inp) return;
+            inp.value = chip.dataset.prompt || chip.textContent;
+            if (typeof window.askBaba === 'function') window.askBaba();
+        });
+    </script>
 </body>
 </html>
