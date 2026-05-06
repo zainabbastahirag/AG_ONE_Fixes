@@ -149,10 +149,12 @@ body {
 /* In default chat mode, center the avatar+bubble. */
 .app-grid[data-mode="chat"] .center-area { align-items: center; justify-content: center; gap: 14px; padding: 16px 16px 12px; }
 
-/* In any pro mode, hide the avatar/bubble and let the workspace take over. */
+/* In any pro mode, hide the avatar/bubble AND the global chat bar — each
+   workspace owns its own focused input, so nothing gets duplicated. */
 body[data-mode]:not([data-mode="chat"]) .avatar-display { display: none; }
 body[data-mode]:not([data-mode="chat"]) .topic-tags { display: none; }
 body[data-mode]:not([data-mode="chat"]) #guestHint { display: none; }
+body[data-mode]:not([data-mode="chat"]) .chat-input-area { display: none; }
 
 .avatar-display {
     text-align: center; position: relative;
@@ -548,6 +550,34 @@ body[data-mode]:not([data-mode="chat"]) #guestHint { display: none; }
     .app-footer { padding-bottom: max(8px, env(safe-area-inset-bottom)); }
 }
 
+/* ─── MOBILE POLISH FOR PRO MODES ──────────────────────────────────── */
+@media (max-width: 600px) {
+    .workspace { padding: 0 6px; gap: 10px; }
+    .ws-card { padding: 12px; }
+    .ws-actions { gap: 6px; }
+    .ws-btn { font-size: 11px; padding: 6px 10px; flex: 1 1 calc(50% - 6px); }
+    .ws-btn.primary { flex-basis: 100%; }
+    .astro-card { padding: 12px; }
+    .astro-card.hero { padding: 14px; }
+    .astro-emoji.huge { font-size: 44px; padding: 6px 10px; }
+    .astro-hero-left h2 { font-size: 18px; letter-spacing: 1.5px; }
+    .astro-hero-right { grid-template-columns: 1fr; gap: 4px 8px; }
+    .astro-section-head h3 { font-size: 12px; letter-spacing: 1px; }
+    .astro-fact { grid-template-columns: 50px 1fr; }
+    .ws-report { min-height: 180px; padding: 12px; }
+    .ws-form-grid { gap: 6px; }
+    .ws-code { min-height: 140px; font-size: 12px; }
+    .ws-followup, .astro-followup { flex-direction: column; gap: 6px; }
+    .astro-followup .ws-input { width: 100%; }
+}
+@media (max-width: 400px) {
+    .ws-shell { gap: 8px; }
+    .astro-card { padding: 10px; }
+    .astro-hero-left { gap: 8px; }
+    .ws-actions { flex-direction: column; }
+    .ws-btn, .ws-btn.primary { width: 100%; flex-basis: auto; }
+}
+
 /* ─── VOICE HINT (mobile unsupported / permission denied) ──────────── */
 .voice-hint {
     display: none; font-size: 11px; color: #fbbf24; margin-top: 4px;
@@ -745,6 +775,30 @@ body[data-mode]:not([data-mode="chat"]) #guestHint { display: none; }
 /* Sectioned narrative grid */
 .astro-section-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 800px) { .astro-section-grid { grid-template-columns: 1fr; } }
+
+/* Spirit animal + Lucky food bio cards (with Wikipedia images) */
+.astro-bio-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 800px) { .astro-bio-grid { grid-template-columns: 1fr; } }
+.astro-bio { display: grid; grid-template-columns: 130px 1fr; gap: 12px; align-items: flex-start; }
+.astro-bio-img {
+    width: 130px; height: 130px; border-radius: 14px; overflow: hidden;
+    border: 1px solid var(--border); background: rgba(20, 22, 40, 0.55);
+    display: flex; align-items: center; justify-content: center;
+    text-decoration: none;
+}
+.astro-bio-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.astro-bio-img.loading { background: linear-gradient(120deg, rgba(255,255,255,0.04), rgba(212,168,83,0.08), rgba(255,255,255,0.04)); background-size: 200% 100%; animation: bio-shimmer 1.4s linear infinite; }
+.astro-bio-img.placeholder { color: var(--gold-dim); font-size: 36px; }
+@keyframes bio-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.astro-bio-meta { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.astro-bio-name { font-family: 'Cinzel', serif; color: var(--gold); font-size: 16px; letter-spacing: 1px; }
+.astro-bio-why { font-size: 12px; color: var(--text); font-style: italic; }
+.astro-bio-extract { font-size: 12px; color: var(--text-dim); line-height: 1.55; }
+.astro-bio-link { font-size: 11px; color: var(--gold); text-decoration: none; border-bottom: 1px dotted var(--gold-dim); align-self: flex-start; margin-top: 4px; }
+@media (max-width: 480px) {
+    .astro-bio { grid-template-columns: 96px 1fr; gap: 10px; }
+    .astro-bio-img { width: 96px; height: 96px; }
+}
 
 /* Fame list */
 .astro-fame-list { display: flex; flex-direction: column; gap: 8px; }
