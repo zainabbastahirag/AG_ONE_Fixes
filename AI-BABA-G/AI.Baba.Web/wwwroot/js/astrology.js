@@ -173,6 +173,73 @@ export async function fetchFunFacts(month, day, max = 4) {
     return out;
 }
 
+/** Wikipedia: notable people who died on the same MM-DD with thumbnails. */
+export async function fetchDeaths(month, day, max = 3) {
+    const mm = String(month).padStart(2, '0');
+    const dd = String(day).padStart(2, '0');
+    const url = `https://en.wikipedia.org/api/rest_v1/feed/onthisday/deaths/${mm}/${dd}`;
+    const res = await fetch(url, { headers: { 'Api-User-Agent': 'AI-BABA-G/1.0' } });
+    if (!res.ok) throw new Error(`Wikipedia returned ${res.status}`);
+    const data = await res.json();
+    const out = [];
+    for (const ev of (data.deaths || [])) {
+        const page = (ev.pages || []).find(p => p.thumbnail);
+        if (!page) continue;
+        out.push({
+            year: ev.year,
+            text: ev.text,
+            title: page.titles?.normalized || (page.title || '').replace(/_/g, ' '),
+            extract: page.extract || '',
+            thumb: page.thumbnail.source,
+            url: page.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${page.title}`,
+        });
+        if (out.length >= max) break;
+    }
+    return out;
+}
+
+/** Wikipedia summary endpoint — returns title + thumbnail + extract for any
+ *  page. CORS-enabled. Used to fetch images for the spirit animal and lucky
+ *  food cards so the astrology dashboard is genuinely visual. */
+export async function fetchWikiSummary(title) {
+    if (!title) return null;
+    try {
+        const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
+        const res = await fetch(url, { headers: { 'Api-User-Agent': 'AI-BABA-G/1.0' } });
+        if (!res.ok) return null;
+        const data = await res.json();
+        return {
+            title: data.title || title,
+            extract: data.extract || '',
+            thumb: data.thumbnail?.source || null,
+            photo: data.originalimage?.source || data.thumbnail?.source || null,
+            url: data.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${title.replace(/\s+/g, '_')}`,
+        };
+    } catch (_) { return null; }
+}
+
+/** Each sign maps to a spirit animal (with a Wikipedia article title) and a
+ *  lucky food. Both are fetched live for their picture. */
+export const SPIRIT_ANIMAL_WIKI = {
+    Aries: 'Mouflon', Taurus: 'Bull', Gemini: 'Hummingbird', Cancer: 'Crab',
+    Leo: 'Lion', Virgo: 'Owl', Libra: 'Mute_swan', Scorpio: 'Phoenix_(mythology)',
+    Sagittarius: 'Red_deer', Capricorn: 'Mountain_goat', Aquarius: 'Sandhill_crane', Pisces: 'Common_bottlenose_dolphin',
+};
+export const LUCKY_FOOD = {
+    Aries:       { name: 'Chili pepper',  wiki: 'Chili_pepper',  why: 'fiery, bold, ignites courage' },
+    Taurus:      { name: 'Chocolate',     wiki: 'Chocolate',     why: 'sensual, grounding, slow indulgence' },
+    Gemini:      { name: 'Coffee',        wiki: 'Coffee',        why: 'sparks the mind, fuels conversation' },
+    Cancer:      { name: 'Cucumber',      wiki: 'Cucumber',      why: 'cooling, watery, soothing to feelings' },
+    Leo:         { name: 'Mango',         wiki: 'Mango',         why: 'sun-ripened, golden, regal' },
+    Virgo:       { name: 'Almonds',       wiki: 'Almond',        why: 'precise nutrition, clean fuel' },
+    Libra:       { name: 'Strawberries',  wiki: 'Strawberry',    why: 'sweet, balanced, beautiful to share' },
+    Scorpio:     { name: 'Dark chocolate',wiki: 'Dark_chocolate',why: 'intense, transformative, deep' },
+    Sagittarius: { name: 'Avocado',       wiki: 'Avocado',       why: 'travels well, generous, abundant' },
+    Capricorn:   { name: 'Pomegranate',   wiki: 'Pomegranate',   why: 'patient harvest, ancient strength' },
+    Aquarius:    { name: 'Blueberries',   wiki: 'Blueberry',     why: 'small revolutions of antioxidants' },
+    Pisces:      { name: 'Salmon',        wiki: 'Salmon',        why: 'swims home, intuitive nourishment' },
+};
+
 /** Build the prompt that asks Ollama for a sectioned, TTS-friendly reading. */
 export function buildAdvicePrompt({ chart, famous }) {
     const { name, sign, chinese } = chart;
@@ -182,15 +249,17 @@ export function buildAdvicePrompt({ chart, famous }) {
         `You are AI Baba-G as the Astrologer Sage.`,
         `${youAre} is a ${sign.name} (${sign.element} \u00B7 ${sign.modality} \u00B7 ruler ${sign.ruler}). Chinese animal: ${chinese.animal}.`,
         famousLine,
-        `Write a warm, professional astrological report. Use these EXACT section headers (each on its own line, in this order). Each section is 2 to 3 short sentences. Plain prose, no bullet points, no markdown.`,
+        `Write a warm, professional astrological report. Use these EXACT section headers (each on its own line, in this order). Each section is 2 to 3 short sentences. Plain prose, no bullet points, no markdown. Address ${youAre} directly.`,
         ``,
         `## TODAY`,
         `## NEXT_3_DAYS`,
         `## NEXT_MONTH`,
         `## YEAR_AHEAD`,
-        `## LOVE_FAMILY`,
-        `## CAREER_MONEY`,
-        `## MAGIC_SPIRIT`,
+        `## CAREER`,
+        `## LOVE`,
+        `## FAMILY`,
+        `## HEALTH`,
+        `## MAGIC`,
         ``,
         `Sound like a wise elder. Never invent quotes from real people. End TODAY with a gentle blessing.`
     ].filter(Boolean).join('\n');

@@ -21,7 +21,9 @@
 
 import {
     SIGNS, westernSign, chineseSign, buildBirthChart, moodGauges, dateKey,
-    fetchFamousBirthdayMatch, fetchFunFacts, buildAdvicePrompt, parseSections
+    fetchFamousBirthdayMatch, fetchFunFacts, fetchDeaths, fetchWikiSummary,
+    SPIRIT_ANIMAL_WIKI, LUCKY_FOOD,
+    buildAdvicePrompt, parseSections
 } from './astrology.js';
 
 const AVATAR_TO_WORKSPACE = {
@@ -481,15 +483,14 @@ async function renderAstroDashboard(dash, { name, dob }) {
     dash.appendChild(birthChartCard(chart, dob));
 
     // 2) Today + Mood gauges
-    const todayCard = el('section', { class: 'astro-card' },
+    dash.appendChild(el('section', { class: 'astro-card' },
         el('header', { class: 'astro-section-head' },
             el('h3', {}, `\u2728 Today, ${today.toDateString()}`),
             el('span', { class: 'astro-tag' }, chart.luckyDay === DAY_NAME(today) ? 'Your lucky day' : '')
         ),
         gaugeStack(moodGauges(chart.sign.name, dateKey(today))),
         el('div', { class: 'astro-section narrative', dataset: { sec: 'today' } })
-    );
-    dash.appendChild(todayCard);
+    ));
 
     // 3) Next 3 days mini-cards
     const next3 = el('div', { class: 'astro-3-grid' });
@@ -506,31 +507,65 @@ async function renderAstroDashboard(dash, { name, dob }) {
         el('div', { class: 'astro-section narrative', dataset: { sec: 'next_3_days' } })
     ));
 
-    // 4) Next month + Year ahead + Love + Career + Magic
+    // 4) Spirit animal + Lucky food (visual cards with Wikipedia images)
+    const animalCard = el('section', { class: 'astro-card' },
+        el('header', { class: 'astro-section-head' }, el('h3', {}, '\uD83D\uDC3E Your spirit animal')),
+        el('div', { class: 'astro-bio' },
+            el('div', { class: 'astro-bio-img loading' }),
+            el('div', { class: 'astro-bio-meta' },
+                el('div', { class: 'astro-bio-name' }, chart.spirit),
+                el('div', { class: 'astro-bio-extract muted-tip' }, 'Loading from Wikipedia\u2026')
+            )
+        )
+    );
+    const food = LUCKY_FOOD[chart.sign.name] || { name: 'Honey', wiki: 'Honey', why: 'sweet, golden, healing' };
+    const foodCard = el('section', { class: 'astro-card' },
+        el('header', { class: 'astro-section-head' }, el('h3', {}, '\uD83C\uDF7D\uFE0F Your lucky food')),
+        el('div', { class: 'astro-bio' },
+            el('div', { class: 'astro-bio-img loading' }),
+            el('div', { class: 'astro-bio-meta' },
+                el('div', { class: 'astro-bio-name' }, food.name),
+                el('div', { class: 'astro-bio-why' }, `Why for ${chart.sign.name}: ${food.why}`),
+                el('div', { class: 'astro-bio-extract muted-tip' }, 'Loading from Wikipedia\u2026')
+            )
+        )
+    );
+    dash.appendChild(el('div', { class: 'astro-bio-grid' }, animalCard, foodCard));
+
+    // 5) Career / Love / Family / Health / Magic / Year-ahead / Month-ahead grid
     const sectionGrid = el('div', { class: 'astro-section-grid' });
-    sectionGrid.appendChild(narrativeCard('\uD83C\uDF15 The month ahead',  'next_month'));
-    sectionGrid.appendChild(narrativeCard('\uD83C\uDF1F The year ahead',   'year_ahead'));
-    sectionGrid.appendChild(narrativeCard('\u2764\uFE0F Love & family',     'love_family'));
-    sectionGrid.appendChild(narrativeCard('\uD83D\uDCBC Career & money',   'career_money'));
-    sectionGrid.appendChild(narrativeCard('\uD83D\uDD2E Magic & spirit',   'magic_spirit'));
+    sectionGrid.appendChild(narrativeCard('\uD83C\uDF15 The month ahead', 'next_month'));
+    sectionGrid.appendChild(narrativeCard('\uD83C\uDF1F The year ahead',  'year_ahead'));
+    sectionGrid.appendChild(narrativeCard('\uD83D\uDCBC Career outlook',  'career'));
+    sectionGrid.appendChild(narrativeCard('\u2764\uFE0F Love & relationships', 'love'));
+    sectionGrid.appendChild(narrativeCard('\uD83D\uDC6A Family & kids',   'family'));
+    sectionGrid.appendChild(narrativeCard('\uD83C\uDF31 Health & body',   'health'));
+    sectionGrid.appendChild(narrativeCard('\uD83D\uDD2E Magic & spirit',  'magic'));
     dash.appendChild(sectionGrid);
 
-    // 5) Famous match (Wikipedia)
+    // 6) Famous match (Wikipedia)
     const fameHost = el('section', { class: 'astro-card' },
         el('header', { class: 'astro-section-head' }, el('h3', {}, '\u2605 Born on the same day')),
-        el('div', { class: 'astro-fame-list' }, el('p', { class: 'ws-msg' }, 'Looking up famous birthday twins…'))
+        el('div', { class: 'astro-fame-list' }, el('p', { class: 'ws-msg' }, 'Looking up famous birthday twins\u2026'))
     );
     dash.appendChild(fameHost);
 
-    // 6) Funny historical facts (Wikipedia events)
+    // 7) Notable deaths on this day (NEW)
+    const deathsHost = el('section', { class: 'astro-card' },
+        el('header', { class: 'astro-section-head' }, el('h3', {}, '\uD83D\uDD56 Remembered on this day')),
+        el('div', { class: 'astro-fame-list' }, el('p', { class: 'ws-msg' }, 'Looking up notable lives\u2026'))
+    );
+    dash.appendChild(deathsHost);
+
+    // 8) Funny historical facts (Wikipedia events)
     const factsHost = el('section', { class: 'astro-card' },
         el('header', { class: 'astro-section-head' }, el('h3', {}, '\uD83C\uDF89 What else happened on this day')),
-        el('div', { class: 'astro-facts' }, el('p', { class: 'ws-msg' }, 'Loading historical events…'))
+        el('div', { class: 'astro-facts' }, el('p', { class: 'ws-msg' }, 'Loading historical events\u2026'))
     );
     dash.appendChild(factsHost);
 
-    // 7) Free-form follow-up at the bottom
-    const followInput = el('input', { class: 'ws-input', placeholder: 'Ask the Astrologer Sage anything…', onkeydown: (e) => { if (e.key === 'Enter') followBtn.click(); } });
+    // 9) Free-form follow-up
+    const followInput = el('input', { class: 'ws-input', placeholder: 'Ask the Astrologer Sage anything\u2026', onkeydown: (e) => { if (e.key === 'Enter') followBtn.click(); } });
     const followBtn = el('button', {
         class: 'ws-btn primary', type: 'button',
         onclick: () => {
@@ -548,40 +583,41 @@ async function renderAstroDashboard(dash, { name, dob }) {
     }, 'Ask');
     dash.appendChild(el('div', { class: 'astro-followup' }, followInput, followBtn));
 
-    // ─── Wikipedia fetches ──────────────────────────────────────────────
+    // ─── Parallel Wikipedia fetches ─────────────────────────────────────
+    const animalTitle = SPIRIT_ANIMAL_WIKI[chart.sign.name];
+    const tasks = [
+        fetchFamousBirthdayMatch(m, d, 3).then(arr => ({ kind: 'famous', arr })).catch(() => ({ kind: 'famous', arr: [] })),
+        fetchDeaths(m, d, 3).then(arr => ({ kind: 'deaths', arr })).catch(() => ({ kind: 'deaths', arr: [] })),
+        fetchFunFacts(m, d, 5).then(arr => ({ kind: 'facts', arr })).catch(() => ({ kind: 'facts', arr: [] })),
+        fetchWikiSummary(animalTitle).then(s => ({ kind: 'animal', s })).catch(() => ({ kind: 'animal', s: null })),
+        fetchWikiSummary(food.wiki).then(s => ({ kind: 'food', s })).catch(() => ({ kind: 'food', s: null })),
+    ];
     let famous = [];
-    try {
-        famous = await fetchFamousBirthdayMatch(m, d, 3);
-        const list = fameHost.querySelector('.astro-fame-list');
-        list.innerHTML = '';
-        for (const f of famous) {
-            list.appendChild(el('a', { class: 'astro-fame', href: f.url, target: '_blank', rel: 'noopener noreferrer' },
-                el('img', { src: f.thumb, alt: f.title, class: 'astro-photo', loading: 'lazy' }),
-                el('div', { class: 'astro-fame-meta' },
-                    el('div', { class: 'astro-fame-name' }, f.title),
-                    el('div', { class: 'astro-fame-year' }, String(f.year || '')),
-                    el('div', { class: 'astro-fame-extract' }, (f.extract || '').slice(0, 180) + ((f.extract || '').length > 180 ? '\u2026' : ''))
-                )
-            ));
-        }
-        if (!famous.length) list.appendChild(el('p', { class: 'ws-msg' }, 'No famous birthday twins found for this date — you are unique!'));
-    } catch (e) {
-        fameHost.querySelector('.astro-fame-list').innerHTML = '<p class="ws-msg">(Wikipedia is unreachable from this device.)</p>';
-    }
-
-    try {
-        const facts = await fetchFunFacts(m, d, 5);
-        const factsEl = factsHost.querySelector('.astro-facts');
-        factsEl.innerHTML = '';
-        for (const f of facts) {
-            factsEl.appendChild(el('div', { class: 'astro-fact' },
+    for (const result of await Promise.all(tasks)) {
+        if (result.kind === 'famous') {
+            famous = result.arr;
+            renderFameList(fameHost.querySelector('.astro-fame-list'), famous, 'No famous birthday twins found \u2014 you are unique!');
+        } else if (result.kind === 'deaths') {
+            renderFameList(deathsHost.querySelector('.astro-fame-list'), result.arr, 'No notable lives recorded for this date.');
+        } else if (result.kind === 'facts') {
+            const factsEl = factsHost.querySelector('.astro-facts');
+            factsEl.innerHTML = '';
+            for (const f of result.arr) factsEl.appendChild(el('div', { class: 'astro-fact' },
                 el('span', { class: 'astro-fact-year' }, String(f.year || '?')),
                 el('span', { class: 'astro-fact-text' }, f.text)
             ));
+            if (!result.arr.length) factsEl.appendChild(el('p', { class: 'ws-msg' }, 'A quiet day in history.'));
+        } else if (result.kind === 'animal') {
+            renderBio(animalCard.querySelector('.astro-bio'), {
+                fallbackName: chart.spirit, summary: result.s,
+                fallbackLine: `${chart.spirit} \u2014 the spirit animal of ${chart.sign.name}.`
+            });
+        } else if (result.kind === 'food') {
+            renderBio(foodCard.querySelector('.astro-bio'), {
+                fallbackName: food.name, summary: result.s,
+                fallbackLine: `Why for ${chart.sign.name}: ${food.why}`
+            });
         }
-        if (!facts.length) factsEl.appendChild(el('p', { class: 'ws-msg' }, 'A quiet day in history.'));
-    } catch (_) {
-        factsHost.querySelector('.astro-facts').innerHTML = '<p class="ws-msg">(Wikipedia is unreachable from this device.)</p>';
     }
 
     // ─── Ollama narrative — single batched call, sectioned ──────────────
@@ -590,8 +626,6 @@ async function renderAstroDashboard(dash, { name, dob }) {
         sectionTargets[el2.dataset.sec] = el2;
         el2.innerHTML = '<span class="typing-dots"><span></span><span></span><span></span></span>';
     });
-    // Stream into a hidden buffer; on every token, re-parse and route into
-    // the right section card.
     const buffer = el('div', { style: 'display:none' });
     dash.appendChild(buffer);
     window.babaSetReplyTarget(buffer, {
@@ -604,6 +638,43 @@ async function renderAstroDashboard(dash, { name, dob }) {
         }
     });
     send(buildAdvicePrompt({ chart, famous }));
+}
+
+// ─── Astrology helpers ──────────────────────────────────────────────────
+function renderFameList(target, arr, emptyMsg) {
+    target.innerHTML = '';
+    if (!arr || !arr.length) {
+        target.appendChild(el('p', { class: 'ws-msg' }, emptyMsg));
+        return;
+    }
+    for (const f of arr) {
+        target.appendChild(el('a', {
+            class: 'astro-fame', href: f.url, target: '_blank', rel: 'noopener noreferrer'
+        },
+            el('img', { src: f.thumb, alt: f.title, class: 'astro-photo', loading: 'lazy' }),
+            el('div', { class: 'astro-fame-meta' },
+                el('div', { class: 'astro-fame-name' }, f.title),
+                el('div', { class: 'astro-fame-year' }, String(f.year || '')),
+                el('div', { class: 'astro-fame-extract' }, (f.extract || '').slice(0, 180) + ((f.extract || '').length > 180 ? '\u2026' : ''))
+            )
+        ));
+    }
+}
+
+function renderBio(host, { fallbackName, summary, fallbackLine }) {
+    host.innerHTML = '';
+    if (summary?.thumb) {
+        host.appendChild(el('a', { href: summary.url, target: '_blank', rel: 'noopener noreferrer', class: 'astro-bio-img' },
+            el('img', { src: summary.thumb, alt: summary.title || fallbackName, loading: 'lazy' })
+        ));
+    } else {
+        host.appendChild(el('div', { class: 'astro-bio-img placeholder' }, '\u2606'));
+    }
+    host.appendChild(el('div', { class: 'astro-bio-meta' },
+        el('div', { class: 'astro-bio-name' }, summary?.title || fallbackName),
+        el('div', { class: 'astro-bio-extract' }, (summary?.extract || fallbackLine).slice(0, 220) + ((summary?.extract || '').length > 220 ? '\u2026' : '')),
+        summary?.url ? el('a', { href: summary.url, target: '_blank', rel: 'noopener noreferrer', class: 'astro-bio-link' }, 'Read on Wikipedia \u2197') : null
+    ));
 }
 
 function birthChartCard(chart, dob) {
