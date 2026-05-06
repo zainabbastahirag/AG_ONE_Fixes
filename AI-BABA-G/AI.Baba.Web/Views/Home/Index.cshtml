@@ -99,6 +99,13 @@
                     <div class="avatar-img hr-img"></div>
                     <div class="avatar-info"><strong>HR</strong><small>People, hiring, culture</small></div>
                 </div>
+
+                <div class="panel-subtitle">SPECIAL</div>
+
+                <div class="avatar-card" data-avatar="astrologer" onclick="selectAvatar(this)">
+                    <div class="avatar-img astrologer-img"></div>
+                    <div class="avatar-info"><strong>Astrologer Sage</strong><small>Birthday · zodiac · daily reading</small></div>
+                </div>
             </div>
 
             <div class="panel-title" style="margin-top:18px"><span>✦</span> CONVERSATIONS <span>✦</span></div>
@@ -128,15 +135,19 @@
                     <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
                 </div>
                 <p class="listening-text" id="listeningText">AI is listening...</p>
+                <p class="voice-hint" id="voiceHint" aria-live="polite"></p>
             </div>
+
+            <!-- ROLE-SPECIFIC WORKSPACE (hidden for the default mystical avatars) -->
+            <div id="workspace" class="workspace hidden" data-ws="chat" aria-live="polite"></div>
 
             <!-- CHAT INPUT -->
             <div class="chat-input-area">
                 <div class="chat-bar">
-                    <input type="text" id="chatInput" placeholder="Type your question here..." onkeydown="onInputKey(event)" autocomplete="off" />
-                    <button class="mic-btn" id="micBtn" onclick="toggleVoice()" title="Voice Input" aria-label="Toggle voice input">🎤</button>
-                    <button class="ask-btn" id="askBtn" onclick="askBaba()"><span>ASK</span> ➤</button>
-                    <button class="ask-btn danger" id="stopBtn" onclick="stopAll()" hidden>STOP</button>
+                    <input type="text" id="chatInput" placeholder="Type your question here..." onkeydown="onInputKey(event)" autocomplete="off" autocapitalize="sentences" autocorrect="on" enterkeyhint="send" />
+                    <button class="mic-btn" id="micBtn" type="button" title="Voice Input" aria-label="Toggle voice input">🎤</button>
+                    <button class="ask-btn" id="askBtn" type="button" onclick="askBaba()"><span>ASK</span> ➤</button>
+                    <button class="ask-btn danger" id="stopBtn" type="button" onclick="stopAll()" hidden>STOP</button>
                 </div>
                 <div class="topic-tags">
                     <span class="tag">📝 Life</span>
