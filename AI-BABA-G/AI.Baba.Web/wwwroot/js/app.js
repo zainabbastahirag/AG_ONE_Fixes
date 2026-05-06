@@ -24,6 +24,16 @@ const state = {
     inFlight: false,
     voiceProfile: localStorage.getItem('baba_voice_profile') || 'guru',
     autoSpeak: localStorage.getItem('baba_autospeak') !== '0',
+    // Workspaces can redirect the streaming AI reply to their own report
+    // panel so users see structured reports instead of just a chat bubble.
+    replyTarget: null,                       // DOM element receiving rendered markdown
+    replyTokenHandler: null,                 // optional (rawToken, fullText) => void
+};
+
+// Used by workspaces to intercept the streamed reply.
+window.babaSetReplyTarget = function (target, opts = {}) {
+    state.replyTarget = target || null;
+    state.replyTokenHandler = (typeof opts.onToken === 'function') ? opts.onToken : null;
 };
 
 function saveAuth() {
@@ -91,7 +101,20 @@ window.selectAvatar = function (el) {
     }
 
     // Swap the workspace below the bubble to match the role.
-    setWorkspace(workspaceForAvatar(state.currentAvatar));
+    const ws = workspaceForAvatar(state.currentAvatar);
+    setWorkspace(ws);
+    document.querySelector('.app-grid')?.setAttribute('data-mode', ws);
+    document.body.setAttribute('data-mode', ws);
+    // When entering chat mode, restore the bubble as the reply target.
+    if (ws === 'chat') {
+        window.babaSetReplyTarget(null);
+    } else if (ws !== 'astrology') {
+        // For pro modes (except astrology, which manages its own targets),
+        // default the report panel as the streaming reply target so a free-
+        // form question typed into the chat input also lands in the report.
+        const target = document.querySelector('#workspace .ws-report-target');
+        if (target) window.babaSetReplyTarget(target);
+    }
 };
 
 window.selectMindset = function (el) {
@@ -322,7 +345,7 @@ async function streamingAsk(prompt) {
         return;
     }
 
-    const babaTextEl = document.getElementById('babaText');
+    const babaTextEl = getReplyEl();
     let firstToken = true;
 
     const reader = res.body.getReader();
@@ -387,6 +410,9 @@ async function streamingAsk(prompt) {
                 }
                 full += data;
                 scheduleRender();
+                if (state.replyTokenHandler) {
+                    try { state.replyTokenHandler(data, full); } catch (_) { }
+                }
 
                 if (state.autoSpeak) {
                     // Feed the TTS only NEW plain-text since last push, so it
@@ -421,7 +447,7 @@ async function streamingAsk(prompt) {
 }
 
 function showTypingDots() {
-    const el = document.getElementById('babaText');
+    const el = getReplyEl();
     if (!el) return;
     el.innerHTML = '<span class="typing-dots"><span></span><span></span><span></span></span>';
 }
@@ -435,8 +461,12 @@ function scrollBubbleToEnd() {
 // ───────────────────────────────────────────────────────────────
 //  UI helpers
 // ───────────────────────────────────────────────────────────────
+function getReplyEl() {
+    return state.replyTarget || document.getElementById('babaText');
+}
+
 function setBabaText(text) {
-    const el = document.getElementById('babaText');
+    const el = getReplyEl();
     if (el) {
         el.classList.remove('cursor-blink', 'formatted');
         el.textContent = text;
@@ -445,7 +475,7 @@ function setBabaText(text) {
 }
 
 function setBabaMarkdown(text) {
-    const el = document.getElementById('babaText');
+    const el = getReplyEl();
     if (el) {
         el.classList.remove('cursor-blink');
         el.innerHTML = renderMarkdown(text);
