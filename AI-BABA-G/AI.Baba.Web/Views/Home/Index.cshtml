@@ -1,13 +1,28 @@
-﻿@{ Layout = null; }
+﻿@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@{
+    Layout = null;
+    var adsenseClient = Configuration["GoogleAds:ClientId"];
+    var bmcUrl = Configuration["Premium:BuyMeACoffeeUrl"] ?? "https://www.buymeacoffee.com/aibabag/membership";
+    var priceLabel = Configuration["Premium:PriceLabel"] ?? "From RM 9.90 / month";
+}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI BABA-G — Ask Anything. Get Wisdom. Anytime.</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌍</text></svg>">
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0A0B14" />
+    <title>AI BABA G — Ask Anything. Get Wisdom.</title>
+    <meta name="description" content="AI BABA G — your wise AI companion. Voice calls, daily guidance, predictions, compatibility, future-me, dream interpretation. Powered by local Ollama models." />
+    <link rel="icon" type="image/svg+xml" href="/img/favicon.svg" />
+    <link rel="apple-touch-icon" href="/img/apple-touch-icon.svg" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/css/site.css" asp-append-version="true" />
+    @if (!string.IsNullOrWhiteSpace(adsenseClient))
+    {
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=@adsenseClient"
+                crossorigin="anonymous"></script>
+    }
     <script type="importmap">
     {
         "imports": {
@@ -17,178 +32,301 @@
     }
     </script>
 </head>
-<body>
-    <!-- TOP NAV -->
-    <nav class="top-nav">
-        <button class="menu-btn" id="menuLeftBtn" type="button" aria-label="Open avatar panel">☰</button>
-        <div class="nav-brand"><span class="nav-icon">🌍</span> AI GUIDE</div>
-        <div class="nav-center">
-            <h1 class="main-title">AI BABA-G</h1>
-            <p class="main-subtitle">— Ask Anything. Get Wisdom. Anytime. —</p>
-        </div>
-        <div class="nav-right">
-            <a class="nav-link" asp-controller="Home" asp-action="Memory" title="Memory">🧠</a>
-            <a class="nav-link" asp-controller="Home" asp-action="Personalities" title="Personalities">✦</a>
-            <a class="nav-link" asp-controller="Home" asp-action="Avatars" title="Avatars">👤</a>
-            <a class="nav-link" asp-controller="Home" asp-action="About" title="About">i</a>
-            <span id="authPill" class="auth-pill"></span>
-            <span class="lang-badge">🌐 EN</span>
-            <button class="icon-btn" title="Settings" onclick="toggle3D()">⚙️</button>
-            <button class="menu-btn" id="menuRightBtn" type="button" aria-label="Open mindset panel">⚙</button>
-        </div>
-    </nav>
+<body data-mode="chat">
+    <button class="menu-btn floating" id="menuLeftBtn" type="button" aria-label="Open menu">☰</button>
+    <button class="menu-btn floating right" id="menuRightBtn" type="button" aria-label="Open features">⚙</button>
     <div class="panel-backdrop" id="panelBackdrop"></div>
 
-    <!-- MAIN LAYOUT -->
-    <main class="app-grid">
-        <!-- LEFT: AVATAR SELECTION -->
-        <aside class="panel panel-left">
-            <div class="panel-title"><span>✦</span> CHOOSE AVATAR <span>✦</span></div>
-            <div class="avatar-list">
-                <div class="avatar-card active" data-avatar="sage" onclick="selectAvatar(this)">
-                    <div class="avatar-img sage-img"><div class="avatar-check">✓</div></div>
-                    <div class="avatar-info"><strong>The Sage</strong><small>Wisdom & Guidance</small></div>
+    <div class="bg-app">
+
+        <!-- ╭─ LEFT SIDEBAR ───────────────────────────────────────╮ -->
+        <aside class="sb sb-left" id="sbLeft">
+            <header class="sb-brand">
+                <img class="sb-brand-img" src="/img/baba-g.png" alt="" loading="lazy" />
+                <div class="sb-brand-text">
+                    <h1>AI BABA G</h1>
+                    <p>Ask Anything. Get Wisdom.</p>
                 </div>
-                <div class="avatar-card" data-avatar="philosopher" onclick="selectAvatar(this)">
-                    <div class="avatar-img philosopher-img"></div>
-                    <div class="avatar-info"><strong>The Philosopher</strong><small>Deep Thinker & Analytical</small></div>
-                </div>
-                <div class="avatar-card" data-avatar="healer" onclick="selectAvatar(this)">
-                    <div class="avatar-img healer-img"></div>
-                    <div class="avatar-info"><strong>The Healer</strong><small>Compassion & Inner Peace</small></div>
-                </div>
-                <div class="avatar-card" data-avatar="elder" onclick="selectAvatar(this)">
-                    <div class="avatar-img elder-img"></div>
-                    <div class="avatar-info"><strong>The Elder</strong><small>Tradition & Experience</small></div>
-                </div>
-                <div class="avatar-card" data-avatar="storyteller" onclick="selectAvatar(this)">
-                    <div class="avatar-img storyteller-img"></div>
-                    <div class="avatar-info"><strong>The Storyteller</strong><small>Stories & Inspiration</small></div>
+            </header>
+
+            <div class="sb-card baba-card">
+                <img class="sb-baba-avatar" src="/img/baba-g.png" alt="Baba G" loading="lazy" />
+                <div class="sb-baba-meta">
+                    <div class="sb-baba-name">Baba G <span class="dot online" aria-label="Online"></span></div>
+                    <div class="sb-baba-tag">Your AI Guide</div>
                 </div>
             </div>
 
-            <div class="panel-title" style="margin-top:18px"><span>✦</span> CONVERSATIONS <span>✦</span></div>
-            <ul id="conversationList" class="conv-list">
-                <li class="conv-empty">Sign in to save chats</li>
-            </ul>
-            <button id="newChatBtn" class="ghost-btn" type="button">+ New chat</button>
+            <nav class="sb-nav" aria-label="Modes">
+                <button class="sb-nav-item active" data-mode-cmd="chat" type="button">
+                    <span class="sb-nav-icon">💬</span><span>Chat with Baba G</span>
+                </button>
+                <button class="sb-nav-item" data-mode-cmd="call" type="button">
+                    <span class="sb-nav-icon">📞</span><span>Voice Call</span>
+                    <span class="sb-nav-pill new">NEW</span>
+                </button>
+                <button class="sb-nav-item" data-mode-cmd="daily" type="button">
+                    <span class="sb-nav-icon">☀️</span><span>Daily Guidance</span>
+                </button>
+                <button class="sb-nav-item" data-mode-cmd="predictions" type="button">
+                    <span class="sb-nav-icon">🔮</span><span>Predictions</span>
+                </button>
+                <button class="sb-nav-item" data-mode-cmd="compatibility" type="button">
+                    <span class="sb-nav-icon">❤️</span><span>Compatibility</span>
+                </button>
+                <button class="sb-nav-item" data-mode-cmd="future-me" type="button">
+                    <span class="sb-nav-icon">🪞</span><span>Future Me</span>
+                </button>
+                <button class="sb-nav-item" data-mode-cmd="history" type="button">
+                    <span class="sb-nav-icon">🕘</span><span>History</span>
+                </button>
+                <button class="sb-nav-item" data-mode-cmd="saved" type="button">
+                    <span class="sb-nav-icon">⭐</span><span>Saved</span>
+                </button>
+            </nav>
+
+            <div class="sb-card">
+                <div class="sb-card-title">VOICE</div>
+                <select id="voiceSelect" class="ws-input" aria-label="Voice profile" style="width:100%">
+                    <option value="guru">🧙 Old Guru — Male</option>
+                    <option value="indian_female">🇮🇳 Indian — Female</option>
+                    <option value="chinese_female">🇨🇳 Chinese (Mandarin) — Female</option>
+                    <option value="malaysian_female">🇲🇾 Malaysian — Female</option>
+                    <option value="bengali_female">🇧🇩 Bengali / Bangla — Female</option>
+                    <option value="pakistani_female">🇵🇰 Pakistani (Urdu) — Female</option>
+                    <option value="elder_woman">Elder Woman (warm)</option>
+                    <option value="expert">Expert (neutral)</option>
+                    <option value="gentle">Gentle (soft)</option>
+                    <option value="deep">Deep (baritone)</option>
+                </select>
+                <label class="toggle-mini" style="margin-top:6px;">
+                    <input type="checkbox" id="autoSpeak" checked />
+                    <span style="color:var(--btext-2);font-size:12px">Read replies aloud</span>
+                </label>
+                <input type="hidden" id="speedRange" value="1" />
+            </div>
+
+            <div class="sb-card premium-card" id="premiumSidebarCard">
+                <div class="premium-crown">👑</div>
+                <h3>BABA G PREMIUM</h3>
+                <p id="premiumSidebarBody">Unlock unlimited chats, voice calls, and premium features.</p>
+                <a class="btn-primary" href="#premium" data-open-premium>Upgrade Now</a>
+                <span class="premium-status" id="premiumStatusBadge" hidden>👑 Premium active</span>
+            </div>
+
+            <div class="sb-foot">
+                <span id="authPill" class="auth-pill"></span>
+                <span class="lang-badge">🌐 EN</span>
+                <a class="nav-link" asp-controller="Home" asp-action="About" title="About">i</a>
+            </div>
         </aside>
 
-        <!-- CENTER: AVATAR + CHAT -->
-        <section class="center-area">
-            <div class="avatar-display">
-                <div class="avatar-glow"></div>
-                <div class="avatar-main" id="mainAvatar">
-                    <div class="avatar-figure" id="avatarFigure">🧙‍♂️</div>
-                    <canvas id="avatar3d" class="avatar-3d" hidden></canvas>
+        <!-- ╭─ CENTER ─────────────────────────────────────────────╮ -->
+        <main class="hero" id="heroMain">
+            <header class="hero-tags">
+                <span class="hero-pill"><span>🧠</span> Baba G remembers you</span>
+                <span class="hero-pill"><span>🔥</span> <span id="streakCount">1</span> Day Streak</span>
+            </header>
+
+            <section class="hero-stage">
+                <div class="hero-bubble" id="heroBubble" hidden>
+                    <p id="bubbleText">Kya haal hai mere dost? 😊</p>
                 </div>
-                <div class="speech-bubble" id="speechBubble">
-                    <span class="quote-mark">❝</span>
-                    <p id="babaText">Welcome, seeker.<br>Ask me anything, and together<br>we shall explore the answers.</p>
-                    <span class="quote-mark">❞</span>
+                <div class="hero-avatar-wrap">
+                    <div class="hero-avatar-glow"></div>
+                    <img id="heroAvatar" class="hero-avatar" src="/img/baba-g.png" alt="Baba G" />
                 </div>
-                <div class="voice-wave" id="voiceWave">
-                    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
-                    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
-                    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
-                    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                <div class="hero-wave" id="heroWave" aria-hidden="true">
+                    @for (var i = 0; i < 22; i++) { <span class="hw-bar"></span> }
                 </div>
-                <p class="listening-text" id="listeningText">AI is listening...</p>
+                <div class="hero-status">
+                    <button class="hero-mic" id="heroMicBtn" type="button" aria-label="Toggle voice input">🎤</button>
+                    <span class="hero-status-text" id="heroStatusText">Tap the mic to talk to Baba G</span>
+                </div>
+            </section>
+
+            <section class="msg-feed" id="msgFeed" aria-live="polite">
+                <!-- Messages render here -->
+            </section>
+
+            <footer class="composer">
+                <button class="cm-add" type="button" title="More" aria-label="More">＋</button>
+                <input id="chatInput" class="cm-input" type="text" placeholder="Type your message..."
+                       autocomplete="off" autocapitalize="sentences" autocorrect="on" enterkeyhint="send"
+                       onkeydown="onInputKey(event)" />
+                <button class="cm-mic" id="micBtn" type="button" aria-label="Voice input" title="Voice input">🎙️</button>
+                <button class="cm-send" id="askBtn" type="button" onclick="askBaba()" aria-label="Send">➤</button>
+                <button class="cm-stop" id="stopBtn" type="button" onclick="stopAll()" hidden aria-label="Stop">■</button>
+            </footer>
+
+            <div class="quick-chips">
+                <button class="qc" data-prompt="Give me motivation for today, mere dost. Speak in 3 short sentences." type="button">Give me motivation</button>
+                <button class="qc" data-prompt="Will I get a good job soon? Speak as a wise friend in 3 sentences." type="button">Will I get a good job?</button>
+                <button class="qc" data-prompt="Tell me my love-life prediction for the week ahead. Be playful, in 3 sentences." type="button">Love life prediction</button>
+                <button class="qc" data-prompt="Give me today's daily guidance and one focus to work on. 3 sentences." type="button">Daily guidance</button>
+            </div>
+        </main>
+
+        <!-- ╭─ RIGHT SIDEBAR ──────────────────────────────────────╮ -->
+        <aside class="sb sb-right" id="sbRight">
+            <div class="sb-card promo-call">
+                <span class="promo-tag">NEW</span>
+                <div class="promo-icon">🎙️</div>
+                <h3>Call Baba G</h3>
+                <p>Real voice call experience.<br/>Talk to Baba G anytime, anywhere.</p>
+                <button class="btn-ghost" type="button" data-mode-cmd="call">📞 Start Voice Call</button>
             </div>
 
-            <!-- CHAT INPUT -->
-            <div class="chat-input-area">
-                <div class="chat-bar">
-                    <input type="text" id="chatInput" placeholder="Type your question here..." onkeydown="onInputKey(event)" />
-                    <button class="mic-btn" id="micBtn" onclick="toggleVoice()" title="Voice Input">🎤</button>
-                    <button class="ask-btn" id="askBtn" onclick="askBaba()"><span>ASK</span> ➤</button>
-                    <button class="ask-btn danger" id="stopBtn" onclick="stopAll()" hidden>STOP</button>
+            <div class="sb-card">
+                <div class="sb-card-title">POPULAR FEATURES</div>
+                <div class="features-grid">
+                    <button class="feature" data-mode-cmd="daily" type="button">
+                        <span class="ft-icon" style="background:rgba(245,158,11,0.12);color:#f59e0b">☀️</span>
+                        <strong>Daily Guidance</strong><small>Personalized advice</small>
+                    </button>
+                    <button class="feature" data-mode-cmd="predictions" type="button">
+                        <span class="ft-icon" style="background:rgba(99,102,241,0.12);color:#818cf8">🔮</span>
+                        <strong>Predictions</strong><small>See your future</small>
+                    </button>
+                    <button class="feature" data-mode-cmd="compatibility" type="button">
+                        <span class="ft-icon" style="background:rgba(244,114,182,0.12);color:#f472b6">❤️</span>
+                        <strong>Compatibility</strong><small>Love & friends</small>
+                    </button>
+                    <button class="feature" data-mode-cmd="future-me" type="button">
+                        <span class="ft-icon" style="background:rgba(34,197,94,0.12);color:#22c55e">🪞</span>
+                        <strong>Future Me</strong><small>See your future self</small>
+                    </button>
+                    <button class="feature" data-mode-cmd="roast" type="button">
+                        <span class="ft-icon" style="background:rgba(239,68,68,0.14);color:#ef4444">🔥</span>
+                        <strong>Roast Me</strong><small>Baba G roast mode</small>
+                    </button>
+                    <button class="feature" data-mode-cmd="dream" type="button">
+                        <span class="ft-icon" style="background:rgba(96,165,250,0.12);color:#60a5fa">☁️</span>
+                        <strong>Dream Interpreter</strong><small>Decode your dreams</small>
+                    </button>
                 </div>
-                <div class="topic-tags">
-                    <span class="tag">📝 Life</span>
-                    <span class="tag">🧠 Mindset</span>
-                    <span class="tag">❤️ Relationships</span>
-                    <span class="tag">💼 Career</span>
-                    <span class="tag">🌿 Health</span>
-                    <span class="tag">🕊️ Spirituality</span>
-                    <span class="tag">+ More</span>
-                </div>
-                <div class="hint" id="guestHint">
-                    Chatting as a guest — <a asp-controller="Home" asp-action="Auth">sign up</a> so BABA can remember you across sessions.
-                </div>
+            </div>
+
+            <!-- Sponsored slot (hidden for premium subscribers) -->
+            <div class="sb-card ad-slot" id="adSlotRight">
+                @if (!string.IsNullOrWhiteSpace(adsenseClient))
+                {
+                    <ins class="adsbygoogle"
+                         style="display:block"
+                         data-ad-client="@adsenseClient"
+                         data-ad-slot="0000000000"
+                         data-ad-format="auto"
+                         data-full-width-responsive="true"></ins>
+                    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+                }
+                else
+                {
+                    <span>Ad slot · set GoogleAds:ClientId to enable</span>
+                }
+            </div>
+
+            <div class="sb-card premium-card big">
+                <h3><span class="premium-crown">👑</span> BABA G PREMIUM</h3>
+                <ul class="premium-list">
+                    <li>✓ Unlimited voice calls</li>
+                    <li>✓ Baba G remembers everything</li>
+                    <li>✓ Personalized daily reports</li>
+                    <li>✓ Premium personalities</li>
+                    <li>✓ No ads. Pure experience.</li>
+                </ul>
+                <a class="btn-primary big" href="#premium" data-open-premium>Upgrade to Premium</a>
+                <p class="premium-price">@priceLabel</p>
+            </div>
+        </aside>
+    </div>
+
+    <!-- ╭─ VOICE CALL MODAL ─────────────────────────────────────╮ -->
+    <div class="call-overlay" id="callOverlay" hidden aria-modal="true" role="dialog" aria-label="Voice call with Baba G">
+        <header class="call-top">
+            <button class="call-back" id="callClose" type="button" aria-label="End call">⌄</button>
+            <div class="call-title">
+                <small>Voice Call with</small>
+                <strong>Baba G</strong>
+                <span class="call-state" id="callState">Connecting…</span>
+                <span class="call-timer" id="callTimer" hidden>00:00</span>
+            </div>
+            <span class="call-secure"><span class="ck">✓</span> Secure Call</span>
+        </header>
+
+        <div class="call-free-banner hidden" id="callFreeBanner">
+            ⏱️ <strong>20-second free trial.</strong>&nbsp;Upgrade to unlock unlimited voice calls.
+        </div>
+
+        <section class="call-stage">
+            <div class="call-wave-l" aria-hidden="true">
+                @for (var i = 0; i < 14; i++) { <span></span> }
+            </div>
+            <div class="call-avatar-frame">
+                <div class="call-avatar-ring"></div>
+                <img class="call-avatar" src="/img/baba-g.png" alt="Baba G" />
+            </div>
+            <div class="call-wave-r" aria-hidden="true">
+                @for (var i = 0; i < 14; i++) { <span></span> }
             </div>
         </section>
 
-        <!-- RIGHT: MINDSET + SETTINGS -->
-        <aside class="panel panel-right">
-            <div class="panel-title"><span>✦</span> CHOOSE MINDSET <span>✦</span></div>
-            <div class="mindset-list">
-                <div class="mindset-card active" data-mindset="balanced" onclick="selectMindset(this)">
-                    <div class="mindset-icon">⚖️</div>
-                    <div class="mindset-info"><strong>Balanced</strong><small>Well-rounded perspective for all situations</small></div>
-                    <div class="mindset-check">✓</div>
-                </div>
-                <div class="mindset-card" data-mindset="logical" onclick="selectMindset(this)">
-                    <div class="mindset-icon">🧩</div>
-                    <div class="mindset-info"><strong>Logical</strong><small>Clear, rational and practical advice</small></div>
-                </div>
-                <div class="mindset-card" data-mindset="spiritual" onclick="selectMindset(this)">
-                    <div class="mindset-icon">🪷</div>
-                    <div class="mindset-info"><strong>Spiritual</strong><small>Soulful, mindful and inner growth</small></div>
-                </div>
-                <div class="mindset-card" data-mindset="motivational" onclick="selectMindset(this)">
-                    <div class="mindset-icon">🔥</div>
-                    <div class="mindset-info"><strong>Motivational</strong><small>Encouraging and uplifting guidance</small></div>
-                </div>
-                <div class="mindset-card" data-mindset="creative" onclick="selectMindset(this)">
-                    <div class="mindset-icon">🎨</div>
-                    <div class="mindset-info"><strong>Creative</strong><small>Innovative and out-of-the-box ideas</small></div>
-                </div>
-            </div>
+        <div class="call-name">
+            Baba G <span class="call-verified">✓</span>
+            <span class="call-sub" id="callSub">Your AI Guide</span>
+        </div>
 
-            <div class="settings-section">
-                <div class="settings-title">🎚️ VOICE & SETTINGS</div>
-                <div class="setting-row">
-                    <label>Voice</label>
-                    <select id="voiceSelect" class="setting-select">
-                        <option>Calm & Warm</option>
-                        <option>Deep & Wise</option>
-                        <option>Gentle</option>
-                    </select>
-                </div>
-                <div class="setting-row">
-                    <label>Speed</label>
-                    <input type="range" id="speedRange" min="0.5" max="2" step="0.1" value="1" class="setting-range" />
-                    <span id="speedVal">1.0x</span>
-                </div>
-                <div class="setting-row">
-                    <label>3D</label>
-                    <label class="toggle-mini"><input type="checkbox" id="toggle3DBox" onchange="toggle3D()" /><span>robot avatar</span></label>
-                </div>
-                <div class="setting-row">
-                    <label>Live</label>
-                    <label class="toggle-mini"><input type="checkbox" id="continuousMode" /><span>continuous voice</span></label>
-                </div>
-                <div class="setting-row">
-                    <label>Stream</label>
-                    <label class="toggle-mini"><input type="checkbox" id="streamMode" checked /><span>realtime tokens</span></label>
-                </div>
-            </div>
-        </aside>
-    </main>
+        <div class="call-bubble" id="callBubble">
+            Baba G is getting ready to talk with you.<br/>
+            Get comfy, take a deep breath and let's have a real conversation.
+        </div>
 
-    <!-- FOOTER -->
-    <footer class="app-footer">
-        <span class="footer-quote">❝ <em>Wisdom is not from one place. It is everywhere.</em> ❞</span>
-        <span class="footer-links">
-            <a asp-controller="Home" asp-action="About">About</a>
-            <a asp-controller="Home" asp-action="Terms">Terms</a>
-            <a asp-controller="Home" asp-action="Memory">Memory</a>
-            <a asp-controller="Home" asp-action="Personalities">Personalities</a>
-            <a asp-controller="Home" asp-action="Avatars">Avatars</a>
-        </span>
-    </footer>
+        <div class="call-equalizer" id="callEq" hidden>
+            @for (var i = 0; i < 32; i++) { <span></span> }
+        </div>
+        <p class="call-listen" id="callListen" hidden>Baba G is listening…</p>
+
+        <div class="call-actions">
+            <button class="ca-btn" id="callMute" type="button"><span>🔇</span><small>Mute</small></button>
+            <button class="ca-end" id="callEnd" type="button" aria-label="End call"><span>📞</span></button>
+            <button class="ca-btn" id="callSpeaker" type="button"><span>🔊</span><small>Speaker</small></button>
+        </div>
+
+        <p class="call-tip">💡 Tip: Speak freely, <strong>Baba G</strong> is here for you.</p>
+    </div>
+
+    <!-- ╭─ PREMIUM MODAL (BuyMeACoffee) ─────────────────────────╮ -->
+    <div class="modal-overlay" id="premiumOverlay" hidden aria-modal="true" role="dialog" aria-label="Premium subscription">
+        <div class="modal premium-modal">
+            <button class="modal-close" type="button" data-close-modal aria-label="Close">×</button>
+            <span class="premium-eyebrow">👑 Premium</span>
+            <h2>BABA G Premium</h2>
+            <p class="muted premium-reason" hidden></p>
+            <p class="muted">Unlock the full Baba G experience.</p>
+            <ul class="premium-list big">
+                <li>✓ Unlimited voice calls (free tier is 20-second trial)</li>
+                <li>✓ Baba G remembers everything across devices</li>
+                <li>✓ Personalized daily reports</li>
+                <li>✓ All premium personalities (Astrologer, Sage, Designer…)</li>
+                <li>✓ Dream interpreter, Roast mode, Future-Me</li>
+                <li>✓ Regional female voices (Indian, Chinese, Malay, Bangla, Pakistani…)</li>
+                <li>✓ No ads. Pure, calm experience.</li>
+            </ul>
+            <p class="premium-price big"><strong>@priceLabel</strong></p>
+            <p class="muted small">Manage your subscription securely via Buy Me a Coffee.</p>
+            <a class="btn-primary big bmc"
+               id="bmcLink"
+               href="@bmcUrl"
+               target="_blank" rel="noopener noreferrer">
+                ☕ Subscribe via Buy Me a Coffee
+            </a>
+            <button class="btn-ghost" id="btnIveSubscribed" type="button" style="margin-top:8px">I've subscribed — activate Premium</button>
+            <p class="muted xsmall">Verification pending — Buy Me a Coffee membership verification is in progress. Once it's live, "I've subscribed" will be auto-validated against your BMC email. Until then, tapping it activates Premium locally so existing supporters can use the app.</p>
+            <button class="msg-action" id="btnRevokePremium" type="button" style="margin-top:6px">Revoke Premium (testing)</button>
+        </div>
+    </div>
 
     <script type="module" src="/js/app.js" asp-append-version="true"></script>
+    <script type="module" src="/js/baba.js" asp-append-version="true"></script>
+    <script type="module" src="/js/panels.js" asp-append-version="true"></script>
 </body>
 </html>

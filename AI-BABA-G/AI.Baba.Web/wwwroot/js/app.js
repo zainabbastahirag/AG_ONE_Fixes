@@ -1,11 +1,13 @@
 // ═══════════════════════════════════════════════════════════════
 //  AI BABA-G — Frontend Logic (ES module)
-//  Integrates persistent memory, vector recall, SSE streaming,
-//  3D avatar with viseme lip-sync, custom personalities, and
-//  ChatGPT-style interrupt with the existing mystical UI.
+//  Persistent memory, vector recall, SSE streaming, 3D avatar with
+//  viseme lip-sync, custom personalities, and ChatGPT-style interrupt
+//  with the existing mystical UI.
 // ═══════════════════════════════════════════════════════════════
 import { Avatar3D } from './avatar.js';
-import { VoiceIO } from './voice.js';
+import { VoiceIO, unlockTTS } from './voice.js';
+import { renderMarkdown, plainText } from './format.js';
+import { initWorkspaces, setWorkspace, workspaceForAvatar } from './workspaces.js';
 
 const state = {
     currentAvatar: 'sage',
@@ -19,7 +21,19 @@ const state = {
     avatar3d: null,
     voice: null,
     abortController: null,
-    isSpeakingTts: false,
+    inFlight: false,
+    voiceProfile: localStorage.getItem('baba_voice_profile') || 'guru',
+    autoSpeak: localStorage.getItem('baba_autospeak') !== '0',
+    // Workspaces can redirect the streaming AI reply to their own report
+    // panel so users see structured reports instead of just a chat bubble.
+    replyTarget: null,                       // DOM element receiving rendered markdown
+    replyTokenHandler: null,                 // optional (rawToken, fullText) => void
+};
+
+// Used by workspaces to intercept the streamed reply.
+window.babaSetReplyTarget = function (target, opts = {}) {
+    state.replyTarget = target || null;
+    state.replyTokenHandler = (typeof opts.onToken === 'function') ? opts.onToken : null;
 };
 
 function saveAuth() {
@@ -50,6 +64,7 @@ const api = {
 //  Selection (avatar / mindset)  — kept compatible with inline HTML
 // ───────────────────────────────────────────────────────────────
 window.selectAvatar = function (el) {
+    if (!el) return;
     document.querySelectorAll('.avatar-card').forEach(c => {
         c.classList.remove('active');
         c.querySelector('.avatar-check')?.remove();
@@ -62,10 +77,45 @@ window.selectAvatar = function (el) {
     check.textContent = '✓';
     img.appendChild(check);
 
-    // update central avatar figure
-    const figureMap = { sage: '🧙‍♂️', philosopher: '🤔', healer: '🙏', elder: '👳', storyteller: '📖' };
+    const figureMap = {
+        sage: '🧙‍♂️', philosopher: '🤔', healer: '🙏', elder: '👳', storyteller: '📖',
+        designer: '🎨', developer: '💻', pm: '📋', marketing: '📣', sales: '💼', hr: '🤝',
+        astrologer: '🔮',
+    };
     const fig = document.getElementById('avatarFigure');
     if (fig && !state.use3D) fig.textContent = figureMap[state.currentAvatar] || '🧙‍♂️';
+
+    // Map avatars → recommended voice profile (user can still override).
+    const profileMap = {
+        sage: 'guru', elder: 'guru', philosopher: 'expert', healer: 'gentle',
+        storyteller: 'expert', designer: 'gentle', developer: 'expert',
+        pm: 'expert', marketing: 'gentle', sales: 'expert', hr: 'gentle',
+        astrologer: 'guru',
+    };
+    const sel = document.getElementById('voiceSelect');
+    if (sel && !sel.dataset.userPicked) {
+        const recommended = profileMap[state.currentAvatar];
+        if (recommended) {
+            sel.value = recommended;
+            state.voiceProfile = recommended;
+        }
+    }
+
+    // Swap the workspace below the bubble to match the role.
+    const ws = workspaceForAvatar(state.currentAvatar);
+    setWorkspace(ws);
+    document.querySelector('.app-grid')?.setAttribute('data-mode', ws);
+    document.body.setAttribute('data-mode', ws);
+    // When entering chat mode, restore the bubble as the reply target.
+    if (ws === 'chat') {
+        window.babaSetReplyTarget(null);
+    } else if (ws !== 'astrology') {
+        // For pro modes (except astrology, which manages its own targets),
+        // default the report panel as the streaming reply target so a free-
+        // form question typed into the chat input also lands in the report.
+        const target = document.querySelector('#workspace .ws-report-target');
+        if (target) window.babaSetReplyTarget(target);
+    }
 };
 
 window.selectMindset = function (el) {
@@ -85,42 +135,80 @@ window.selectMindset = function (el) {
 //  Voice (STT + TTS)
 // ───────────────────────────────────────────────────────────────
 function initVoice() {
+    if (state.voice) return;
     state.voice = new VoiceIO({
-        onPartial: (t) => { document.getElementById('chatInput').value = t; },
+        onPartial: (t) => {
+            const inp = document.getElementById('chatInput');
+            if (inp) inp.value = t;
+        },
         onFinal: (t) => {
-            document.getElementById('chatInput').value = t;
-            if (t.toLowerCase().includes('hey baba')) {
-                document.getElementById('chatInput').value = t.replace(/hey baba/gi, '').trim();
-            }
-            if (document.getElementById('chatInput').value.trim()) askBaba();
+            const inp = document.getElementById('chatInput');
+            if (!inp) return;
+            inp.value = t;
+            if (inp.value.trim()) askBaba();
         },
         onSpeakChunk: (chunk) => { state.avatar3d?.speakText(chunk); },
+        onSpeakingStart: () => {
+            document.getElementById('listeningText')?.classList.remove('visible');
+        },
         onSpeakingDone: () => {
             showWave(false);
-            document.getElementById('listeningText').classList.remove('visible');
-            if (state.voice?.continuous) {
-                document.getElementById('listeningText').classList.add('visible');
+            if (state.voice?.continuous && !state.voice?.userMutedMic) {
+                document.getElementById('listeningText')?.classList.add('visible');
+            }
+        },
+        onUnsupported: (msg) => {
+            const hint = document.getElementById('voiceHint');
+            if (hint) { hint.textContent = msg; hint.classList.add('visible'); }
+            const micBtn = document.getElementById('micBtn');
+            if (micBtn) {
+                micBtn.classList.add('disabled');
+                micBtn.setAttribute('aria-disabled', 'true');
+                micBtn.title = msg;
             }
         },
         getRate: () => parseFloat(document.getElementById('speedRange')?.value || '1'),
+        getProfile: () => localStorage.getItem('baba_voice_profile') || state.voiceProfile,
     });
+    // If recognition isn't supported, mark mic disabled but keep TTS available.
+    if (!state.voice.supported()) {
+        const micBtn = document.getElementById('micBtn');
+        if (micBtn) {
+            micBtn.classList.add('disabled');
+            micBtn.title = state.voice.isMobile()
+                ? 'Voice input unavailable on this browser. You can still type — the bot will speak its reply.'
+                : 'Voice input is not supported in this browser.';
+        }
+    }
+    // Expose for baba.js (voice-call modal, replay buttons, etc.)
+    window._babaVoice = state.voice;
 }
 
-window.toggleVoice = function () {
-    if (!state.voice) initVoice();
+window.toggleVoice = function (ev) {
+    // CRITICAL: this must run synchronously inside the user-gesture handler.
+    // No async work before .startListening() — Safari/iOS will silently
+    // reject mic permission otherwise.
+    initVoice();
+    unlockTTS();
     if (!state.voice.supported()) {
-        alert('Voice input not supported in this browser. Use Chrome.');
+        const hint = document.getElementById('voiceHint');
+        const msg = state.voice.isMobile()
+            ? 'Voice input is unavailable on this browser. Please type — the bot will speak its reply.'
+            : 'Voice input is not supported in this browser. Please use Chrome, Edge, or Samsung Internet.';
+        if (hint) { hint.textContent = msg; hint.classList.add('visible'); }
         return;
     }
     if (state.voice.listening) {
         state.voice.stopListening();
-        document.getElementById('micBtn').classList.remove('recording');
-        document.getElementById('listeningText').classList.remove('visible');
+        document.getElementById('micBtn')?.classList.remove('recording');
+        document.getElementById('listeningText')?.classList.remove('visible');
     } else {
-        state.voice.startListening();
-        document.getElementById('micBtn').classList.add('recording');
-        document.getElementById('listeningText').classList.add('visible');
-        state.avatar3d?.setListening(true);
+        const ok = state.voice.startListening();
+        if (ok) {
+            document.getElementById('micBtn')?.classList.add('recording');
+            document.getElementById('listeningText')?.classList.add('visible');
+            state.avatar3d?.setListening(true);
+        }
     }
 };
 
@@ -139,13 +227,17 @@ window.toggle3D = function () {
 };
 
 window.stopAll = function () {
-    if (state.abortController) { state.abortController.abort(); state.abortController = null; }
+    if (state.abortController) {
+        try { state.abortController.abort(); } catch (_) { }
+        state.abortController = null;
+    }
     state.voice?.stopSpeaking();
     state.avatar3d?.stopSpeaking();
     document.getElementById('avatarFigure')?.classList.remove('speaking');
     document.getElementById('askBtn').hidden = false;
     document.getElementById('stopBtn').hidden = true;
     showWave(false);
+    state.inFlight = false;
 };
 
 window.onInputKey = function (e) {
@@ -157,17 +249,31 @@ window.onInputKey = function (e) {
 //  Ask Baba  — chooses streaming SSE or legacy /api/ask
 // ───────────────────────────────────────────────────────────────
 async function askBaba() {
-    if (state.abortController) return;
-    if (!state.voice) initVoice();
+    if (state.inFlight) return;                 // hard guard against double-submits
+    initVoice();
     const input = document.getElementById('chatInput');
     const prompt = input.value.trim();
     if (!prompt) return;
 
     input.value = '';
-    showTypingDots();
-    showWave(true);
+    state.inFlight = true;
+
+    // Render the user's question + create a bot bubble for the streaming reply.
+    if (window.babaUi) {
+        try { window.babaUi.onUserSend(prompt); } catch (_) { }
+        try {
+            const target = window.babaUi.startBabaTurn();
+            if (target) window.babaSetReplyTarget(target);
+        } catch (_) { }
+        try { window.babaUi.setBubble('Hmm…'); } catch (_) { }
+    }
+
+    // Stop any in-flight TTS so the new question takes priority (interrupt).
     state.voice?.stopSpeaking();
     state.avatar3d?.stopSpeaking();
+
+    showTypingDots();
+    showWave(true);
 
     state.streaming = document.getElementById('streamMode')?.checked ?? true;
 
@@ -181,12 +287,16 @@ async function askBaba() {
             await legacyAsk(prompt);
         }
     } catch (err) {
-        if (err.name !== 'AbortError') {
+        if (err?.name !== 'AbortError') {
             console.error(err);
-            setBabaText('The connection to wisdom was lost. Please try again.');
+            const msg = String(err?.message || '').slice(0, 200);
+            setBabaText(msg
+                ? `I'm having trouble reaching the wisdom servers (${msg}). Please try again in a moment.`
+                : 'The connection to wisdom was lost. Please try again.');
         }
     } finally {
         state.abortController = null;
+        state.inFlight = false;
         document.getElementById('askBtn').hidden = false;
         document.getElementById('stopBtn').hidden = true;
         showWave(false);
@@ -203,89 +313,202 @@ async function legacyAsk(prompt) {
             mindset: state.currentMindset
         })
     });
-    const data = await res.json();
-    if (data.success) {
-        setBabaText(data.response);
-        state.voice?.speak(data.response);
+    let data; try { data = await res.json(); } catch (_) { data = {}; }
+    if (res.ok && data.success) {
+        setBabaMarkdown(data.response);
+        if (state.autoSpeak) state.voice?.speak(plainText(data.response));
     } else {
-        setBabaText('Something went wrong... try again, seeker.');
+        const err = data?.error || `Server returned ${res.status}.`;
+        setBabaText(err);
     }
 }
 
 async function streamingAsk(prompt) {
     const isAuthed = !!state.user;
     const url = isAuthed ? '/api/chat/stream' : '/api/chat/guest/stream';
+    // Tell the server which mode this turn is in:
+    //   'voice' — call modal is open; replies must be 1–2 sentences (num_predict=64).
+    //   'panel' — fired from one of the sidebar panels; 2–3 sentences (num_predict=110).
+    //   undefined — normal chat (current Ollama defaults).
+    const mode = window.babaCall?.isOpen?.() ? 'voice' :
+                 (state.activePanelMode || undefined);
     const body = isAuthed
-        ? { message: prompt, conversationId: state.conversationId, personalityId: state.currentPersonalityId, avatar: state.currentAvatar, mindset: state.currentMindset }
-        : { message: prompt, personalityId: state.currentPersonalityId, avatar: state.currentAvatar, mindset: state.currentMindset };
+        ? { message: prompt, conversationId: state.conversationId, personalityId: state.currentPersonalityId, avatar: state.currentAvatar, mindset: state.currentMindset, mode }
+        : { message: prompt, personalityId: state.currentPersonalityId, avatar: state.currentAvatar, mindset: state.currentMindset, mode };
 
     state.abortController = new AbortController();
     const headers = { 'Content-Type': 'application/json' };
     if (state.token) headers['Authorization'] = 'Bearer ' + state.token;
 
-    // Show typing dots immediately so the user sees instant activity.
     showTypingDots();
 
-    const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal: state.abortController.signal });
-    if (!res.ok || !res.body) {
-        setBabaText(`Connection failed (${res.status}).`);
+    let res;
+    try {
+        res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal: state.abortController.signal });
+    } catch (e) {
+        if (e?.name === 'AbortError') return;
+        setBabaText('Could not reach the server. Please check your connection and try again.');
         return;
     }
 
-    const babaTextEl = document.getElementById('babaText');
+    if (!res.ok || !res.body) {
+        // Try to surface a friendly error from JSON-shaped responses.
+        let friendly = `Connection failed (${res.status}).`;
+        try {
+            const j = await res.clone().json();
+            if (j?.error) friendly = j.error;
+        } catch (_) { }
+        if (res.status === 429) friendly = 'You\'re asking very quickly. Please wait a moment and try again.';
+        if (res.status === 503) friendly = 'The service is starting up. Please try again in a few seconds.';
+        setBabaText(friendly);
+        return;
+    }
+
+    const babaTextEl = getReplyEl();
     let firstToken = true;
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
     let buf = '';
-    let full = '';
-    while (true) {
-        const { value, done } = await reader.read();
+    let full = '';            // raw markdown accumulated
+    let spokenSoFar = '';     // plain text already pushed to TTS
+
+    let renderScheduled = false;
+    const scheduleRender = () => {
+        if (renderScheduled) return;
+        renderScheduled = true;
+        requestAnimationFrame(() => {
+            renderScheduled = false;
+            babaTextEl.innerHTML = renderMarkdown(full);
+            babaTextEl.classList.add('cursor-blink');
+            scrollBubbleToEnd();
+        });
+    };
+
+    let serverDone = false;
+    while (!serverDone) {
+        let chunk;
+        try {
+            chunk = await reader.read();
+        } catch (e) {
+            if (e?.name === 'AbortError') break;
+            throw e;
+        }
+        const { value, done } = chunk;
         if (done) break;
         buf += decoder.decode(value, { stream: true });
         let idx;
         while ((idx = buf.indexOf('\n\n')) >= 0) {
             const block = buf.slice(0, idx); buf = buf.slice(idx + 2);
-            let evt = 'message', data = '';
+            let evt = 'message', dataLines = [];
             for (const line of block.split('\n')) {
-                if (line.startsWith('event:')) evt = line.slice(6).trim();
-                else if (line.startsWith('data:')) data += line.slice(5).trimStart();
+                if (line.startsWith('event:')) {
+                    // 'event:' field — trim a single optional leading space + trailing CR
+                    evt = line.slice(6).replace(/^ /, '').replace(/\r$/, '');
+                } else if (line.startsWith('data:')) {
+                    // 'data:' field — per the SSE spec strip EXACTLY ONE leading space.
+                    // (The previous code used trimStart() which ate every leading space,
+                    // welding tokens like ' the' / ' however' / a literal ' ' to the
+                    // previous word and producing 'That'sverykindofyou,butIdon't...'.)
+                    let v = line.slice(5);
+                    if (v.startsWith(' ')) v = v.slice(1);
+                    if (v.endsWith('\r')) v = v.slice(0, -1);
+                    dataLines.push(v);
+                }
             }
+            // Per spec: when multiple 'data:' lines appear in one event, join with '\n'.
+            let data = dataLines.join('\n');
             data = data.replace(/\\n/g, '\n');
             if (evt === 'ack') {
-                showTypingDots(); // server confirmed it's working on it
+                showTypingDots();
             } else if (evt === 'token') {
                 if (firstToken) {
                     firstToken = false;
-                    setBabaText('');
-                    babaTextEl.classList.add('cursor-blink');
+                    babaTextEl.innerHTML = '';
+                    babaTextEl.classList.add('formatted');
                 }
                 full += data;
-                babaTextEl.textContent = full;
-                state.voice?.pushStreamingText(data);
+                scheduleRender();
+                if (state.replyTokenHandler) {
+                    try { state.replyTokenHandler(data, full); } catch (_) { }
+                }
+                // Pipe into the voice-call modal bubble too, when it's open.
+                if (window.babaCall?.isOpen?.()) {
+                    try { window.babaCall.onTokenChunk(full); } catch (_) { }
+                }
+                // Update the centered hero bubble with the latest line.
+                if (window.babaUi?.setBubble) {
+                    try { window.babaUi.setBubble(full.slice(-180)); } catch (_) { }
+                }
+
+                if (localStorage.getItem('baba_autospeak') !== '0') {
+                    // Feed the TTS only NEW plain-text since last push, so it
+                    // never speaks markdown punctuation like '**', '###', '`'.
+                    const plainAll = plainText(full);
+                    if (plainAll.length > spokenSoFar.length && plainAll.startsWith(spokenSoFar)) {
+                        const delta = plainAll.slice(spokenSoFar.length);
+                        spokenSoFar = plainAll;
+                        if (delta) state.voice?.pushStreamingText(delta);
+                    } else if (plainAll !== spokenSoFar) {
+                        // Rare: plainText collapsed earlier whitespace; resync
+                        // without re-speaking what we already spoke.
+                        spokenSoFar = plainAll;
+                    }
+                }
             } else if (evt === 'meta') {
                 try { const m = JSON.parse(data); if (m.conversationId) { state.conversationId = m.conversationId; loadConversations(); } } catch (_) { }
             } else if (evt === 'error') {
-                full += `\n[error: ${data}]`; babaTextEl.textContent = full;
+                full += `\n\n_[error: ${data}]_`; scheduleRender();
+            } else if (evt === 'done') {
+                serverDone = true;
+                try { reader.cancel(); } catch (_) { }
+                break;
             }
         }
     }
+    // Final render without the typing cursor.
+    babaTextEl.innerHTML = renderMarkdown(full) || babaTextEl.innerHTML;
     babaTextEl.classList.remove('cursor-blink');
-    state.voice?.flushStreaming();
+    scrollBubbleToEnd();
+    if (localStorage.getItem('baba_autospeak') !== '0') state.voice?.flushStreaming();
 }
 
 function showTypingDots() {
-    const el = document.getElementById('babaText');
+    const el = getReplyEl();
     if (!el) return;
     el.innerHTML = '<span class="typing-dots"><span></span><span></span><span></span></span>';
+}
+
+function scrollBubbleToEnd() {
+    const bubble = document.getElementById('speechBubble');
+    if (!bubble) return;
+    bubble.scrollTop = bubble.scrollHeight;
 }
 
 // ───────────────────────────────────────────────────────────────
 //  UI helpers
 // ───────────────────────────────────────────────────────────────
+function getReplyEl() {
+    return state.replyTarget || document.getElementById('babaText');
+}
+
 function setBabaText(text) {
-    const el = document.getElementById('babaText');
-    if (el) { el.classList.remove('cursor-blink'); el.textContent = text; }
+    const el = getReplyEl();
+    if (el) {
+        el.classList.remove('cursor-blink', 'formatted');
+        el.textContent = text;
+    }
+    scrollBubbleToEnd();
+}
+
+function setBabaMarkdown(text) {
+    const el = getReplyEl();
+    if (el) {
+        el.classList.remove('cursor-blink');
+        el.innerHTML = renderMarkdown(text);
+        el.classList.add('formatted');
+    }
+    scrollBubbleToEnd();
 }
 
 function showWave(show) {
@@ -373,7 +596,8 @@ async function loadConversation(id) {
             if (card) window.selectMindset(card);
         }
         const last = c.messages?.[c.messages.length - 1];
-        setBabaText(last?.role === 'assistant' ? last.content : 'Continuing our conversation, seeker...');
+        if (last?.role === 'assistant') setBabaMarkdown(last.content);
+        else setBabaText('Continuing our conversation, seeker...');
         loadConversations();
     } catch (e) { console.warn(e); }
 }
@@ -392,14 +616,27 @@ function wireTopicTags() {
 }
 
 document.getElementById('speedRange')?.addEventListener('input', (e) => {
-    document.getElementById('speedVal').textContent = parseFloat(e.target.value).toFixed(1) + 'x';
+    const v = parseFloat(e.target.value).toFixed(1);
+    const el = document.getElementById('speedVal');
+    if (el) el.textContent = v + 'x';
 });
 
 document.getElementById('continuousMode')?.addEventListener('change', (e) => {
-    if (!state.voice) initVoice();
-    state.voice.setContinuous(e.target.checked);
-    if (e.target.checked) document.getElementById('listeningText').classList.add('visible');
-    else document.getElementById('listeningText').classList.remove('visible');
+    initVoice();
+    state.voice.setContinuous(e.target.checked, { wakeWord: false });
+    document.getElementById('listeningText')?.classList.toggle('visible', !!e.target.checked);
+});
+
+document.getElementById('voiceSelect')?.addEventListener('change', (e) => {
+    state.voiceProfile = e.target.value;
+    e.target.dataset.userPicked = '1';
+    localStorage.setItem('baba_voice_profile', state.voiceProfile);
+});
+
+document.getElementById('autoSpeak')?.addEventListener('change', (e) => {
+    state.autoSpeak = !!e.target.checked;
+    localStorage.setItem('baba_autospeak', state.autoSpeak ? '1' : '0');
+    if (!state.autoSpeak) state.voice?.stopSpeaking();
 });
 
 document.getElementById('newChatBtn')?.addEventListener('click', () => {
@@ -407,33 +644,9 @@ document.getElementById('newChatBtn')?.addEventListener('click', () => {
     setBabaText('A fresh canvas, seeker. What is on your mind?');
 });
 
-// Mobile drawer panels
-function setupMobileDrawers() {
-    const left = document.querySelector('.panel-left');
-    const right = document.querySelector('.panel-right');
-    const backdrop = document.getElementById('panelBackdrop');
-    const closeAll = () => {
-        left?.classList.remove('open');
-        right?.classList.remove('open');
-        backdrop?.classList.remove('open');
-    };
-    document.getElementById('menuLeftBtn')?.addEventListener('click', () => {
-        right?.classList.remove('open');
-        left?.classList.toggle('open');
-        backdrop?.classList.toggle('open', left?.classList.contains('open'));
-    });
-    document.getElementById('menuRightBtn')?.addEventListener('click', () => {
-        left?.classList.remove('open');
-        right?.classList.toggle('open');
-        backdrop?.classList.toggle('open', right?.classList.contains('open'));
-    });
-    backdrop?.addEventListener('click', closeAll);
-    // Close drawer after picking a card on mobile
-    [left, right].forEach(p => p?.addEventListener('click', e => {
-        const card = e.target.closest('.avatar-card, .mindset-card, #newChatBtn, .conv-list li:not(.conv-empty)');
-        if (card && window.matchMedia('(max-width: 900px)').matches) closeAll();
-    }));
-}
+// Drawer behavior is now owned by baba.js (which targets the new .sb-left /
+// .sb-right sidebars). Kept as a no-op for backward compatibility.
+function setupMobileDrawers() { /* baba.js owns this now */ }
 
 // ───────────────────────────────────────────────────────────────
 //  Init
@@ -448,4 +661,38 @@ window.addEventListener('load', () => {
     renderAuthPill();
     loadConversations();
     setupMobileDrawers();
+
+    // Mic button — bind synchronously to both pointer/touch events so iOS
+    // and Android receive the user-gesture token when permission is asked.
+    const micBtn = document.getElementById('micBtn');
+    if (micBtn) {
+        const handler = (e) => { e.preventDefault(); window.toggleVoice(e); };
+        micBtn.addEventListener('click', handler);
+        micBtn.addEventListener('touchend', handler, { passive: false });
+    }
+    // Make the ASK button also unlock TTS so the first reply speaks on iOS.
+    document.getElementById('askBtn')?.addEventListener('click', () => unlockTTS());
+
+    // Workspaces — driven by avatar selection. Each workspace's "send"
+    // routes through the existing chat flow so replies stream into the
+    // bubble and speak out loud just like a normal turn.
+    const wsRoot = document.getElementById('workspace');
+    if (wsRoot) {
+        initWorkspaces({
+            root: wsRoot,
+            ask: (prompt) => {
+                const inp = document.getElementById('chatInput');
+                if (inp) inp.value = prompt;
+                askBaba();
+            },
+            setBubbleText: setBabaText,
+            setBubbleMarkdown: setBabaMarkdown,
+        });
+    }
+
+    // Restore persisted UI prefs
+    const sel = document.getElementById('voiceSelect');
+    if (sel && state.voiceProfile) sel.value = state.voiceProfile;
+    const auto = document.getElementById('autoSpeak');
+    if (auto) auto.checked = state.autoSpeak;
 });

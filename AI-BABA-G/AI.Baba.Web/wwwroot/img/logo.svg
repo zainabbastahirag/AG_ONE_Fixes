@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="AI BABA-G">
+  <defs>
+    <linearGradient id="lg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F2C870"/>
+      <stop offset="100%" stop-color="#8B7335"/>
+    </linearGradient>
+  </defs>
+  <circle cx="24" cy="24" r="22" fill="none" stroke="url(#lg)" stroke-width="1.5" opacity="0.7"/>
+  <circle cx="24" cy="14" r="1.8" fill="url(#lg)"/>
+  <text x="24" y="32" text-anchor="middle" font-family="'Cinzel', 'Times New Roman', serif" font-size="20" font-weight="700" fill="url(#lg)">G</text>
+</svg>

@@ -1,0 +1,13 @@
+{
+  "name": "AI BABA-G",
+  "short_name": "AI BABA-G",
+  "description": "Voice-first AI guide. Multi-personality assistant powered by local Ollama models.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A0B14",
+  "theme_color": "#0A0B14",
+  "icons": [
+    { "src": "/img/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/img/apple-touch-icon.svg", "sizes": "180x180", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using AI.Baba.Web.Data;
 using AI.Baba.Web.Models;
 using AI.Baba.Web.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -11,11 +12,13 @@ public class ApiController : ControllerBase
 {
     private readonly OllamaService _ollama;
     private readonly MemoryService _memory;
+    private readonly BabaDbContext _db;
 
-    public ApiController(OllamaService ollama, MemoryService memory)
+    public ApiController(OllamaService ollama, MemoryService memory, BabaDbContext db)
     {
         _ollama = ollama;
         _memory = memory;
+        _db = db;
     }
 
     /// Legacy non-streaming Ask endpoint — kept for backward compatibility.
@@ -87,7 +90,22 @@ public class ApiController : ControllerBase
     }
 
     [HttpGet("health")]
-    public IActionResult Health() => Ok(new { status = "ok", app = "AI-BABA-G", version = "2.0" });
+    public async Task<IActionResult> Health(CancellationToken ct)
+    {
+        bool dbReachable = false; string? dbError = null;
+        try { dbReachable = await _db.Database.CanConnectAsync(ct); }
+        catch (Exception ex) { dbError = ex.GetType().Name; }
+        return Ok(new
+        {
+            status = "ok",
+            app = "AI-BABA-G",
+            version = "2.1",
+            utc = DateTime.UtcNow,
+            provider = _db.Database.ProviderName,
+            dbReachable,
+            dbError,
+        });
+    }
 
     [HttpGet("config")]
     public IActionResult Config([FromServices] IConfiguration cfg) => Ok(new

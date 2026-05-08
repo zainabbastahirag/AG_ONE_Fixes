@@ -24,6 +24,17 @@ public class ChatController : ControllerBase
         _db = db; _ollama = ollama; _memory = memory; _log = log;
     }
 
+    /// Pre-warm the local Ollama model so the next reply has near-zero
+    /// "first-token" latency. The voice-call modal hits this the moment it
+    /// opens — by the time the user finishes the first sentence the model
+    /// is already loaded and warm.
+    [HttpPost("warm")]
+    public async Task<IActionResult> Warm(CancellationToken ct)
+    {
+        await _ollama.WarmAsync(ct);
+        return Ok(new { warmed = true });
+    }
+
     /// SSE streaming endpoint for *guests* (no persistent memory, no history).
     /// Uses the mystical Baba-G prompt with the chosen avatar/mindset.
     [HttpPost("guest/stream")]
@@ -33,14 +44,33 @@ public class ChatController : ControllerBase
         await SendSseAsync("ack", "thinking"); // instant feedback for the UI
         var sysPrompt = await ResolvePersonalityPromptAsync(req.PersonalityId, req.Avatar, req.Mindset, userName: null, history: string.Empty, ct);
         sysPrompt += "\n\nNOTE: this user is a guest and is NOT signed in, so you have no long-term memory of them. Gently invite them to sign up if they ask you to remember anything.";
+        sysPrompt = ApplyModeOverlay(sysPrompt, req.Mode);
 
         var msgs = new List<OllamaService.ChatTurn>
         {
             new("system", sysPrompt),
             new("user", req.Message)
         };
-        await StreamToClientAsync(msgs, persistAssistantToConversationId: null, ct);
+        var (np, temp) = ModeGenerationOptions(req.Mode);
+        await StreamToClientAsync(msgs, persistAssistantToConversationId: null, ct, np, temp);
     }
+
+    /// Rule overlay added to the system prompt depending on the call mode.
+    /// 'voice' makes BABA G snap-quick (1–2 sentences) for live phone calls.
+    /// 'panel' is for sidebar mode panels — short cards, structured.
+    private static string ApplyModeOverlay(string sys, string? mode) => mode switch
+    {
+        "voice" => sys + "\n\nVOICE-CALL MODE: The user is on a real-time phone call with you. Reply in 1 or at most 2 SHORT sentences. No pleasantries. No filler. Speak directly. The reply must finish within roughly 60 spoken words.",
+        "panel" => sys + "\n\nPANEL MODE: Reply in 2 or at most 3 short sentences. Stay focused on the topic. No markdown.",
+        _ => sys,
+    };
+
+    private static (int? numPredict, double? temperature) ModeGenerationOptions(string? mode) => mode switch
+    {
+        "voice" => (64, 0.45),       // very short, slightly more deterministic for snappiness
+        "panel" => (110, 0.6),
+        _      => ((int?)null, (double?)null),
+    };
 
     /// Authenticated streaming chat with persistent + vector memory.
     [Authorize]
@@ -116,11 +146,13 @@ public class ChatController : ControllerBase
             ct);
 
         if (memBlock.Length > 0) systemPrompt += "\n\n" + memBlock;
+        systemPrompt = ApplyModeOverlay(systemPrompt, req.Mode);
 
         var msgs = new List<OllamaService.ChatTurn> { new("system", systemPrompt) };
         foreach (var m in history) msgs.Add(new(m.Role, m.Content));
 
-        await StreamToClientAsync(msgs, persistAssistantToConversationId: conv.Id, ct);
+        var (np, temp) = ModeGenerationOptions(req.Mode);
+        await StreamToClientAsync(msgs, persistAssistantToConversationId: conv.Id, ct, np, temp);
     }
 
     private async Task<string> ResolvePersonalityPromptAsync(Guid? personalityId, string? avatar, string? mindset, string? userName, string history, CancellationToken ct)
@@ -141,12 +173,14 @@ public class ChatController : ControllerBase
     private async Task StreamToClientAsync(
         List<OllamaService.ChatTurn> msgs,
         Guid? persistAssistantToConversationId,
-        CancellationToken ct)
+        CancellationToken ct,
+        int? numPredict = null,
+        double? temperature = null)
     {
         var full = new StringBuilder();
         try
         {
-            await foreach (var token in _ollama.StreamChatAsync(msgs, ct: ct))
+            await foreach (var token in _ollama.StreamChatAsync(msgs, numPredict: numPredict, temperature: temperature, ct: ct))
             {
                 full.Append(token);
                 await SendSseAsync("token", token);
