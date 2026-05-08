@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#0A0B14" />
-    <title>AI BABA-G — Ask Anything. Get Wisdom. Anytime.</title>
-    <meta name="description" content="AI BABA-G — your professional AI guide. Voice-first, multi-personality (Sage, Designer, Developer, PM, Marketing, Sales, HR) AI assistant powered by local Ollama models." />
+    <title>AI BABA G — Ask Anything. Get Wisdom.</title>
+    <meta name="description" content="AI BABA G — your wise AI companion. Voice calls, daily guidance, predictions, compatibility, future-me, dream interpretation. Powered by local Ollama models." />
     <link rel="icon" type="image/svg+xml" href="/img/favicon.svg" />
     <link rel="apple-touch-icon" href="/img/apple-touch-icon.svg" />
     <link rel="manifest" href="/site.webmanifest" />
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/css/site.css" asp-append-version="true" />
     <script type="importmap">
     {
@@ -21,315 +21,252 @@
     }
     </script>
 </head>
-<body>
-    <!-- TOP NAV -->
-    <nav class="top-nav">
-        <button class="menu-btn" id="menuLeftBtn" type="button" aria-label="Open avatar panel">☰</button>
-        <a class="nav-brand" href="/" aria-label="AI BABA-G home">
-            <img class="nav-logo" src="/img/logo.svg" alt="" aria-hidden="true" width="28" height="28" />
-            <span>AI BABA-G</span>
-        </a>
-        <div class="nav-center">
-            <h1 class="main-title">AI BABA-G</h1>
-            <p class="main-subtitle">— Ask Anything. Get Wisdom. Anytime. —</p>
-        </div>
-        <div class="nav-right">
-            <a class="nav-link" asp-controller="Home" asp-action="Memory" title="Memory">🧠</a>
-            <a class="nav-link" asp-controller="Home" asp-action="Personalities" title="Personalities">✦</a>
-            <a class="nav-link" asp-controller="Home" asp-action="Avatars" title="Avatars">👤</a>
-            <a class="nav-link" asp-controller="Home" asp-action="About" title="About">i</a>
-            <span id="authPill" class="auth-pill"></span>
-            <span class="lang-badge">🌐 EN</span>
-            <button class="icon-btn" title="Settings" onclick="toggle3D()">⚙️</button>
-            <button class="menu-btn" id="menuRightBtn" type="button" aria-label="Open mindset panel">⚙</button>
-        </div>
-    </nav>
+<body data-mode="chat">
+    <button class="menu-btn floating" id="menuLeftBtn" type="button" aria-label="Open menu">☰</button>
+    <button class="menu-btn floating right" id="menuRightBtn" type="button" aria-label="Open features">⚙</button>
     <div class="panel-backdrop" id="panelBackdrop"></div>
 
-    <!-- MAIN LAYOUT -->
-    <main class="app-grid">
-        <!-- LEFT: AVATAR SELECTION -->
-        <aside class="panel panel-left">
-            <div class="panel-title"><span>✦</span> CHOOSE AVATAR <span>✦</span></div>
-            <div class="avatar-list">
-                <div class="avatar-card active" data-avatar="sage" onclick="selectAvatar(this)">
-                    <div class="avatar-img sage-img"><div class="avatar-check">✓</div></div>
-                    <div class="avatar-info"><strong>The Sage</strong><small>Wisdom & Guidance</small></div>
-                </div>
-                <div class="avatar-card" data-avatar="philosopher" onclick="selectAvatar(this)">
-                    <div class="avatar-img philosopher-img"></div>
-                    <div class="avatar-info"><strong>The Philosopher</strong><small>Deep Thinker</small></div>
-                </div>
-                <div class="avatar-card" data-avatar="healer" onclick="selectAvatar(this)">
-                    <div class="avatar-img healer-img"></div>
-                    <div class="avatar-info"><strong>The Healer</strong><small>Calm & Empathetic</small></div>
-                </div>
-                <div class="avatar-card" data-avatar="elder" onclick="selectAvatar(this)">
-                    <div class="avatar-img elder-img"></div>
-                    <div class="avatar-info"><strong>The Elder</strong><small>Tradition & Experience</small></div>
-                </div>
-                <div class="avatar-card" data-avatar="storyteller" onclick="selectAvatar(this)">
-                    <div class="avatar-img storyteller-img"></div>
-                    <div class="avatar-info"><strong>The Storyteller</strong><small>Stories & Inspiration</small></div>
-                </div>
+    <div class="bg-app">
 
-                <div class="panel-subtitle">PROFESSIONAL</div>
+        <!-- ╭─ LEFT SIDEBAR ───────────────────────────────────────╮ -->
+        <aside class="sb sb-left" id="sbLeft">
+            <header class="sb-brand">
+                <img class="sb-brand-img" src="/img/baba-g.png" alt="" loading="lazy" />
+                <div class="sb-brand-text">
+                    <h1>AI BABA G</h1>
+                    <p>Ask Anything. Get Wisdom.</p>
+                </div>
+            </header>
 
-                <div class="avatar-card" data-avatar="designer" onclick="selectAvatar(this)">
-                    <div class="avatar-img designer-img"></div>
-                    <div class="avatar-info"><strong>The Designer</strong><small>UI / UX & Brand</small></div>
-                </div>
-                <div class="avatar-card" data-avatar="developer" onclick="selectAvatar(this)">
-                    <div class="avatar-img developer-img"></div>
-                    <div class="avatar-info"><strong>The Developer</strong><small>Code & Architecture</small></div>
-                </div>
-                <div class="avatar-card" data-avatar="pm" onclick="selectAvatar(this)">
-                    <div class="avatar-img pm-img"></div>
-                    <div class="avatar-info"><strong>Project Manager</strong><small>Plans, sprints, scope</small></div>
-                </div>
-                <div class="avatar-card" data-avatar="marketing" onclick="selectAvatar(this)">
-                    <div class="avatar-img marketing-img"></div>
-                    <div class="avatar-info"><strong>Marketing</strong><small>Copy, growth, channels</small></div>
-                </div>
-                <div class="avatar-card" data-avatar="sales" onclick="selectAvatar(this)">
-                    <div class="avatar-img sales-img"></div>
-                    <div class="avatar-info"><strong>Sales</strong><small>Pitch, objections, deals</small></div>
-                </div>
-                <div class="avatar-card" data-avatar="hr" onclick="selectAvatar(this)">
-                    <div class="avatar-img hr-img"></div>
-                    <div class="avatar-info"><strong>HR</strong><small>People, hiring, culture</small></div>
-                </div>
-
-                <div class="panel-subtitle">SPECIAL</div>
-
-                <div class="avatar-card" data-avatar="astrologer" onclick="selectAvatar(this)">
-                    <div class="avatar-img astrologer-img"></div>
-                    <div class="avatar-info"><strong>Astrologer Sage</strong><small>Birthday · zodiac · daily reading</small></div>
+            <div class="sb-card baba-card">
+                <img class="sb-baba-avatar" src="/img/baba-g.png" alt="Baba G" loading="lazy" />
+                <div class="sb-baba-meta">
+                    <div class="sb-baba-name">Baba G <span class="dot online" aria-label="Online"></span></div>
+                    <div class="sb-baba-tag">Your AI Guide</div>
                 </div>
             </div>
 
-            <div class="panel-title" style="margin-top:18px"><span>✦</span> CONVERSATIONS <span>✦</span></div>
-            <ul id="conversationList" class="conv-list">
-                <li class="conv-empty">Sign in to save chats</li>
-            </ul>
-            <button id="newChatBtn" class="ghost-btn" type="button">+ New chat</button>
+            <nav class="sb-nav" aria-label="Modes">
+                <button class="sb-nav-item active" data-mode-cmd="chat" type="button">
+                    <span class="sb-nav-icon">💬</span><span>Chat with Baba G</span>
+                </button>
+                <button class="sb-nav-item" data-mode-cmd="call" type="button">
+                    <span class="sb-nav-icon">📞</span><span>Voice Call</span>
+                    <span class="sb-nav-pill new">NEW</span>
+                </button>
+                <button class="sb-nav-item" data-mode-cmd="daily" type="button">
+                    <span class="sb-nav-icon">☀️</span><span>Daily Guidance</span>
+                </button>
+                <button class="sb-nav-item" data-mode-cmd="predictions" type="button">
+                    <span class="sb-nav-icon">🔮</span><span>Predictions</span>
+                </button>
+                <button class="sb-nav-item" data-mode-cmd="compatibility" type="button">
+                    <span class="sb-nav-icon">❤️</span><span>Compatibility</span>
+                </button>
+                <button class="sb-nav-item" data-mode-cmd="future-me" type="button">
+                    <span class="sb-nav-icon">🪞</span><span>Future Me</span>
+                </button>
+                <button class="sb-nav-item" data-mode-cmd="history" type="button">
+                    <span class="sb-nav-icon">🕘</span><span>History</span>
+                </button>
+                <button class="sb-nav-item" data-mode-cmd="saved" type="button">
+                    <span class="sb-nav-icon">⭐</span><span>Saved</span>
+                </button>
+            </nav>
+
+            <div class="sb-card premium-card">
+                <div class="premium-crown">👑</div>
+                <h3>BABA G PREMIUM</h3>
+                <p>Unlock unlimited chats, voice calls, and premium features.</p>
+                <a class="btn-primary" href="#premium" data-open-premium>Upgrade Now</a>
+            </div>
+
+            <div class="sb-foot">
+                <span id="authPill" class="auth-pill"></span>
+                <span class="lang-badge">🌐 EN</span>
+                <a class="nav-link" asp-controller="Home" asp-action="About" title="About">i</a>
+            </div>
         </aside>
 
-        <!-- CENTER: AVATAR + CHAT -->
-        <section class="center-area">
-            <div class="avatar-display">
-                <div class="avatar-glow"></div>
-                <div class="avatar-main" id="mainAvatar">
-                    <div class="avatar-figure" id="avatarFigure">🧙‍♂️</div>
-                    <canvas id="avatar3d" class="avatar-3d" hidden></canvas>
+        <!-- ╭─ CENTER ─────────────────────────────────────────────╮ -->
+        <main class="hero" id="heroMain">
+            <header class="hero-tags">
+                <span class="hero-pill"><span>🧠</span> Baba G remembers you</span>
+                <span class="hero-pill"><span>🔥</span> <span id="streakCount">1</span> Day Streak</span>
+            </header>
+
+            <section class="hero-stage">
+                <div class="hero-bubble" id="heroBubble" hidden>
+                    <p id="bubbleText">Kya haal hai mere dost? 😊</p>
                 </div>
-                <div class="speech-bubble" id="speechBubble">
-                    <span class="quote-mark top">❝</span>
-                    <p id="babaText">Welcome, seeker. Ask me anything, and together we shall explore the answers.</p>
-                    <span class="quote-mark bottom">❞</span>
+                <div class="hero-avatar-wrap">
+                    <div class="hero-avatar-glow"></div>
+                    <img id="heroAvatar" class="hero-avatar" src="/img/baba-g.png" alt="Baba G" />
                 </div>
-                <div class="voice-wave" id="voiceWave">
-                    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
-                    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
-                    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
-                    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                <div class="hero-wave" id="heroWave" aria-hidden="true">
+                    @for (var i = 0; i < 22; i++) { <span class="hw-bar"></span> }
                 </div>
-                <p class="listening-text" id="listeningText">AI is listening...</p>
-                <p class="voice-hint" id="voiceHint" aria-live="polite"></p>
+                <div class="hero-status">
+                    <button class="hero-mic" id="heroMicBtn" type="button" aria-label="Toggle voice input">🎤</button>
+                    <span class="hero-status-text" id="heroStatusText">Tap the mic to talk to Baba G</span>
+                </div>
+            </section>
+
+            <section class="msg-feed" id="msgFeed" aria-live="polite">
+                <!-- Messages render here -->
+            </section>
+
+            <footer class="composer">
+                <button class="cm-add" type="button" title="More" aria-label="More">＋</button>
+                <input id="chatInput" class="cm-input" type="text" placeholder="Type your message..."
+                       autocomplete="off" autocapitalize="sentences" autocorrect="on" enterkeyhint="send"
+                       onkeydown="onInputKey(event)" />
+                <button class="cm-mic" id="micBtn" type="button" aria-label="Voice input" title="Voice input">🎙️</button>
+                <button class="cm-send" id="askBtn" type="button" onclick="askBaba()" aria-label="Send">➤</button>
+                <button class="cm-stop" id="stopBtn" type="button" onclick="stopAll()" hidden aria-label="Stop">■</button>
+            </footer>
+
+            <div class="quick-chips">
+                <button class="qc" data-prompt="Give me motivation for today, mere dost. Speak in 3 short sentences." type="button">Give me motivation</button>
+                <button class="qc" data-prompt="Will I get a good job soon? Speak as a wise friend in 3 sentences." type="button">Will I get a good job?</button>
+                <button class="qc" data-prompt="Tell me my love-life prediction for the week ahead. Be playful, in 3 sentences." type="button">Love life prediction</button>
+                <button class="qc" data-prompt="Give me today's daily guidance and one focus to work on. 3 sentences." type="button">Daily guidance</button>
+            </div>
+        </main>
+
+        <!-- ╭─ RIGHT SIDEBAR ──────────────────────────────────────╮ -->
+        <aside class="sb sb-right" id="sbRight">
+            <div class="sb-card promo-call">
+                <span class="promo-tag">NEW</span>
+                <div class="promo-icon">🎙️</div>
+                <h3>Call Baba G</h3>
+                <p>Real voice call experience.<br/>Talk to Baba G anytime, anywhere.</p>
+                <button class="btn-ghost" type="button" data-mode-cmd="call">📞 Start Voice Call</button>
             </div>
 
-            <!-- ROLE-SPECIFIC WORKSPACE (hidden for the default mystical avatars) -->
-            <div id="workspace" class="workspace hidden" data-ws="chat" aria-live="polite"></div>
+            <div class="sb-card">
+                <div class="sb-card-title">POPULAR FEATURES</div>
+                <div class="features-grid">
+                    <button class="feature" data-mode-cmd="daily" type="button">
+                        <span class="ft-icon" style="background:rgba(245,158,11,0.12);color:#f59e0b">☀️</span>
+                        <strong>Daily Guidance</strong><small>Personalized advice</small>
+                    </button>
+                    <button class="feature" data-mode-cmd="predictions" type="button">
+                        <span class="ft-icon" style="background:rgba(99,102,241,0.12);color:#818cf8">🔮</span>
+                        <strong>Predictions</strong><small>See your future</small>
+                    </button>
+                    <button class="feature" data-mode-cmd="compatibility" type="button">
+                        <span class="ft-icon" style="background:rgba(244,114,182,0.12);color:#f472b6">❤️</span>
+                        <strong>Compatibility</strong><small>Love & friends</small>
+                    </button>
+                    <button class="feature" data-mode-cmd="future-me" type="button">
+                        <span class="ft-icon" style="background:rgba(34,197,94,0.12);color:#22c55e">🪞</span>
+                        <strong>Future Me</strong><small>See your future self</small>
+                    </button>
+                    <button class="feature" data-mode-cmd="roast" type="button">
+                        <span class="ft-icon" style="background:rgba(239,68,68,0.14);color:#ef4444">🔥</span>
+                        <strong>Roast Me</strong><small>Baba G roast mode</small>
+                    </button>
+                    <button class="feature" data-mode-cmd="dream" type="button">
+                        <span class="ft-icon" style="background:rgba(96,165,250,0.12);color:#60a5fa">☁️</span>
+                        <strong>Dream Interpreter</strong><small>Decode your dreams</small>
+                    </button>
+                </div>
+            </div>
 
-            <!-- CHAT INPUT -->
-            <div class="chat-input-area">
-                <div class="chat-bar">
-                    <input type="text" id="chatInput" placeholder="Type your question here..." onkeydown="onInputKey(event)" autocomplete="off" autocapitalize="sentences" autocorrect="on" enterkeyhint="send" />
-                    <button class="mic-btn" id="micBtn" type="button" title="Voice Input" aria-label="Toggle voice input">🎤</button>
-                    <button class="ask-btn" id="askBtn" type="button" onclick="askBaba()"><span>ASK</span> ➤</button>
-                    <button class="ask-btn danger" id="stopBtn" type="button" onclick="stopAll()" hidden>STOP</button>
-                </div>
-                <div class="topic-tags">
-                    <span class="tag">📝 Life</span>
-                    <span class="tag">🧠 Mindset</span>
-                    <span class="tag">❤️ Relationships</span>
-                    <span class="tag">💼 Career</span>
-                    <span class="tag">🌿 Health</span>
-                    <span class="tag">🕊️ Spirituality</span>
-                    <span class="tag">+ More</span>
-                </div>
-                <div class="hint" id="guestHint">
-                    Chatting as a guest — <a asp-controller="Home" asp-action="Auth">sign up</a> so BABA can remember you across sessions.
-                </div>
+            <div class="sb-card premium-card big">
+                <h3><span class="premium-crown">👑</span> BABA G PREMIUM</h3>
+                <ul class="premium-list">
+                    <li>✓ Unlimited voice calls</li>
+                    <li>✓ Baba G remembers everything</li>
+                    <li>✓ Personalized daily reports</li>
+                    <li>✓ Premium personalities</li>
+                    <li>✓ No ads. Pure experience.</li>
+                </ul>
+                <a class="btn-primary big" href="#premium" data-open-premium>Upgrade to Premium</a>
+                <p class="premium-price">From RM9.90 / month</p>
+            </div>
+        </aside>
+    </div>
+
+    <!-- ╭─ VOICE CALL MODAL ─────────────────────────────────────╮ -->
+    <div class="call-overlay" id="callOverlay" hidden aria-modal="true" role="dialog" aria-label="Voice call with Baba G">
+        <header class="call-top">
+            <button class="call-back" id="callClose" type="button" aria-label="End call">⌄</button>
+            <div class="call-title">
+                <small>Voice Call with</small>
+                <strong>Baba G</strong>
+                <span class="call-state" id="callState">Connecting…</span>
+                <span class="call-timer" id="callTimer" hidden>00:00</span>
+            </div>
+            <span class="call-secure"><span class="ck">✓</span> Secure Call</span>
+        </header>
+
+        <section class="call-stage">
+            <div class="call-wave-l" aria-hidden="true">
+                @for (var i = 0; i < 14; i++) { <span></span> }
+            </div>
+            <div class="call-avatar-frame">
+                <div class="call-avatar-ring"></div>
+                <img class="call-avatar" src="/img/baba-g.png" alt="Baba G" />
+            </div>
+            <div class="call-wave-r" aria-hidden="true">
+                @for (var i = 0; i < 14; i++) { <span></span> }
             </div>
         </section>
 
-        <!-- RIGHT: MINDSET + SETTINGS + CONTEXTUAL PANES -->
-        <aside class="panel panel-right">
-            <!-- Astrology context: zodiac wheel + quick insight -->
-            <div class="context-pane astrology" data-context="astrology">
-                <div class="panel-title"><span>✦</span> ZODIAC WHEEL <span>✦</span></div>
-                <div class="zodiac-wheel" aria-label="Zodiac wheel"></div>
-                <div class="zw-insight">
-                    <p class="muted-tip">Tap a sign to peek at its day.</p>
-                </div>
-            </div>
+        <div class="call-name">
+            Baba G <span class="call-verified">✓</span>
+            <span class="call-sub" id="callSub">Your AI Guide</span>
+        </div>
 
-            <!-- Developer context: quick prompts -->
-            <div class="context-pane dev" data-context="dev">
-                <div class="panel-title"><span>✦</span> CODE QUICK PROMPTS <span>✦</span></div>
-                <div class="ctx-chips">
-                    <button class="ctx-chip" data-prompt="Show me the standard project structure for a small REST API in this language with a code example." type="button">REST API skeleton</button>
-                    <button class="ctx-chip" data-prompt="Give me a clean unit-test starter file for the language and framework I'm using above. Include 3 example tests and how to run them." type="button">Test starter</button>
-                    <button class="ctx-chip" data-prompt="Write a regex cheatsheet for common patterns (email, URL, slug, ISO date) with one-line explanations." type="button">Regex cheatsheet</button>
-                    <button class="ctx-chip" data-prompt="Summarize the SOLID principles with a tiny code example for each in this language." type="button">SOLID cheatsheet</button>
-                    <button class="ctx-chip" data-prompt="Show me a minimal Dockerfile for an app written in this language, with comments explaining each line." type="button">Dockerfile starter</button>
-                </div>
-            </div>
+        <div class="call-bubble" id="callBubble">
+            Baba G is getting ready to talk with you.<br/>
+            Get comfy, take a deep breath and let's have a real conversation.
+        </div>
 
-            <!-- Designer context -->
-            <div class="context-pane design" data-context="design">
-                <div class="panel-title"><span>✦</span> DESIGN INSPIRATIONS <span>✦</span></div>
-                <div class="ctx-chips">
-                    <button class="ctx-chip" data-prompt="Suggest 3 well-balanced color palettes for a calm, premium B2B SaaS — return them as named palettes with hex codes." type="button">Calm SaaS palettes</button>
-                    <button class="ctx-chip" data-prompt="Show me 5 popular Google-Fonts pairings (display + body) suitable for a modern startup, with a one-line use case for each." type="button">Type pairings</button>
-                    <button class="ctx-chip" data-prompt="Give me an accessibility checklist for a landing-page hero section." type="button">A11y checklist</button>
-                    <button class="ctx-chip" data-prompt="List 8 concrete principles of strong information hierarchy with a one-line justification each." type="button">Hierarchy 101</button>
-                </div>
-            </div>
+        <div class="call-equalizer" id="callEq" hidden>
+            @for (var i = 0; i < 32; i++) { <span></span> }
+        </div>
+        <p class="call-listen" id="callListen" hidden>Baba G is listening…</p>
 
-            <!-- PM context -->
-            <div class="context-pane pm" data-context="pm">
-                <div class="panel-title"><span>✦</span> PM PLAYBOOK <span>✦</span></div>
-                <div class="ctx-chips">
-                    <button class="ctx-chip" data-prompt="Give me 5 questions a PM should ask before committing to a deadline." type="button">Pre-deadline questions</button>
-                    <button class="ctx-chip" data-prompt="Explain the RICE prioritization framework with a worked example." type="button">RICE worked example</button>
-                    <button class="ctx-chip" data-prompt="What does a great weekly status update look like? Give me a 5-line template." type="button">Status template</button>
-                    <button class="ctx-chip" data-prompt="Draft a one-page PRD template for a new feature, with section headings." type="button">PRD template</button>
-                </div>
-            </div>
+        <div class="call-actions">
+            <button class="ca-btn" id="callMute" type="button"><span>🔇</span><small>Mute</small></button>
+            <button class="ca-end" id="callEnd" type="button" aria-label="End call"><span>📞</span></button>
+            <button class="ca-btn" id="callSpeaker" type="button"><span>🔊</span><small>Speaker</small></button>
+        </div>
 
-            <!-- Marketing context -->
-            <div class="context-pane marketing" data-context="marketing">
-                <div class="panel-title"><span>✦</span> GROWTH IDEAS <span>✦</span></div>
-                <div class="ctx-chips">
-                    <button class="ctx-chip" data-prompt="List 10 high-leverage growth experiments for an early-stage SaaS, ordered by speed-to-result." type="button">10 growth experiments</button>
-                    <button class="ctx-chip" data-prompt="Write 5 strong landing-page hero headline patterns with one example each." type="button">Hero headlines</button>
-                    <button class="ctx-chip" data-prompt="What is the AIDA copy framework? Show a 4-line example for a fictional fitness app." type="button">AIDA example</button>
-                    <button class="ctx-chip" data-prompt="Give me a 30-day content calendar outline (4 themes, 2 posts/week)." type="button">Content calendar</button>
-                </div>
-            </div>
+        <p class="call-tip">💡 Tip: Speak freely, <strong>Baba G</strong> is here for you.</p>
+    </div>
 
-            <!-- Sales context -->
-            <div class="context-pane sales" data-context="sales">
-                <div class="panel-title"><span>✦</span> SALES PLAYBOOK <span>✦</span></div>
-                <div class="ctx-chips">
-                    <button class="ctx-chip" data-prompt="Show me the SPIN selling framework with a 3-question example for a SaaS deal." type="button">SPIN example</button>
-                    <button class="ctx-chip" data-prompt="Give me 5 strong opening lines for a cold call that don't sound like cold calls." type="button">Cold-call openers</button>
-                    <button class="ctx-chip" data-prompt="What are 5 negotiation pitfalls and how to avoid each?" type="button">Negotiation traps</button>
-                    <button class="ctx-chip" data-prompt="Draft a 3-message LinkedIn outreach sequence — short, friendly, value-first." type="button">LinkedIn sequence</button>
-                </div>
-            </div>
-
-            <!-- HR context -->
-            <div class="context-pane hr" data-context="hr">
-                <div class="panel-title"><span>✦</span> PEOPLE TOOLS <span>✦</span></div>
-                <div class="ctx-chips">
-                    <button class="ctx-chip" data-prompt="Write a 5-question employee-engagement survey with rationale per question." type="button">Engagement survey</button>
-                    <button class="ctx-chip" data-prompt="Give me a step-by-step structure for delivering tough feedback (SBI model) with an example." type="button">SBI feedback model</button>
-                    <button class="ctx-chip" data-prompt="Draft a 1:1 meeting template (15 minutes) — questions and agenda." type="button">1:1 template</button>
-                    <button class="ctx-chip" data-prompt="What does psychological safety look like in practice? Give 5 concrete behaviors." type="button">Psych safety</button>
-                </div>
-            </div>
-
-            <!-- Default mindset section (chat mode) -->
-            <div class="mindset-section">
-            <div class="panel-title"><span>✦</span> CHOOSE MINDSET <span>✦</span></div>
-            <div class="mindset-list">
-                <div class="mindset-card active" data-mindset="balanced" onclick="selectMindset(this)">
-                    <div class="mindset-icon">⚖️</div>
-                    <div class="mindset-info"><strong>Balanced</strong><small>Well-rounded perspective</small></div>
-                    <div class="mindset-check">✓</div>
-                </div>
-                <div class="mindset-card" data-mindset="logical" onclick="selectMindset(this)">
-                    <div class="mindset-icon">🧩</div>
-                    <div class="mindset-info"><strong>Logical</strong><small>Clear, rational, practical</small></div>
-                </div>
-                <div class="mindset-card" data-mindset="spiritual" onclick="selectMindset(this)">
-                    <div class="mindset-icon">🪷</div>
-                    <div class="mindset-info"><strong>Spiritual</strong><small>Soulful & mindful</small></div>
-                </div>
-                <div class="mindset-card" data-mindset="motivational" onclick="selectMindset(this)">
-                    <div class="mindset-icon">🔥</div>
-                    <div class="mindset-info"><strong>Motivational</strong><small>Encouraging & uplifting</small></div>
-                </div>
-                <div class="mindset-card" data-mindset="creative" onclick="selectMindset(this)">
-                    <div class="mindset-icon">🎨</div>
-                    <div class="mindset-info"><strong>Creative</strong><small>Innovative & imaginative</small></div>
-                </div>
-            </div>
-            </div><!-- /.mindset-section -->
-
-            <div class="settings-section">
-                <div class="settings-title">🎚️ VOICE & SETTINGS</div>
-                <div class="setting-row">
-                    <label>Voice</label>
-                    <select id="voiceSelect" class="setting-select">
-                        <option value="guru">Old Guru (deep, calm)</option>
-                        <option value="elder_woman">Elder Woman (warm)</option>
-                        <option value="expert">Expert (neutral)</option>
-                        <option value="gentle">Gentle (soft)</option>
-                        <option value="deep">Deep (baritone)</option>
-                    </select>
-                </div>
-                <div class="setting-row">
-                    <label>Speed</label>
-                    <input type="range" id="speedRange" min="0.7" max="1.4" step="0.05" value="1" class="setting-range" />
-                    <span id="speedVal">1.0x</span>
-                </div>
-                <div class="setting-row">
-                    <label>3D</label>
-                    <label class="toggle-mini"><input type="checkbox" id="toggle3DBox" onchange="toggle3D()" /><span>robot avatar</span></label>
-                </div>
-                <div class="setting-row">
-                    <label>Live</label>
-                    <label class="toggle-mini"><input type="checkbox" id="continuousMode" /><span>continuous voice</span></label>
-                </div>
-                <div class="setting-row">
-                    <label>Speak</label>
-                    <label class="toggle-mini"><input type="checkbox" id="autoSpeak" checked /><span>read replies aloud</span></label>
-                </div>
-                <div class="setting-row">
-                    <label>Stream</label>
-                    <label class="toggle-mini"><input type="checkbox" id="streamMode" checked /><span>realtime tokens</span></label>
-                </div>
-            </div>
-        </aside>
-    </main>
-
-    <!-- FOOTER -->
-    <footer class="app-footer">
-        <span class="footer-quote">❝ <em>Wisdom is not from one place. It is everywhere.</em> ❞</span>
-        <span class="footer-links">
-            <a asp-controller="Home" asp-action="About">About</a>
-            <a asp-controller="Home" asp-action="Terms">Terms</a>
-            <a asp-controller="Home" asp-action="Memory">Memory</a>
-            <a asp-controller="Home" asp-action="Personalities">Personalities</a>
-            <a asp-controller="Home" asp-action="Avatars">Avatars</a>
-        </span>
-    </footer>
+    <!-- ╭─ PREMIUM MODAL (BuyMeACoffee) ─────────────────────────╮ -->
+    <div class="modal-overlay" id="premiumOverlay" hidden aria-modal="true" role="dialog" aria-label="Premium subscription">
+        <div class="modal premium-modal">
+            <button class="modal-close" type="button" data-close-modal aria-label="Close">×</button>
+            <div class="premium-crown big">👑</div>
+            <h2>BABA G Premium</h2>
+            <p class="muted">Unlock the full Baba G experience.</p>
+            <ul class="premium-list big">
+                <li>✓ Unlimited voice calls</li>
+                <li>✓ Baba G remembers everything across devices</li>
+                <li>✓ Personalized daily reports</li>
+                <li>✓ All premium personalities (Astrologer, Sage, Designer…)</li>
+                <li>✓ Dream interpreter, Roast mode, Future-Me</li>
+                <li>✓ No ads. Pure, calm experience.</li>
+            </ul>
+            <p class="premium-price big"><strong>From RM 9.90 / month</strong></p>
+            <p class="muted small">Manage your subscription securely via Buy Me a Coffee.</p>
+            <a class="btn-primary big bmc"
+               id="bmcLink"
+               href="https://www.buymeacoffee.com/aibabag/membership"
+               target="_blank" rel="noopener noreferrer">
+                ☕ Subscribe via Buy Me a Coffee
+            </a>
+            <p class="muted xsmall">Verification pending — your subscription will activate once Buy Me a Coffee verifies the page. Existing supporters will get full access automatically.</p>
+        </div>
+    </div>
 
     <script type="module" src="/js/app.js" asp-append-version="true"></script>
-    <script>
-        // Wire the right-panel quick-prompt chips to populate and send.
-        document.addEventListener('click', (e) => {
-            const chip = e.target.closest('.ctx-chip');
-            if (!chip) return;
-            const inp = document.getElementById('chatInput');
-            if (!inp) return;
-            inp.value = chip.dataset.prompt || chip.textContent;
-            if (typeof window.askBaba === 'function') window.askBaba();
-        });
-    </script>
+    <script type="module" src="/js/baba.js" asp-append-version="true"></script>
 </body>
 </html>
