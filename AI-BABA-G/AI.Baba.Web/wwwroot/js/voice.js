@@ -27,29 +27,66 @@ const IS_MOBILE = IS_IOS || IS_ANDROID || matchMedia('(pointer: coarse)').matche
 const HAS_SR = !!SR && !IS_IOS;          // iOS Safari falsely exposes SR but it doesn't work
 const HAS_TTS = 'speechSynthesis' in window;
 
+// Voice profiles match by name patterns AND `lang` codes from the
+// browser's installed voices. We always fall back to a localService voice
+// in the same language family if no exact pattern matches, so the right
+// regional voice gets picked even when the user's OS exposes a generic
+// list.
 const VOICE_PROFILES = {
+    /* ─── DEFAULT MALE / GURU ────────────────────────────────────────── */
     guru: {
         match: [/old/i, /grandpa/i, /senior/i, /deep/i, /baritone/i,
                 /daniel/i, /alex/i, /george/i, /fred/i, /arthur/i,
                 /reed/i, /rishi/i, /aaron/i, /james/i],
-        rate: 0.88, pitch: 0.78, volume: 1.0, gender: 'male'
+        langs: ['en-IN', 'en-US', 'en-GB'],
+        rate: 0.88, pitch: 0.78, volume: 1.0, gender: 'male', label: 'Old Guru (deep)'
     },
+    /* ─── REGIONAL FEMALE ────────────────────────────────────────────── */
+    indian_female: {
+        match: [/veena/i, /lekha/i, /heera/i, /priya/i, /raveena/i, /isha/i, /neerja/i, /aditi/i, /kalpana/i, /shruti/i, /anjali/i, /microsoft.*kavya/i, /microsoft.*neerja/i],
+        langs: ['en-IN', 'hi-IN'],
+        rate: 0.95, pitch: 1.05, volume: 1.0, gender: 'female', label: 'Indian (Hindi/English) — Female'
+    },
+    chinese_female: {
+        match: [/tingting/i, /tingt/i, /xiaoxiao/i, /yaoyao/i, /lili/i, /huihui/i, /microsoft.*xiaoyi/i, /microsoft.*hsiaochen/i, /sin\-ji/i],
+        langs: ['zh-CN', 'zh-TW', 'zh-HK', 'zh'],
+        rate: 0.95, pitch: 1.05, volume: 1.0, gender: 'female', label: 'Chinese (Mandarin) — Female'
+    },
+    malaysian_female: {
+        match: [/yasmin/i, /amira/i, /microsoft.*yasmin/i, /siti/i, /aisha/i, /malay/i],
+        langs: ['ms-MY', 'en-MY', 'id-ID'],
+        rate: 0.95, pitch: 1.04, volume: 1.0, gender: 'female', label: 'Malaysian — Female'
+    },
+    bengali_female: {
+        match: [/microsoft.*bashkar/i, /microsoft.*tanishaa/i, /tanishaa/i, /pradeep/i, /bashkar/i, /bengali/i],
+        langs: ['bn-IN', 'bn-BD', 'bn'],
+        rate: 0.95, pitch: 1.04, volume: 1.0, gender: 'female', label: 'Bengali / Bangla — Female'
+    },
+    pakistani_female: {
+        match: [/microsoft.*uzma/i, /uzma/i, /asad/i, /microsoft.*gul/i, /urdu/i, /pakistan/i],
+        langs: ['ur-PK', 'ur-IN', 'ur'],
+        rate: 0.95, pitch: 1.05, volume: 1.0, gender: 'female', label: 'Pakistani (Urdu) — Female'
+    },
+    /* ─── GENERIC FALLBACKS ──────────────────────────────────────────── */
     elder_woman: {
-        match: [/lekha/i, /veena/i, /heera/i, /priya/i, /samantha/i,
-                /victoria/i, /kate/i, /serena/i, /tessa/i, /susan/i],
-        rate: 0.92, pitch: 0.95, volume: 1.0, gender: 'female'
+        match: [/samantha/i, /victoria/i, /kate/i, /serena/i, /tessa/i, /susan/i, /allison/i, /moira/i],
+        langs: ['en-US', 'en-GB', 'en-IN'],
+        rate: 0.92, pitch: 0.95, volume: 1.0, gender: 'female', label: 'Elder Woman (warm)'
     },
     expert: {
         match: [/google.*us.*english/i, /microsoft.*aria/i, /microsoft.*guy/i, /natural/i],
-        rate: 0.95, pitch: 0.95, volume: 1.0, gender: 'any'
+        langs: ['en-US', 'en-GB'],
+        rate: 0.95, pitch: 0.95, volume: 1.0, gender: 'any', label: 'Expert (neutral)'
     },
     gentle: {
         match: [/karen/i, /moira/i, /tessa/i, /samantha/i, /female/i],
-        rate: 0.95, pitch: 1.05, volume: 1.0, gender: 'female'
+        langs: ['en-US', 'en-GB', 'en-AU'],
+        rate: 0.95, pitch: 1.05, volume: 1.0, gender: 'female', label: 'Gentle (soft)'
     },
     deep: {
         match: [/daniel/i, /alex/i, /fred/i, /microsoft david/i, /microsoft mark/i, /male/i],
-        rate: 0.9, pitch: 0.8, volume: 1.0, gender: 'male'
+        langs: ['en-US', 'en-GB'],
+        rate: 0.9, pitch: 0.8, volume: 1.0, gender: 'male', label: 'Deep (baritone)'
     }
 };
 
@@ -337,18 +374,42 @@ export class VoiceIO {
         const voices = synth.getVoices();
         if (!voices || !voices.length) return null;
         const profile = VOICE_PROFILES[profileKey] || VOICE_PROFILES.guru;
-        const enVoices = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('en'));
-        const pool = enVoices.length ? enVoices : voices;
+
+        // 1. Strong match: exact name pattern within the profile's preferred langs.
+        const inLangs = (v) => !profile.langs || profile.langs.some(l => (v.lang || '').toLowerCase().startsWith(l.toLowerCase()));
         for (const re of profile.match) {
-            const v = pool.find(v => re.test(v.name || ''));
+            const v = voices.find(v => re.test(v.name || '') && inLangs(v));
+            if (v) return v;
+            // Fall back to any name match, even if the lang differs.
+            const any = voices.find(v => re.test(v.name || ''));
+            if (any) return any;
+        }
+        // 2. Lang-only match — pick a voice in the requested language with the
+        //    right gender hint when possible.
+        for (const lang of (profile.langs || [])) {
+            const sameLang = voices.filter(v => (v.lang || '').toLowerCase().startsWith(lang.toLowerCase()));
+            if (!sameLang.length) continue;
+            if (profile.gender === 'female') {
+                const fem = sameLang.find(v => /female|woman|girl|samantha|karen|victoria|lekha|veena|priya|tingting|xiaoxiao|yaoyao|yasmin|tanishaa|uzma|gul|aisha|raveena/i.test(v.name));
+                if (fem) return fem;
+            }
+            if (profile.gender === 'male') {
+                const m = sameLang.find(v => /male|man|boy|david|daniel|alex|fred|mark|rishi|aaron/i.test(v.name) && !/female/i.test(v.name));
+                if (m) return m;
+            }
+            const local = sameLang.find(v => v.localService);
+            if (local) return local;
+            return sameLang[0];
+        }
+        // 3. Fall back to English then anything localService.
+        const enVoices = voices.filter(v => (v.lang || '').toLowerCase().startsWith('en'));
+        const pool = enVoices.length ? enVoices : voices;
+        if (profile.gender === 'female') {
+            const v = pool.find(v => /female|woman|girl|samantha|karen|victoria/i.test(v.name));
             if (v) return v;
         }
         if (profile.gender === 'male') {
             const v = pool.find(v => /male/i.test(v.name) && !/female/i.test(v.name));
-            if (v) return v;
-        }
-        if (profile.gender === 'female') {
-            const v = pool.find(v => /female|woman|girl|samantha|karen|victoria/i.test(v.name));
             if (v) return v;
         }
         const local = pool.find(v => v.localService);
