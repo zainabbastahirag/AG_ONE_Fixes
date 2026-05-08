@@ -1,4 +1,10 @@
-﻿@{ Layout = null; }
+﻿@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@{
+    Layout = null;
+    var adsenseClient = Configuration["GoogleAds:ClientId"];
+    var bmcUrl = Configuration["Premium:BuyMeACoffeeUrl"] ?? "https://www.buymeacoffee.com/aibabag/membership";
+    var priceLabel = Configuration["Premium:PriceLabel"] ?? "From RM 9.90 / month";
+}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,6 +18,11 @@
     <link rel="manifest" href="/site.webmanifest" />
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/css/site.css" asp-append-version="true" />
+    @if (!string.IsNullOrWhiteSpace(adsenseClient))
+    {
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=@adsenseClient"
+                crossorigin="anonymous"></script>
+    }
     <script type="importmap">
     {
         "imports": {
@@ -74,11 +85,33 @@
                 </button>
             </nav>
 
-            <div class="sb-card premium-card">
+            <div class="sb-card">
+                <div class="sb-card-title">VOICE</div>
+                <select id="voiceSelect" class="ws-input" aria-label="Voice profile" style="width:100%">
+                    <option value="guru">🧙 Old Guru — Male</option>
+                    <option value="indian_female">🇮🇳 Indian — Female</option>
+                    <option value="chinese_female">🇨🇳 Chinese (Mandarin) — Female</option>
+                    <option value="malaysian_female">🇲🇾 Malaysian — Female</option>
+                    <option value="bengali_female">🇧🇩 Bengali / Bangla — Female</option>
+                    <option value="pakistani_female">🇵🇰 Pakistani (Urdu) — Female</option>
+                    <option value="elder_woman">Elder Woman (warm)</option>
+                    <option value="expert">Expert (neutral)</option>
+                    <option value="gentle">Gentle (soft)</option>
+                    <option value="deep">Deep (baritone)</option>
+                </select>
+                <label class="toggle-mini" style="margin-top:6px;">
+                    <input type="checkbox" id="autoSpeak" checked />
+                    <span style="color:var(--btext-2);font-size:12px">Read replies aloud</span>
+                </label>
+                <input type="hidden" id="speedRange" value="1" />
+            </div>
+
+            <div class="sb-card premium-card" id="premiumSidebarCard">
                 <div class="premium-crown">👑</div>
                 <h3>BABA G PREMIUM</h3>
-                <p>Unlock unlimited chats, voice calls, and premium features.</p>
+                <p id="premiumSidebarBody">Unlock unlimited chats, voice calls, and premium features.</p>
                 <a class="btn-primary" href="#premium" data-open-premium>Upgrade Now</a>
+                <span class="premium-status" id="premiumStatusBadge" hidden>👑 Premium active</span>
             </div>
 
             <div class="sb-foot">
@@ -174,6 +207,24 @@
                 </div>
             </div>
 
+            <!-- Sponsored slot (hidden for premium subscribers) -->
+            <div class="sb-card ad-slot" id="adSlotRight">
+                @if (!string.IsNullOrWhiteSpace(adsenseClient))
+                {
+                    <ins class="adsbygoogle"
+                         style="display:block"
+                         data-ad-client="@adsenseClient"
+                         data-ad-slot="0000000000"
+                         data-ad-format="auto"
+                         data-full-width-responsive="true"></ins>
+                    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+                }
+                else
+                {
+                    <span>Ad slot · set GoogleAds:ClientId to enable</span>
+                }
+            </div>
+
             <div class="sb-card premium-card big">
                 <h3><span class="premium-crown">👑</span> BABA G PREMIUM</h3>
                 <ul class="premium-list">
@@ -184,7 +235,7 @@
                     <li>✓ No ads. Pure experience.</li>
                 </ul>
                 <a class="btn-primary big" href="#premium" data-open-premium>Upgrade to Premium</a>
-                <p class="premium-price">From RM9.90 / month</p>
+                <p class="premium-price">@priceLabel</p>
             </div>
         </aside>
     </div>
@@ -201,6 +252,10 @@
             </div>
             <span class="call-secure"><span class="ck">✓</span> Secure Call</span>
         </header>
+
+        <div class="call-free-banner hidden" id="callFreeBanner">
+            ⏱️ <strong>20-second free trial.</strong>&nbsp;Upgrade to unlock unlimited voice calls.
+        </div>
 
         <section class="call-stage">
             <div class="call-wave-l" aria-hidden="true">
@@ -243,26 +298,30 @@
     <div class="modal-overlay" id="premiumOverlay" hidden aria-modal="true" role="dialog" aria-label="Premium subscription">
         <div class="modal premium-modal">
             <button class="modal-close" type="button" data-close-modal aria-label="Close">×</button>
-            <div class="premium-crown big">👑</div>
+            <span class="premium-eyebrow">👑 Premium</span>
             <h2>BABA G Premium</h2>
+            <p class="muted premium-reason" hidden></p>
             <p class="muted">Unlock the full Baba G experience.</p>
             <ul class="premium-list big">
-                <li>✓ Unlimited voice calls</li>
+                <li>✓ Unlimited voice calls (free tier is 20-second trial)</li>
                 <li>✓ Baba G remembers everything across devices</li>
                 <li>✓ Personalized daily reports</li>
                 <li>✓ All premium personalities (Astrologer, Sage, Designer…)</li>
                 <li>✓ Dream interpreter, Roast mode, Future-Me</li>
+                <li>✓ Regional female voices (Indian, Chinese, Malay, Bangla, Pakistani…)</li>
                 <li>✓ No ads. Pure, calm experience.</li>
             </ul>
-            <p class="premium-price big"><strong>From RM 9.90 / month</strong></p>
+            <p class="premium-price big"><strong>@priceLabel</strong></p>
             <p class="muted small">Manage your subscription securely via Buy Me a Coffee.</p>
             <a class="btn-primary big bmc"
                id="bmcLink"
-               href="https://www.buymeacoffee.com/aibabag/membership"
+               href="@bmcUrl"
                target="_blank" rel="noopener noreferrer">
                 ☕ Subscribe via Buy Me a Coffee
             </a>
-            <p class="muted xsmall">Verification pending — your subscription will activate once Buy Me a Coffee verifies the page. Existing supporters will get full access automatically.</p>
+            <button class="btn-ghost" id="btnIveSubscribed" type="button" style="margin-top:8px">I've subscribed — activate Premium</button>
+            <p class="muted xsmall">Verification pending — Buy Me a Coffee membership verification is in progress. Once it's live, "I've subscribed" will be auto-validated against your BMC email. Until then, tapping it activates Premium locally so existing supporters can use the app.</p>
+            <button class="msg-action" id="btnRevokePremium" type="button" style="margin-top:6px">Revoke Premium (testing)</button>
         </div>
     </div>
 

@@ -1,27 +1,36 @@
 @{ ViewData["Title"] = "About"; Layout = "_PortalLayout"; }
 <section class="portal-page">
-    <h1>About AI BABA-G</h1>
-    <p>BABA-G is a memory-aware AI companion blending the calm wisdom of five mystical personas — The Sage, The Philosopher, The Healer, The Elder, and The Storyteller — with modern AI infrastructure: persistent SQLite memory, vector recall, real-time streaming, and an optional 3D lip-syncing avatar.</p>
+    <h1>About AI BABA G</h1>
+    <p class="muted">Your wise AI companion. Voice-first. Memory-aware. Made for real conversations.</p>
 
-    <h2>What's new in this build</h2>
+    <h2>What is BABA G?</h2>
+    <p>BABA G is a voice-first AI companion modelled after a warm, slightly humorous old guru. He listens, remembers, and replies in short, real sentences — like an old friend on a phone call. Powered by an open-source local language model (Ollama), with persistent memory and a voice-call experience that works directly in your browser.</p>
+
+    <h2>Modes</h2>
     <ul>
-        <li><strong>Persistent SQLite memory.</strong> Everything is stored on disk via EF Core. Tables auto-create at startup. Your server RAM stays low.</li>
-        <li><strong>Vector recall.</strong> Each memory is embedded (Ollama's <code>nomic-embed-text</code>, with deterministic local fallback) and recalled by cosine similarity to your current message.</li>
-        <li><strong>Memory-aware Ollama prompt.</strong> Top-K relevant memories are quietly woven into the system prompt so BABA "feels" like it knows you.</li>
-        <li><strong>Sign-up gate.</strong> Guests still get a beautiful chat experience, but persistent memory, saved conversations, and custom personalities & avatars unlock once you register.</li>
-        <li><strong>Real-time streaming.</strong> Replies stream token-by-token via Server-Sent Events for a ChatGPT-like feel — perfect for voice playback that doesn't wait for the whole answer.</li>
-        <li><strong>3D viseme lip-sync avatar.</strong> Toggle on the 3D Robot in settings; mouth shapes are driven by phoneme groups derived from the streamed text.</li>
-        <li><strong>Voice in & out + interrupt.</strong> Web Speech API for STT, browser TTS, continuous-conversation mode, and ChatGPT-style interrupt with Esc or by speaking over BABA.</li>
-        <li><strong>Avatar marketplace.</strong> The five emoji presets, a 3D Robot, photo billboards from your own picture, and GLB model URLs.</li>
-        <li><strong>Custom personalities.</strong> Compose your own system prompt, voice, and preferred avatar/mindset; private or shared.</li>
-        <li><strong>Scalable.</strong> Async streaming, indexed queries, IP rate limiting, Docker-ready, drop-in PostgreSQL upgrade path.</li>
+        <li><strong>Chat with Baba G</strong> — open-ended conversation, voice or text.</li>
+        <li><strong>Voice Call (NEW)</strong> — fullscreen WhatsApp-style call. Free tier: 20-second trial.</li>
+        <li><strong>Daily Guidance</strong> — short personalised guidance for the day.</li>
+        <li><strong>Predictions</strong> — what the next 7 days might look like for energy, work, relationships.</li>
+        <li><strong>Compatibility</strong> — quick zodiac compatibility analysis for friends or partners.</li>
+        <li><strong>Future Me</strong> — your future self in 10 years sending advice back to today.</li>
+        <li><strong>Roast Me</strong> — a warm, funny 4-line roast about your habits.</li>
+        <li><strong>Dream Interpreter</strong> — describe a dream, get a short interpretation focused on your life.</li>
+        <li><strong>History &amp; Saved</strong> — your past chats, plus any starred replies.</li>
     </ul>
 
-    <h2>How memory works</h2>
-    <p>When you say things like <em>"remember that…"</em> or <em>"my favorite…"</em>, BABA stores it. You can also add memories manually on the Memory page. Each one is converted to a 256-dim embedding (or higher when an Ollama embedding model is available) and indexed in SQLite. On every reply, BABA fetches the top-6 most relevant memories using:</p>
-    <p style="font-family:monospace; color: var(--gold-dim); font-size: 13px;">score = 0.8 · cosine(q, m) + 0.1 · importance + 0.1 · recencyWeight</p>
-    <p>Frequently relevant memories get their <code>LastUsedAt</code> and <code>UseCount</code> bumped, so they stay sticky.</p>
+    <h2>Voices</h2>
+    <p>BABA G ships with multiple voice profiles, including regional female voices (where available on your device): <strong>Indian</strong>, <strong>Chinese</strong>, <strong>Malaysian</strong>, <strong>Bengali / Bangla</strong>, and <strong>Pakistani (Urdu)</strong>. Pick your voice from the sidebar. The selection is honoured immediately on the next reply.</p>
+
+    <h2>Memory</h2>
+    <p>When you say <em>"remember that…"</em>, <em>"my favorite…"</em>, or share details about yourself, BABA quietly stores them. On every reply, the most relevant memories are retrieved by vector similarity and woven into the system prompt — so BABA "feels" like he knows you. You can review and delete memories on the <a asp-controller="Home" asp-action="Memory">Memory</a> page.</p>
+
+    <h2>Premium &amp; payments</h2>
+    <p>BABA G has a free tier and a Premium subscription. The free tier includes unlimited text chat with light Ollama-powered replies, all 9 modes, and a 20-second free voice-call trial. Premium unlocks unlimited voice calls, all premium personalities, regional female voices, no ads, and personalised daily reports — for <strong>RM 9.90 / month</strong> via <a href="https://www.buymeacoffee.com/aibabag/membership" target="_blank" rel="noopener">Buy Me a Coffee</a>.</p>
 
     <h2>Privacy</h2>
-    <p>Your data lives in a single SQLite file alongside the server. You can delete any memory at any time on the Memory page. Guest users are anonymous and have no persistent memory.</p>
+    <p>Your account, conversations, and memories live in a single SQLite file on the server (or SQL Server on production). You can delete any memory at any time. Guests are anonymous and have no persistent server-side memory; client-side history and starred replies live only in your browser&rsquo;s localStorage and never leave your device.</p>
+
+    <h2>Tech</h2>
+    <p>ASP.NET 8 + EF Core 8 (SQLite by default, SQL Server in production), Server-Sent-Events streaming for real-time replies, Web Speech API for browser STT/TTS, Three.js for the optional 3D avatar, and an open-source local Ollama model for the AI. Deploy as a single Docker image — see the README for the one-line run command.</p>
 </section>
