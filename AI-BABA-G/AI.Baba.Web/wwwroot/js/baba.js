@@ -8,6 +8,29 @@
 
 import { unlockTTS } from './voice.js';
 
+// ─── Premium / paywall ────────────────────────────────────────────────
+const FREE_CALL_LIMIT_SEC = 20;
+function isPremium() {
+    return localStorage.getItem('baba_premium') === '1';
+}
+function setPremium(on) {
+    if (on) localStorage.setItem('baba_premium', '1');
+    else localStorage.removeItem('baba_premium');
+    refreshPremiumUi();
+}
+function refreshPremiumUi() {
+    const badge = document.getElementById('premiumStatusBadge');
+    const body  = document.getElementById('premiumSidebarBody');
+    if (badge) badge.hidden = !isPremium();
+    if (body) body.textContent = isPremium()
+        ? 'Premium active. Enjoy unlimited calls, memory, and personalities.'
+        : 'Unlock unlimited chats, voice calls, and premium features.';
+    // Hide AdSense slots for premium users.
+    document.querySelectorAll('.ad-slot').forEach(a => a.classList.toggle('hidden', isPremium()));
+    // Unlock pills on premium-only nav items.
+    document.querySelectorAll('.sb-nav-pill.lock').forEach(p => p.classList.toggle('hidden', isPremium()));
+}
+
 // ─── Streak ───────────────────────────────────────────────────────────
 //   On first paint each calendar day we increment the streak; if more
 //   than one day was missed we reset to 1.
@@ -131,18 +154,40 @@ function addBabaMessage(text, opts = {}) {
             <div class="msg-wave" aria-hidden="true">${'<span></span>'.repeat(28)}</div>
             <span class="msg-time">${timeNow()}</span>
             <p class="msg-text"></p>
+            ${opts.opener ? '' : `
+            <div class="msg-actions">
+                <button class="msg-action save-btn" type="button">⭐ <span class="lbl">Save</span></button>
+                <button class="msg-action copy-btn" type="button">📋 Copy</button>
+            </div>`}
         </div>`;
     const textEl = node.querySelector('.msg-text');
     textEl.textContent = text;
     feed.appendChild(node);
     feed.scrollTop = feed.scrollHeight;
     if (!opts.opener) saveHistory(text, 'baba');
-    // Allow user to "play" any prior reply through TTS again.
     node.querySelector('.msg-play')?.addEventListener('click', () => {
         unlockTTS();
         if (window._babaVoice && typeof window._babaVoice.speak === 'function') {
             window._babaVoice.speak(textEl.textContent);
         }
+    });
+    const saveBtn = node.querySelector('.save-btn');
+    if (saveBtn) {
+        const refresh = () => {
+            const cur = textEl.textContent;
+            const on = isStarred(cur);
+            saveBtn.classList.toggle('saved', on);
+            saveBtn.querySelector('.lbl').textContent = on ? 'Saved' : 'Save';
+        };
+        refresh();
+        saveBtn.addEventListener('click', () => {
+            const cur = textEl.textContent;
+            if (isStarred(cur)) unsaveStarred(cur); else saveStarred(cur);
+            refresh();
+        });
+    }
+    node.querySelector('.copy-btn')?.addEventListener('click', () => {
+        navigator.clipboard?.writeText(textEl.textContent).catch(() => { });
     });
     return textEl;
 }
@@ -195,7 +240,13 @@ function showSaved() {
     closeMobileDrawers();
     const feed = document.getElementById('msgFeed');
     if (!feed) return;
-    feed.innerHTML = '<p class="feed-empty">⭐ Saved conversations — long-press a Baba G reply to save it. Coming soon.</p>';
+    feed.innerHTML = '';
+    let arr = []; try { arr = JSON.parse(localStorage.getItem('baba_saved') || '[]'); } catch (_) { }
+    if (!arr.length) {
+        feed.innerHTML = '<p class="feed-empty">⭐ Saved replies — tap the ⭐ Save button on any of Baba G\u2019s replies to keep it forever. Your starred list will appear here.</p>';
+        return;
+    }
+    for (const m of arr) addBabaMessage(m.text, {});
 }
 
 // ─── Voice Call modal ─────────────────────────────────────────────────
@@ -253,16 +304,47 @@ function closeCall() {
 function startCallTimer() {
     _callStartTs = Date.now();
     const timer = document.getElementById('callTimer');
+    const banner = document.getElementById('callFreeBanner');
+    const premium = isPremium();
+    if (banner) banner.classList.toggle('hidden', premium);
     const tick = () => {
         const s = Math.floor((Date.now() - _callStartTs) / 1000);
-        const mm = String(Math.floor(s / 60)).padStart(2, '0');
-        const ss = String(s % 60).padStart(2, '0');
-        if (timer) timer.textContent = `${mm}:${ss}`;
+        if (premium) {
+            const mm = String(Math.floor(s / 60)).padStart(2, '0');
+            const ss = String(s % 60).padStart(2, '0');
+            if (timer) {
+                timer.textContent = `${mm}:${ss}`;
+                timer.classList.remove('free-warn', 'free-end');
+            }
+        } else {
+            // Free trial: count DOWN from FREE_CALL_LIMIT_SEC.
+            const left = Math.max(0, FREE_CALL_LIMIT_SEC - s);
+            if (timer) {
+                timer.textContent = `Free trial · 0:${String(left).padStart(2, '0')}`;
+                timer.classList.toggle('free-warn', left <= 10 && left > 5);
+                timer.classList.toggle('free-end', left <= 5);
+            }
+            if (left <= 0) {
+                stopCallTimer();
+                triggerFreeCallEnd();
+            }
+        }
     };
     tick();
     _callTimerH = setInterval(tick, 1000);
 }
 function stopCallTimer() { if (_callTimerH) { clearInterval(_callTimerH); _callTimerH = null; } }
+
+function triggerFreeCallEnd() {
+    setCallState('Trial ended');
+    setCallBubble('Your 20-second free call is up, mere dost. Upgrade to Premium for unlimited voice calls with Baba G.');
+    if (window._babaVoice) {
+        try { window._babaVoice.stopSpeaking(); } catch (_) { }
+        try { window._babaVoice.setContinuous(false); } catch (_) { }
+    }
+    // Auto-close the call after 1.5s and open the premium modal.
+    setTimeout(() => { closeCall(); openPremium('Your 20-second free voice-call trial just ended. Upgrade to keep talking with Baba G.'); }, 1500);
+}
 
 function setCallBubble(text) {
     const el = document.getElementById('callBubble');
@@ -291,17 +373,51 @@ function closeMobileDrawers() {
 }
 
 // ─── Premium / Buy Me A Coffee modal ─────────────────────────────────
-function openPremium() {
+function openPremium(reason) {
     const ov = document.getElementById('premiumOverlay');
-    if (ov) ov.hidden = false;
+    if (!ov) return;
+    const reasonEl = ov.querySelector('.premium-reason');
+    if (reasonEl) {
+        if (reason) {
+            reasonEl.textContent = reason;
+            reasonEl.hidden = false;
+        } else {
+            reasonEl.hidden = true;
+        }
+    }
+    ov.hidden = false;
 }
 function closePremium() {
     const ov = document.getElementById('premiumOverlay');
     if (ov) ov.hidden = true;
 }
 
+// ─── Saved messages ───────────────────────────────────────────────────
+function saveStarred(text) {
+    try {
+        const arr = JSON.parse(localStorage.getItem('baba_saved') || '[]');
+        arr.push({ text, at: Date.now() });
+        if (arr.length > 100) arr.splice(0, arr.length - 100);
+        localStorage.setItem('baba_saved', JSON.stringify(arr));
+    } catch (_) { }
+}
+function unsaveStarred(text) {
+    try {
+        const arr = JSON.parse(localStorage.getItem('baba_saved') || '[]');
+        const next = arr.filter(m => m.text !== text);
+        localStorage.setItem('baba_saved', JSON.stringify(next));
+    } catch (_) { }
+}
+function isStarred(text) {
+    try {
+        const arr = JSON.parse(localStorage.getItem('baba_saved') || '[]');
+        return arr.some(m => m.text === text);
+    } catch (_) { return false; }
+}
+
 // ─── Bind everything on load ─────────────────────────────────────────
 window.addEventListener('load', () => {
+    refreshPremiumUi();
     updateStreak();
 
     // Sidebar nav + popular features + right-panel "Start Voice Call" all share
@@ -348,6 +464,30 @@ window.addEventListener('load', () => {
     document.querySelectorAll('[data-open-premium]').forEach(b => b.addEventListener('click', (e) => { e.preventDefault(); openPremium(); }));
     document.querySelectorAll('[data-close-modal]').forEach(b => b.addEventListener('click', closePremium));
     document.getElementById('premiumOverlay')?.addEventListener('click', (e) => { if (e.target.id === 'premiumOverlay') closePremium(); });
+    document.getElementById('btnIveSubscribed')?.addEventListener('click', () => {
+        setPremium(true); closePremium();
+    });
+    document.getElementById('btnRevokePremium')?.addEventListener('click', () => {
+        setPremium(false); closePremium();
+    });
+
+    // Voice profile + auto-speak — persist to localStorage so app.js picks it up.
+    const voiceSel = document.getElementById('voiceSelect');
+    if (voiceSel) {
+        const saved = localStorage.getItem('baba_voice_profile');
+        if (saved) voiceSel.value = saved;
+        voiceSel.addEventListener('change', () => {
+            localStorage.setItem('baba_voice_profile', voiceSel.value);
+            // app.js reads this on each utterance through the live profile getter.
+        });
+    }
+    const autoSpeak = document.getElementById('autoSpeak');
+    if (autoSpeak) {
+        autoSpeak.checked = localStorage.getItem('baba_autospeak') !== '0';
+        autoSpeak.addEventListener('change', () => {
+            localStorage.setItem('baba_autospeak', autoSpeak.checked ? '1' : '0');
+        });
+    }
 
     // Mobile drawers
     const left = document.getElementById('sbLeft');

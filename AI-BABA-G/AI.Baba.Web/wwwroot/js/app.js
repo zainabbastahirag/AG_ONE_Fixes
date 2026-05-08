@@ -168,7 +168,7 @@ function initVoice() {
             }
         },
         getRate: () => parseFloat(document.getElementById('speedRange')?.value || '1'),
-        getProfile: () => state.voiceProfile,
+        getProfile: () => localStorage.getItem('baba_voice_profile') || state.voiceProfile,
     });
     // If recognition isn't supported, mark mic disabled but keep TTS available.
     if (!state.voice.supported()) {
@@ -435,7 +435,7 @@ async function streamingAsk(prompt) {
                     try { window.babaUi.setBubble(full.slice(-180)); } catch (_) { }
                 }
 
-                if (state.autoSpeak) {
+                if (localStorage.getItem('baba_autospeak') !== '0') {
                     // Feed the TTS only NEW plain-text since last push, so it
                     // never speaks markdown punctuation like '**', '###', '`'.
                     const plainAll = plainText(full);
@@ -464,7 +464,7 @@ async function streamingAsk(prompt) {
     babaTextEl.innerHTML = renderMarkdown(full) || babaTextEl.innerHTML;
     babaTextEl.classList.remove('cursor-blink');
     scrollBubbleToEnd();
-    if (state.autoSpeak) state.voice?.flushStreaming();
+    if (localStorage.getItem('baba_autospeak') !== '0') state.voice?.flushStreaming();
 }
 
 function showTypingDots() {
