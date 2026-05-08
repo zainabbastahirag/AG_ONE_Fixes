@@ -326,9 +326,15 @@ async function legacyAsk(prompt) {
 async function streamingAsk(prompt) {
     const isAuthed = !!state.user;
     const url = isAuthed ? '/api/chat/stream' : '/api/chat/guest/stream';
+    // Tell the server which mode this turn is in:
+    //   'voice' — call modal is open; replies must be 1–2 sentences (num_predict=64).
+    //   'panel' — fired from one of the sidebar panels; 2–3 sentences (num_predict=110).
+    //   undefined — normal chat (current Ollama defaults).
+    const mode = window.babaCall?.isOpen?.() ? 'voice' :
+                 (state.activePanelMode || undefined);
     const body = isAuthed
-        ? { message: prompt, conversationId: state.conversationId, personalityId: state.currentPersonalityId, avatar: state.currentAvatar, mindset: state.currentMindset }
-        : { message: prompt, personalityId: state.currentPersonalityId, avatar: state.currentAvatar, mindset: state.currentMindset };
+        ? { message: prompt, conversationId: state.conversationId, personalityId: state.currentPersonalityId, avatar: state.currentAvatar, mindset: state.currentMindset, mode }
+        : { message: prompt, personalityId: state.currentPersonalityId, avatar: state.currentAvatar, mindset: state.currentMindset, mode };
 
     state.abortController = new AbortController();
     const headers = { 'Content-Type': 'application/json' };

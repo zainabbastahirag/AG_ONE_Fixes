@@ -25,6 +25,31 @@ public class OllamaService
     public int NumPredict => int.TryParse(_config["Ollama:NumPredict"], out var n) ? n : 220;
     public double Temperature => double.TryParse(_config["Ollama:Temperature"], out var t) ? t : 0.7;
 
+    /// Fire-and-forget warm-up: opens a tiny chat to keep the model loaded
+    /// so the next real reply hits "first token" instantly. Safe to call from
+    /// the UI when entering the voice-call modal. Returns whatever Ollama
+    /// produced (typically a single token) but the caller can ignore it.
+    public async Task WarmAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            var client = _httpFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(20);
+            var body = new
+            {
+                model = ChatModel,
+                stream = false,
+                keep_alive = KeepAlive,
+                prompt = "ok",
+                options = new { temperature = 0.0, num_predict = 1, num_ctx = 256 }
+            };
+            await client.PostAsync(
+                $"{BaseUrl}/api/generate",
+                new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json"), ct);
+        }
+        catch (Exception ex) { _log.LogDebug(ex, "warm-up skipped"); }
+    }
+
     /// Legacy non-streaming generate kept for /api/ask compatibility.
     public async Task<string> GenerateAsync(string systemPrompt, string userPrompt, CancellationToken ct = default)
     {
@@ -68,9 +93,13 @@ public class OllamaService
     }
 
     /// Streams Ollama chat responses chunk-by-chunk so the UI feels real-time.
+    /// Pass numPredict / temperature to override per-call defaults — used to
+    /// keep voice-call replies short (<=64 tokens, <=2 sentences).
     public async IAsyncEnumerable<string> StreamChatAsync(
         IEnumerable<ChatTurn> messages,
         string? model = null,
+        int? numPredict = null,
+        double? temperature = null,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
         var body = new
@@ -79,7 +108,13 @@ public class OllamaService
             stream = true,
             keep_alive = KeepAlive,
             messages = messages.Select(m => new { role = m.Role, content = m.Content }).ToArray(),
-            options = new { temperature = Temperature, num_predict = NumPredict, top_p = 0.9, num_ctx = 2048 }
+            options = new
+            {
+                temperature = temperature ?? Temperature,
+                num_predict = numPredict ?? NumPredict,
+                top_p = 0.9,
+                num_ctx = 2048,
+            }
         };
 
         var (resp, stream, errorMessage) = await TryOpenStreamAsync(body, ct);

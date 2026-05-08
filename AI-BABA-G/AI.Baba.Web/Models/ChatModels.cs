@@ -44,13 +44,15 @@ public record StreamChatRequest(
     Guid? ConversationId,
     Guid? PersonalityId,
     string? Avatar,
-    string? Mindset);
+    string? Mindset,
+    string? Mode = null);   // 'chat' | 'voice' | 'panel' — controls num_predict + brevity
 
 public record GuestStreamChatRequest(
     string Message,
     Guid? PersonalityId,
     string? Avatar,
-    string? Mindset);
+    string? Mindset,
+    string? Mode = null);
 
 public record CreatePersonalityRequest(
     string Name,

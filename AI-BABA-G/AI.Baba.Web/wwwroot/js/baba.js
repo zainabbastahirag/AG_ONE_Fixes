@@ -7,6 +7,7 @@
 // ═══════════════════════════════════════════════════════════════════════
 
 import { unlockTTS } from './voice.js';
+import { openPanel, closePanel } from './panels.js';
 
 // ─── Premium / paywall ────────────────────────────────────────────────
 const FREE_CALL_LIMIT_SEC = 20;
@@ -99,22 +100,20 @@ function applyModeSelection(modeCmd) {
     });
 }
 
+// Modes that open dedicated panels instead of dumping into the chat feed.
+const PANEL_MODES = new Set(['daily', 'predictions', 'compatibility', 'future-me', 'roast', 'dream', 'history', 'saved']);
+
 function runMode(modeCmd) {
     if (modeCmd === 'call') { openCall(); return; }
-    if (modeCmd === 'history') { showHistory(); return; }
-    if (modeCmd === 'saved') { showSaved(); return; }
-    applyModeSelection(modeCmd);
     closeMobileDrawers();
-
-    const prompt = MODE_PROMPTS[modeCmd];
-    if (!prompt) return;
-    // Show an opener bubble + send the prompt.
-    const opener = MODE_OPENERS[modeCmd];
-    if (opener) addBabaMessage(opener, { mode: modeCmd, opener: true });
-    setBubbleText('Hmm… let Baba G think for a moment.');
-    const inp = document.getElementById('chatInput');
-    if (inp) inp.value = prompt;
-    if (typeof window.askBaba === 'function') window.askBaba();
+    if (PANEL_MODES.has(modeCmd)) {
+        applyModeSelection(modeCmd);
+        openPanel(modeCmd);
+        return;
+    }
+    applyModeSelection(modeCmd);
+    // 'chat' mode — just close any open panel, nothing else.
+    closePanel();
 }
 
 // ─── Message feed ─────────────────────────────────────────────────────
@@ -259,17 +258,31 @@ function openCall() {
     closeMobileDrawers();
     const ov = document.getElementById('callOverlay');
     if (!ov) return;
+
+    // ─── CRITICAL FOR MOBILE: do mic + TTS unlock SYNCHRONOUSLY here ──
+    //   The browser only honours getUserMedia / SpeechRecognition.start()
+    //   inside the gesture that opened the call. setTimeout would expire
+    //   the gesture token (especially on iOS / Safari / Android Chrome).
+    unlockTTS();
+    if (window._babaVoice && typeof window._babaVoice.setContinuous === 'function') {
+        try { window._babaVoice.setContinuous(true, { wakeWord: false }); } catch (_) { }
+    }
+
     ov.hidden = false;
     document.body.classList.add('call-open');
-    unlockTTS();
 
     // Reset state
     document.getElementById('callState').textContent = 'Connecting…';
     document.getElementById('callTimer').hidden = true;
-    document.getElementById('callBubble').textContent = 'Baba G is getting ready to talk with you. Get comfy, take a deep breath and let\'s have a real conversation.';
+    document.getElementById('callBubble').textContent = 'Baba G is getting ready to talk with you. Take a deep breath — Baba G is keeping the line warm.';
     document.getElementById('callEq').hidden = true;
     document.getElementById('callListen').hidden = true;
 
+    // Pre-warm Ollama in the background so the first reply has near-zero
+    // first-token latency (huge perceived speed boost on a voice call).
+    fetch('/api/chat/warm', { method: 'POST' }).catch(() => { /* best-effort */ });
+
+    // Brief connection animation, then arm timer + greeting.
     setTimeout(() => {
         document.getElementById('callState').textContent = 'Listening…';
         document.getElementById('callTimer').hidden = false;
@@ -277,15 +290,10 @@ function openCall() {
         document.getElementById('callListen').hidden = false;
         startCallTimer();
 
-        // Kick the bot off with a warm greeting, and arm continuous voice.
         const inp = document.getElementById('chatInput');
-        if (inp) inp.value = 'Greet me warmly in two short sentences as if we just connected on a phone call. Then ask me how I am feeling.';
+        if (inp) inp.value = 'Greet me warmly in ONE short sentence as if we just connected on a phone call.';
         if (typeof window.askBaba === 'function') window.askBaba();
-
-        if (window._babaVoice && typeof window._babaVoice.setContinuous === 'function') {
-            window._babaVoice.setContinuous(true, { wakeWord: false });
-        }
-    }, 800);
+    }, 600);
 }
 
 function closeCall() {
