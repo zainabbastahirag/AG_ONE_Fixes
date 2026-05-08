@@ -64,6 +64,7 @@ const api = {
 //  Selection (avatar / mindset)  — kept compatible with inline HTML
 // ───────────────────────────────────────────────────────────────
 window.selectAvatar = function (el) {
+    if (!el) return;
     document.querySelectorAll('.avatar-card').forEach(c => {
         c.classList.remove('active');
         c.querySelector('.avatar-check')?.remove();
@@ -179,6 +180,8 @@ function initVoice() {
                 : 'Voice input is not supported in this browser.';
         }
     }
+    // Expose for baba.js (voice-call modal, replay buttons, etc.)
+    window._babaVoice = state.voice;
 }
 
 window.toggleVoice = function (ev) {
@@ -254,6 +257,16 @@ async function askBaba() {
 
     input.value = '';
     state.inFlight = true;
+
+    // Render the user's question + create a bot bubble for the streaming reply.
+    if (window.babaUi) {
+        try { window.babaUi.onUserSend(prompt); } catch (_) { }
+        try {
+            const target = window.babaUi.startBabaTurn();
+            if (target) window.babaSetReplyTarget(target);
+        } catch (_) { }
+        try { window.babaUi.setBubble('Hmm…'); } catch (_) { }
+    }
 
     // Stop any in-flight TTS so the new question takes priority (interrupt).
     state.voice?.stopSpeaking();
@@ -412,6 +425,14 @@ async function streamingAsk(prompt) {
                 scheduleRender();
                 if (state.replyTokenHandler) {
                     try { state.replyTokenHandler(data, full); } catch (_) { }
+                }
+                // Pipe into the voice-call modal bubble too, when it's open.
+                if (window.babaCall?.isOpen?.()) {
+                    try { window.babaCall.onTokenChunk(full); } catch (_) { }
+                }
+                // Update the centered hero bubble with the latest line.
+                if (window.babaUi?.setBubble) {
+                    try { window.babaUi.setBubble(full.slice(-180)); } catch (_) { }
                 }
 
                 if (state.autoSpeak) {
@@ -617,32 +638,9 @@ document.getElementById('newChatBtn')?.addEventListener('click', () => {
     setBabaText('A fresh canvas, seeker. What is on your mind?');
 });
 
-// Mobile drawer panels
-function setupMobileDrawers() {
-    const left = document.querySelector('.panel-left');
-    const right = document.querySelector('.panel-right');
-    const backdrop = document.getElementById('panelBackdrop');
-    const closeAll = () => {
-        left?.classList.remove('open');
-        right?.classList.remove('open');
-        backdrop?.classList.remove('open');
-    };
-    document.getElementById('menuLeftBtn')?.addEventListener('click', () => {
-        right?.classList.remove('open');
-        left?.classList.toggle('open');
-        backdrop?.classList.toggle('open', left?.classList.contains('open'));
-    });
-    document.getElementById('menuRightBtn')?.addEventListener('click', () => {
-        left?.classList.remove('open');
-        right?.classList.toggle('open');
-        backdrop?.classList.toggle('open', right?.classList.contains('open'));
-    });
-    backdrop?.addEventListener('click', closeAll);
-    [left, right].forEach(p => p?.addEventListener('click', e => {
-        const card = e.target.closest('.avatar-card, .mindset-card, #newChatBtn, .conv-list li:not(.conv-empty)');
-        if (card && window.matchMedia('(max-width: 900px)').matches) closeAll();
-    }));
-}
+// Drawer behavior is now owned by baba.js (which targets the new .sb-left /
+// .sb-right sidebars). Kept as a no-op for backward compatibility.
+function setupMobileDrawers() { /* baba.js owns this now */ }
 
 // ───────────────────────────────────────────────────────────────
 //  Init
