@@ -1,6 +1,6 @@
-using AgoneSentimentSales.Core.Entities;
-using AgoneSentimentSales.Core.Enums;
-using AgoneSentimentSales.Core.Interfaces;
+using AgoneSentimentSales.Domain.Entities;
+using AgoneSentimentSales.Domain.Enums;
+using AgoneSentimentSales.Domain.Interfaces;
 
 namespace AgoneSentimentSales.Infrastructure.Services;
 

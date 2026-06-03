@@ -3,13 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgoneSentimentSales.Core", "AgoneSentimentSales.Core\AgoneSentimentSales.Core.csproj", "{7782B4F9-2532-4163-9515-36ECAE4EE7D6}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgoneSentimentSales.Application", "AgoneSentimentSales.Application\AgoneSentimentSales.Application.csproj", "{77C9EAAB-60A1-433A-AC58-0DA39A3CE932}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgoneSentimentSales.Infrastructure", "AgoneSentimentSales.Infrastructure\AgoneSentimentSales.Infrastructure.csproj", "{4AE3FB40-5DE9-462F-8065-C67E3F980DD6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgoneSentimentSales.API", "AgoneSentimentSales.API\AgoneSentimentSales.API.csproj", "{3277E3C8-5AAC-43FE-BE45-BE818812A8FC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgoneSentimentSales.Domain", "AgoneSentimentSales.Domain\AgoneSentimentSales.Domain.csproj", "{18D08BA4-BF9C-4578-B31B-8DACC93DCCFD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgoneSentimentSales.Shared", "AgoneSentimentSales.Shared\AgoneSentimentSales.Shared.csproj", "{EE358A23-7D04-4CC2-BFD3-98CFF4854BA6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgoneSentimentSales.UI", "AgoneSentimentSales.UI\AgoneSentimentSales.UI.csproj", "{FAB8BD81-C9CE-4602-BF99-32CF17863388}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -20,14 +22,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{7782B4F9-2532-4163-9515-36ECAE4EE7D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7782B4F9-2532-4163-9515-36ECAE4EE7D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7782B4F9-2532-4163-9515-36ECAE4EE7D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7782B4F9-2532-4163-9515-36ECAE4EE7D6}.Release|Any CPU.Build.0 = Release|Any CPU
-		{77C9EAAB-60A1-433A-AC58-0DA39A3CE932}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{77C9EAAB-60A1-433A-AC58-0DA39A3CE932}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{77C9EAAB-60A1-433A-AC58-0DA39A3CE932}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{77C9EAAB-60A1-433A-AC58-0DA39A3CE932}.Release|Any CPU.Build.0 = Release|Any CPU
 		{4AE3FB40-5DE9-462F-8065-C67E3F980DD6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4AE3FB40-5DE9-462F-8065-C67E3F980DD6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4AE3FB40-5DE9-462F-8065-C67E3F980DD6}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -36,5 +30,17 @@ Global
 		{3277E3C8-5AAC-43FE-BE45-BE818812A8FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3277E3C8-5AAC-43FE-BE45-BE818812A8FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3277E3C8-5AAC-43FE-BE45-BE818812A8FC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{18D08BA4-BF9C-4578-B31B-8DACC93DCCFD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{18D08BA4-BF9C-4578-B31B-8DACC93DCCFD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{18D08BA4-BF9C-4578-B31B-8DACC93DCCFD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{18D08BA4-BF9C-4578-B31B-8DACC93DCCFD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE358A23-7D04-4CC2-BFD3-98CFF4854BA6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE358A23-7D04-4CC2-BFD3-98CFF4854BA6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE358A23-7D04-4CC2-BFD3-98CFF4854BA6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE358A23-7D04-4CC2-BFD3-98CFF4854BA6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FAB8BD81-C9CE-4602-BF99-32CF17863388}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FAB8BD81-C9CE-4602-BF99-32CF17863388}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FAB8BD81-C9CE-4602-BF99-32CF17863388}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FAB8BD81-C9CE-4602-BF99-32CF17863388}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

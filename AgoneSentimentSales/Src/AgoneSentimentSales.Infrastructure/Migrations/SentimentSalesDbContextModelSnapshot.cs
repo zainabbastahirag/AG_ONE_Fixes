@@ -23,7 +23,7 @@ namespace AgoneSentimentSales.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("AgoneSentimentSales.Core.Entities.ApiRequestLog", b =>
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.ApiRequestLog", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -56,7 +56,7 @@ namespace AgoneSentimentSales.Infrastructure.Migrations
                     b.ToTable("ApiRequestLogs", "sentimentsales");
                 });
 
-            modelBuilder.Entity("AgoneSentimentSales.Core.Entities.ExecutiveContact", b =>
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.ExecutiveContact", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -104,7 +104,7 @@ namespace AgoneSentimentSales.Infrastructure.Migrations
                     b.ToTable("ExecutiveContacts", "sentimentsales");
                 });
 
-            modelBuilder.Entity("AgoneSentimentSales.Core.Entities.ItBudgetBreakdown", b =>
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.ItBudgetBreakdown", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -176,7 +176,7 @@ namespace AgoneSentimentSales.Infrastructure.Migrations
                     b.ToTable("ItBudgets", "sentimentsales");
                 });
 
-            modelBuilder.Entity("AgoneSentimentSales.Core.Entities.LeadGenerationData", b =>
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.LeadGenerationData", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -222,7 +222,7 @@ namespace AgoneSentimentSales.Infrastructure.Migrations
                     b.ToTable("LeadGenerationData", "sentimentsales");
                 });
 
-            modelBuilder.Entity("AgoneSentimentSales.Core.Entities.LseCompany", b =>
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.LseCompany", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -288,7 +288,7 @@ namespace AgoneSentimentSales.Infrastructure.Migrations
                     b.ToTable("Companies", "sentimentsales");
                 });
 
-            modelBuilder.Entity("AgoneSentimentSales.Core.Entities.OutsourcingPartner", b =>
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.OutsourcingPartner", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -330,7 +330,7 @@ namespace AgoneSentimentSales.Infrastructure.Migrations
                     b.ToTable("OutsourcingPartners", "sentimentsales");
                 });
 
-            modelBuilder.Entity("AgoneSentimentSales.Core.Entities.ResearchJob", b =>
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.ResearchJob", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -366,7 +366,107 @@ namespace AgoneSentimentSales.Infrastructure.Migrations
                     b.ToTable("ResearchJobs", "sentimentsales");
                 });
 
-            modelBuilder.Entity("AgoneSentimentSales.Core.Entities.TechnologyStrategy", b =>
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.SourceExtractionEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CompanyName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double>("ConfidenceScore")
+                        .HasColumnType("float");
+
+                    b.Property<DateTime>("ExtractedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ExtractedValue")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FieldName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("LseCompanyId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RawSnippet")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("ResearchJobId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SourceLabel")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SourceType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LseCompanyId");
+
+                    b.HasIndex("ResearchJobId");
+
+                    b.ToTable("SourceExtractionEvents", "sentimentsales");
+                });
+
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.SourcedDataPoint", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<double>("ConfidenceScore")
+                        .HasColumnType("float");
+
+                    b.Property<string>("EntityName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FieldName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("FieldValue")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("LseCompanyId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("RecordedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SourceType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LseCompanyId");
+
+                    b.HasIndex("LseCompanyId", "FieldName");
+
+                    b.ToTable("SourcedDataPoints", "sentimentsales");
+                });
+
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.TechnologyStrategy", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -412,9 +512,9 @@ namespace AgoneSentimentSales.Infrastructure.Migrations
                     b.ToTable("TechnologyStrategies", "sentimentsales");
                 });
 
-            modelBuilder.Entity("AgoneSentimentSales.Core.Entities.ExecutiveContact", b =>
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.ExecutiveContact", b =>
                 {
-                    b.HasOne("AgoneSentimentSales.Core.Entities.LseCompany", "Company")
+                    b.HasOne("AgoneSentimentSales.Domain.Entities.LseCompany", "Company")
                         .WithMany("ExecutiveContacts")
                         .HasForeignKey("LseCompanyId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -423,51 +523,79 @@ namespace AgoneSentimentSales.Infrastructure.Migrations
                     b.Navigation("Company");
                 });
 
-            modelBuilder.Entity("AgoneSentimentSales.Core.Entities.ItBudgetBreakdown", b =>
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.ItBudgetBreakdown", b =>
                 {
-                    b.HasOne("AgoneSentimentSales.Core.Entities.LseCompany", "Company")
+                    b.HasOne("AgoneSentimentSales.Domain.Entities.LseCompany", "Company")
                         .WithOne("ItBudget")
-                        .HasForeignKey("AgoneSentimentSales.Core.Entities.ItBudgetBreakdown", "LseCompanyId")
+                        .HasForeignKey("AgoneSentimentSales.Domain.Entities.ItBudgetBreakdown", "LseCompanyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Company");
                 });
 
-            modelBuilder.Entity("AgoneSentimentSales.Core.Entities.LeadGenerationData", b =>
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.LeadGenerationData", b =>
                 {
-                    b.HasOne("AgoneSentimentSales.Core.Entities.LseCompany", "Company")
+                    b.HasOne("AgoneSentimentSales.Domain.Entities.LseCompany", "Company")
                         .WithOne("LeadGeneration")
-                        .HasForeignKey("AgoneSentimentSales.Core.Entities.LeadGenerationData", "LseCompanyId")
+                        .HasForeignKey("AgoneSentimentSales.Domain.Entities.LeadGenerationData", "LseCompanyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Company");
                 });
 
-            modelBuilder.Entity("AgoneSentimentSales.Core.Entities.OutsourcingPartner", b =>
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.OutsourcingPartner", b =>
                 {
-                    b.HasOne("AgoneSentimentSales.Core.Entities.LseCompany", "Company")
+                    b.HasOne("AgoneSentimentSales.Domain.Entities.LseCompany", "Company")
                         .WithOne("OutsourcingPartner")
-                        .HasForeignKey("AgoneSentimentSales.Core.Entities.OutsourcingPartner", "LseCompanyId")
+                        .HasForeignKey("AgoneSentimentSales.Domain.Entities.OutsourcingPartner", "LseCompanyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Company");
                 });
 
-            modelBuilder.Entity("AgoneSentimentSales.Core.Entities.TechnologyStrategy", b =>
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.SourceExtractionEvent", b =>
                 {
-                    b.HasOne("AgoneSentimentSales.Core.Entities.LseCompany", "Company")
-                        .WithOne("TechnologyStrategy")
-                        .HasForeignKey("AgoneSentimentSales.Core.Entities.TechnologyStrategy", "LseCompanyId")
+                    b.HasOne("AgoneSentimentSales.Domain.Entities.LseCompany", "Company")
+                        .WithMany()
+                        .HasForeignKey("LseCompanyId");
+
+                    b.HasOne("AgoneSentimentSales.Domain.Entities.ResearchJob", "ResearchJob")
+                        .WithMany()
+                        .HasForeignKey("ResearchJobId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Company");
+
+                    b.Navigation("ResearchJob");
+                });
+
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.SourcedDataPoint", b =>
+                {
+                    b.HasOne("AgoneSentimentSales.Domain.Entities.LseCompany", "Company")
+                        .WithMany()
+                        .HasForeignKey("LseCompanyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Company");
                 });
 
-            modelBuilder.Entity("AgoneSentimentSales.Core.Entities.LseCompany", b =>
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.TechnologyStrategy", b =>
+                {
+                    b.HasOne("AgoneSentimentSales.Domain.Entities.LseCompany", "Company")
+                        .WithOne("TechnologyStrategy")
+                        .HasForeignKey("AgoneSentimentSales.Domain.Entities.TechnologyStrategy", "LseCompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Company");
+                });
+
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.LseCompany", b =>
                 {
                     b.Navigation("ExecutiveContacts");
 

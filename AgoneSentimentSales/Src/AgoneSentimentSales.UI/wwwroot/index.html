@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AG ONE Sentiment Sales</title>
+  <link href="/css/agone.css" rel="stylesheet" />
+</head>
+<body>
+  <div class="agone-app-shell">
+    <aside class="agone-sidebar-container">
+      <div class="agone-sidebar-header">AG ONE<br>Sentiment Sales</div>
+      <a class="agone-menu-item" href="#home">Home</a>
+      <a class="agone-menu-item" href="#dashboard">Dashboard</a>
+    </aside>
+    <div class="agone-main-content">
+      <header class="agone-header">
+        <span class="h4-headline" style="font-size:18px">LSE IT Offshoring Research</span>
+        <span class="agone-ai-badge">API + SQL Server</span>
+      </header>
+      <main class="agone-page-container">
+        <h1 class="h3-headline">Market Research</h1>
+        <p>Single startup: <strong>AgoneSentimentSales.API</strong> — database schema <code>sentimentsales</code></p>
+        <div class="actions-row">
+          <button class="agone-btn-primary-medium" id="btnStart">Start Research (100)</button>
+          <button class="agone-btn-secondary-medium" id="btnDash">Load Dashboard</button>
+          <a class="agone-btn-secondary-medium" href="/api/export/excel" style="display:inline-flex;align-items:center;text-decoration:none;color:inherit">Download Excel</a>
+          <a class="agone-btn-secondary-medium" href="/swagger" style="display:inline-flex;align-items:center;text-decoration:none;color:inherit">Swagger</a>
+        </div>
+        <pre id="out" style="background:#fff;padding:16px;border-radius:8px;border:1px solid #D6DBE6;max-height:400px;overflow:auto"></pre>
+        <div id="metrics" class="metrics-grid"></div>
+      </main>
+      <footer class="agone-footer">Schema: sentimentsales.Companies, sentimentsales.ItBudgets, …</footer>
+    </div>
+  </div>
+  <script>
+    const out = document.getElementById('out');
+    const log = (x) => { out.textContent = typeof x === 'string' ? x : JSON.stringify(x, null, 2); };
+    document.getElementById('btnStart').onclick = async () => {
+      log('Starting...');
+      const r = await fetch('/api/research/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ companyCount: 20 }) });
+      log(await r.json());
+    };
+    document.getElementById('btnDash').onclick = async () => {
+      const r = await fetch('/api/research/dashboard');
+      const d = await r.json();
+      log(d);
+      const m = document.getElementById('metrics');
+      m.innerHTML = '';
+      [['Companies', d.totalCompanies], ['Confirmed Offshoring', d.confirmedOffshoring], ['IT Budget £B', d.totalEstimatedItBudgetGbpB?.toFixed(1)]].forEach(([t,v]) => {
+        const el = document.createElement('div');
+        el.className = 'agone-mp-card-metrics-type1';
+        el.innerHTML = '<div>'+t+'</div><div class="h4-headline" style="font-size:20px">'+v+'</div>';
+        m.appendChild(el);
+      });
+    };
+  </script>
+</body>
+</html>

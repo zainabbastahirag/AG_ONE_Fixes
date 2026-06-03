@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Live Extraction Monitor — AG ONE Sentiment Sales</title>
+  <link href="/css/agone.css" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+  <style>
+    .feed { max-height: 480px; overflow-y: auto; }
+    .event { border-left: 4px solid #296DF5; padding: 10px 14px; margin: 8px 0; background: #fff; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+    .event[data-source="LinkedIn"] { border-left-color: #7742FF; }
+    .event[data-source="AnnualReport"] { border-left-color: #4472C4; }
+    .event[data-source="JobBoard"] { border-left-color: #CC9500; }
+    .event[data-source="PressRelease"] { border-left-color: #0AA956; }
+    .event[data-source="CompanyWebsite"] { border-left-color: #FF6733; }
+    .badge { font-size: 11px; padding: 2px 8px; border-radius: 4px; background: #EBF3FF; color: #083DA6; }
+    .source-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(140px,1fr)); gap: 10px; margin: 16px 0; }
+    .source-card { padding: 12px; border-radius: 8px; background: #fff; border: 1px solid #D6DBE6; text-align: center; }
+  </style>
+</head>
+<body>
+<div class="agone-app-shell">
+  <aside class="agone-sidebar-container">
+    <div class="agone-sidebar-header">AG ONE<br>Live Scraper</div>
+    <a class="agone-menu-item" href="/">Home</a>
+    <a class="agone-menu-item selected" href="/monitor.html">Live Monitor</a>
+    <a class="agone-menu-item" href="/swagger">API Docs</a>
+  </aside>
+  <div class="agone-main-content">
+    <header class="agone-header">
+      <span class="subtitle-large-bold">Real-Time Public Source Extraction</span>
+      <span class="agone-ai-badge" id="connStatus">Disconnected</span>
+    </header>
+    <main class="agone-page-container">
+      <p class="body-text-medium-regular">Watch data arrive from <strong>Annual Reports</strong>, <strong>LinkedIn</strong>, <strong>Job Boards</strong>, <strong>Press</strong>, and <strong>Corporate Websites</strong>. Each card shows which source provided which field.</p>
+      <div class="actions-row">
+        <button class="agone-btn-primary-medium" id="btnStart">Start Research + Scrape</button>
+        <input id="jobId" placeholder="Job ID (auto-filled)" style="padding:8px;border-radius:6px;border:1px solid #D6DBE6;min-width:280px" />
+      </div>
+      <h3 class="subtitle-large-bold">Facts by source</h3>
+      <div class="source-grid" id="sourceGrid"></div>
+      <h3 class="subtitle-large-bold">Live feed</h3>
+      <div class="feed" id="feed"></div>
+    </main>
+  </div>
+</div>
+<script>
+const feed = document.getElementById('feed');
+const sourceGrid = document.getElementById('sourceGrid');
+const counts = {};
+let connection;
+
+function renderSourceGrid() {
+  sourceGrid.innerHTML = Object.entries(counts).map(([k,v]) =>
+    `<div class="source-card"><div class="badge">${k}</div><div class="h4-headline" style="font-size:22px">${v}</div></div>`).join('');
+}
+
+function addEvent(dto) {
+  counts[dto.sourceType] = (counts[dto.sourceType] || 0) + 1;
+  renderSourceGrid();
+  const el = document.createElement('div');
+  el.className = 'event';
+  el.dataset.source = dto.sourceType;
+  el.innerHTML = `<div><span class="badge">${dto.sourceLabel}</span> <strong>${dto.companyName}</strong></div>
+    <div style="margin-top:6px"><strong>${dto.fieldName}</strong>: ${dto.extractedValue}</div>
+    <div style="font-size:12px;color:#7288AC;margin-top:4px">↳ <a href="${dto.sourceUrl}" target="_blank">${dto.sourceUrl}</a> · ${(dto.confidenceScore*100).toFixed(0)}% confidence</div>`;
+  feed.prepend(el);
+}
+
+async function connect(jobId) {
+  connection = new signalR.HubConnectionBuilder().withUrl('/hubs/extraction').build();
+  connection.on('ExtractionReceived', addEvent);
+  await connection.start();
+  await connection.invoke('JoinJob', jobId);
+  document.getElementById('connStatus').textContent = 'Live';
+}
+
+document.getElementById('btnStart').onclick = async () => {
+  feed.innerHTML = '';
+  Object.keys(counts).forEach(k => delete counts[k]);
+  const r = await fetch('/api/research/start', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({companyCount: 20})});
+  const j = await r.json();
+  document.getElementById('jobId').value = j.jobId;
+  await connect(j.jobId);
+};
+</script>
+</body>
+</html>

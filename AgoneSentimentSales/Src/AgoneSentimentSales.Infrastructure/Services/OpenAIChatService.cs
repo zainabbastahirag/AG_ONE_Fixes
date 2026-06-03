@@ -1,4 +1,4 @@
-using AgoneSentimentSales.Core.Interfaces;
+using AgoneSentimentSales.Domain.Interfaces;
 using AgoneSentimentSales.Infrastructure.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

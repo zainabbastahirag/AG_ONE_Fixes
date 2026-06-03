@@ -1,59 +1,63 @@
 # AG ONE Sentiment Sales
 
-Market research and lead generation for **LSE top 100** IT offshoring intelligence — built on the AG ONE layered architecture (.NET 8 + Blazor WASM).
+Market research and lead generation for **LSE top 100** IT offshoring intelligence — clean architecture (.NET 8), **SQL Server**, **Quartz** scheduling, public-source scrapers with **real-time attribution**.
 
-## Structure
+## Solution layers (5 only)
 
-| Folder | Contents |
-|--------|----------|
-| `Src/` | All application code |
-| `Docs/` | PRD, project plan, architecture, Draw.io diagram |
+| Project | Role |
+|---------|------|
+| `AgoneSentimentSales.API` | **Startup** — REST, SignalR, DI, static UI host |
+| `AgoneSentimentSales.UI` | Presentation assets (Razor library) |
+| `AgoneSentimentSales.Infrastructure` | EF Core, scrapers, Quartz, Excel |
+| `AgoneSentimentSales.Shared` | DTOs, constants |
+| `AgoneSentimentSales.Domain` | Entities, interfaces |
 
 ## Quick start
 
 ```bash
+docker compose up -d sqlserver
+# wait ~30s for SQL Server
 cd Src
 dotnet build
 dotnet run --project AgoneSentimentSales.API --urls http://localhost:5080
-# separate terminal
-dotnet run --project AgoneSentimentSales.Web
 ```
+
+- **Home:** http://localhost:5080  
+- **Live scraper monitor:** http://localhost:5080/monitor.html  
+- **Swagger:** http://localhost:5080/swagger  
+
+## Public data sources
+
+Annual reports, LinkedIn, job boards, press releases, and company websites — each extraction is tagged with **source type**, **URL**, and **field name**. View live on the monitor page or in Excel *Source Attribution* sheets.
+
+## API highlights
+
+| Endpoint | Purpose |
+|----------|---------|
+| `POST /api/research/start` | Start research + scrape job |
+| `GET /api/extraction/jobs/{id}/feed` | Attribution feed by job |
+| `GET /api/export/excel?jobId=` | Download workbook with source sheets |
+| SignalR `/hubs/extraction` | Real-time `ExtractionReceived` events |
+
+## SQL Server
+
+Schema: **`sentimentsales`** (`Companies`, `SourceExtractionEvents`, `SourcedDataPoints`, …). Migrations apply on API startup.
 
 ## Documentation
 
-- [Project Plan](Docs/PROJECT_PLAN.md)
-- [PRD](Docs/PRD.md)
-- [Architecture](Docs/ARCHITECTURE.md)
-- [Draw.io Diagram](Docs/diagrams/AgoneSentimentSales-Architecture.drawio) — open at [diagrams.net](https://app.diagrams.net)
-
-## Excel output sheets
-
-1. LSE Dashboard Summary  
-2. LSE Company Profiles  
-3. LSE IT Budget Breakdown  
-4. LSE Technology Strategy  
-5. LSE Executive Contacts  
-6. LSE Outsourcing Partners  
-7. LSE Lead Generation Data  
-
-
-## SQL Server (required)
-
-```bash
-docker compose up -d sqlserver
-# wait ~30s, then:
-cd Src
-dotnet run --project AgoneSentimentSales.API
-```
-
-Tables are created under schema **sentimentsales** (e.g. `sentimentsales.Companies`, `sentimentsales.ItBudgets`).
-
-**Startup project:** `AgoneSentimentSales.API` only.
-
-## Architecture & flows
-
 | Doc | Description |
 |-----|-------------|
-| [CORE_ARCHITECTURE.md](Docs/CORE_ARCHITECTURE.md) | How the system works |
-| [SYSTEM_FLOW.md](Docs/SYSTEM_FLOW.md) | Full flow diagrams (Mermaid) |
-| [AgoneSentimentSales-Full-Flow.drawio](Docs/diagrams/AgoneSentimentSales-Full-Flow.drawio) | Draw.io — open in [diagrams.net](https://app.diagrams.net) |
+| [ARCHITECTURE.md](Docs/ARCHITECTURE.md) | Layer reference |
+| [CLEAN_ARCHITECTURE_FLOW.md](Docs/CLEAN_ARCHITECTURE_FLOW.md) | Mermaid flow diagrams |
+| [CORE_ARCHITECTURE.md](Docs/CORE_ARCHITECTURE.md) | Detailed system design |
+| [SYSTEM_FLOW.md](Docs/SYSTEM_FLOW.md) | Additional flows |
+| [PRD.md](Docs/PRD.md) | Requirements |
+
+## Folder layout
+
+```
+AgoneSentimentSales/
+├── Src/          # .NET solution (5 projects)
+├── Docs/         # PRD, architecture, diagrams
+└── docker-compose.yml
+```

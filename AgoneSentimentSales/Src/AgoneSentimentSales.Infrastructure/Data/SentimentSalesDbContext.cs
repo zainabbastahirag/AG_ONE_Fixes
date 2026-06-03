@@ -1,4 +1,4 @@
-using AgoneSentimentSales.Core.Entities;
+using AgoneSentimentSales.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace AgoneSentimentSales.Infrastructure.Data;
@@ -16,6 +16,9 @@ public class SentimentSalesDbContext : DbContext
     public DbSet<OutsourcingPartner> OutsourcingPartners => Set<OutsourcingPartner>();
     public DbSet<LeadGenerationData> LeadGenerationData => Set<LeadGenerationData>();
     public DbSet<ResearchJob> ResearchJobs => Set<ResearchJob>();
+    
+    public DbSet<SourceExtractionEvent> SourceExtractionEvents => Set<SourceExtractionEvent>();
+    public DbSet<SourcedDataPoint> SourcedDataPoints => Set<SourcedDataPoint>();
     public DbSet<ApiRequestLog> ApiRequestLogs => Set<ApiRequestLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -69,6 +72,20 @@ public class SentimentSalesDbContext : DbContext
         modelBuilder.Entity<ApiRequestLog>(e =>
         {
             e.ToTable("ApiRequestLogs", SchemaName);
+        });
+
+        modelBuilder.Entity<SourceExtractionEvent>(e =>
+        {
+            e.ToTable("SourceExtractionEvents", SchemaName);
+            e.HasIndex(x => x.ResearchJobId);
+            e.HasIndex(x => x.LseCompanyId);
+        });
+
+        modelBuilder.Entity<SourcedDataPoint>(e =>
+        {
+            e.ToTable("SourcedDataPoints", SchemaName);
+            e.HasIndex(x => x.LseCompanyId);
+            e.HasIndex(x => new { x.LseCompanyId, x.FieldName });
         });
     }
 }

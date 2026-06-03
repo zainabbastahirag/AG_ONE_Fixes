@@ -1,5 +1,5 @@
-using AgoneSentimentSales.Application.DTOs;
-using AgoneSentimentSales.Core.Interfaces;
+using AgoneSentimentSales.Shared.DTOs;
+using AgoneSentimentSales.Domain.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AgoneSentimentSales.API.Controllers;

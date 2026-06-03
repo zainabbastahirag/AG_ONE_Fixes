@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using AgoneSentimentSales.Core.Entities;
+using AgoneSentimentSales.Domain.Entities;
 using AgoneSentimentSales.Infrastructure.Data;
 
 namespace AgoneSentimentSales.API.Middleware;

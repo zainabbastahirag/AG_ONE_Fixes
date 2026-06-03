@@ -1,6 +1,6 @@
-using AgoneSentimentSales.Core.Entities;
-using AgoneSentimentSales.Core.Enums;
-using AgoneSentimentSales.Core.Interfaces;
+using AgoneSentimentSales.Domain.Entities;
+using AgoneSentimentSales.Domain.Enums;
+using AgoneSentimentSales.Domain.Interfaces;
 using ClosedXML.Excel;
 
 namespace AgoneSentimentSales.Infrastructure.Services;
@@ -16,25 +16,25 @@ public class ExcelExportService : IExcelExportService
     private const string OrangeText = "#9C6500";
     private const string GreenConfirmed = "#C6EFCE";
 
-    public Task<byte[]> ExportWorkbookAsync(IReadOnlyList<LseCompany> companies, CancellationToken cancellationToken = default)
+    public Task<byte[]> ExportWorkbookAsync(IReadOnlyList<LseCompany> companies, IReadOnlyList<SourceExtractionEvent>? extractions = null, CancellationToken cancellationToken = default)
     {
-        using var wb = BuildWorkbook(companies);
+        using var wb = BuildWorkbook(companies, extractions ?? []);
         using var ms = new MemoryStream();
         wb.SaveAs(ms);
         return Task.FromResult(ms.ToArray());
     }
 
-    public async Task<string> SaveWorkbookAsync(IReadOnlyList<LseCompany> companies, string outputDirectory, CancellationToken cancellationToken = default)
+    public async Task<string> SaveWorkbookAsync(IReadOnlyList<LseCompany> companies, IReadOnlyList<SourceExtractionEvent>? extractions, string outputDirectory, CancellationToken cancellationToken = default)
     {
         Directory.CreateDirectory(outputDirectory);
         var fileName = $"LSE_TOP100_IT_OFFSHORING_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xlsx";
         var path = Path.Combine(outputDirectory, fileName);
-        using var wb = BuildWorkbook(companies);
+        using var wb = BuildWorkbook(companies, extractions ?? []);
         wb.SaveAs(path);
         return await Task.FromResult(path);
     }
 
-    private static XLWorkbook BuildWorkbook(IReadOnlyList<LseCompany> companies)
+    private static XLWorkbook BuildWorkbook(IReadOnlyList<LseCompany> companies, IReadOnlyList<SourceExtractionEvent> extractions)
     {
         var wb = new XLWorkbook();
         BuildDashboardSheet(wb, companies);
@@ -44,6 +44,8 @@ public class ExcelExportService : IExcelExportService
         BuildExecutiveContactsSheet(wb, companies);
         BuildOutsourcingPartnersSheet(wb, companies);
         BuildLeadGenerationSheet(wb, companies);
+        BuildSourceAttributionSheet(wb, extractions);
+        BuildSourceSummarySheet(wb, extractions);
         return wb;
     }
 
@@ -235,6 +237,65 @@ public class ExcelExportService : IExcelExportService
                 c.CompanyName, l.AsiaOperations, l.ItAnnouncements, l.HiringTrends,
                 l.DigitalRoles, l.PainPoints, l.RenewalCycle
             ], row % 2 == 0);
+            row++;
+        }
+        ws.Columns().AdjustToContents();
+    }
+
+
+    private static void BuildSourceAttributionSheet(XLWorkbook wb, IReadOnlyList<SourceExtractionEvent> extractions)
+    {
+        var ws = wb.Worksheets.Add("Source Attribution");
+        ApplyTitle(ws, 1, 10, "PUBLIC DATA SOURCE ATTRIBUTION — FIELD-LEVEL PROVENANCE");
+        ApplySubtitle(ws, 2, 10, "Each row shows which public source supplied a fact for lead research");
+
+        string[] headers = ["Company", "Source Type", "Source Label", "Field", "Extracted Value", "Source URL", "Confidence %", "Extracted At", "Snippet"];
+        var row = 4;
+        WriteTableHeader(ws, row, headers);
+        row++;
+        foreach (var e in extractions.OrderBy(x => x.CompanyName).ThenBy(x => x.SourceType).ThenBy(x => x.FieldName))
+        {
+            WriteDataRow(ws, row, [
+                e.CompanyName, e.SourceType, e.SourceLabel, e.FieldName, e.ExtractedValue,
+                e.SourceUrl, $"{e.ConfidenceScore * 100:F0}%",
+                e.ExtractedAt.ToString("yyyy-MM-dd HH:mm:ss UTC"), e.RawSnippet ?? ""
+            ], row % 2 == 0);
+            row++;
+        }
+        ws.Columns().AdjustToContents();
+    }
+
+    private static void BuildSourceSummarySheet(XLWorkbook wb, IReadOnlyList<SourceExtractionEvent> extractions)
+    {
+        var ws = wb.Worksheets.Add("Source Summary Dashboard");
+        ApplyTitle(ws, 1, 6, "SOURCE SUMMARY — EXTRACTIONS BY PUBLIC DATA CHANNEL");
+        ApplySubtitle(ws, 2, 6, $"Total extractions: {extractions.Count} | Generated: {DateTime.UtcNow:yyyy-MM-dd HH:mm} UTC");
+
+        var row = 4;
+        ApplySectionHeader(ws, row, "COUNTS BY SOURCE TYPE");
+        row++;
+        WriteTableHeader(ws, row, ["Source Type", "Source Label", "# Extractions", "% of Total", "Avg Confidence", "Top Field"]);
+        row++;
+        var total = extractions.Count;
+        foreach (var g in extractions.GroupBy(e => e.SourceType).OrderByDescending(g => g.Count()))
+        {
+            var avgConf = g.Average(x => x.ConfidenceScore);
+            var topField = g.GroupBy(x => x.FieldName).OrderByDescending(fg => fg.Count()).First().Key;
+            var pct = total > 0 ? $"{g.Count() * 100.0 / total:F1}%" : "0%";
+            WriteDataRow(ws, row, [g.Key, g.First().SourceLabel, g.Count().ToString(), pct, $"{avgConf * 100:F0}%", topField], row % 2 == 0);
+            row++;
+        }
+
+        row += 2;
+        ApplySectionHeader(ws, row, "TOP COMPANIES BY SOURCE COVERAGE");
+        row++;
+        WriteTableHeader(ws, row, ["Company", "Distinct Sources", "Total Facts", "Best Lead Fields"]);
+        row++;
+        foreach (var g in extractions.GroupBy(e => e.CompanyName).OrderByDescending(g => g.Select(x => x.SourceType).Distinct().Count()).Take(25))
+        {
+            var sources = g.Select(x => x.SourceType).Distinct().Count();
+            var fields = string.Join(", ", g.Select(x => x.FieldName).Distinct().Take(4));
+            WriteDataRow(ws, row, [g.Key, sources.ToString(), g.Count().ToString(), fields], row % 2 == 0);
             row++;
         }
         ws.Columns().AdjustToContents();

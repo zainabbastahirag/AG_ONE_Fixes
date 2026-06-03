@@ -1,9 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
-  <ItemGroup>
-    <ProjectReference Include="..\AgoneSentimentSales.Core\AgoneSentimentSales.Core.csproj" />
-    <ProjectReference Include="..\AgoneSentimentSales.Application\AgoneSentimentSales.Application.csproj" />
-  </ItemGroup>
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.105.0" />
@@ -14,6 +9,7 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.11" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.8" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.8" />
+    <PackageReference Include="Quartz" Version="3.13.1" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -22,4 +18,4 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-</Project>
+<ItemGroup><ProjectReference Include="../AgoneSentimentSales.Domain/AgoneSentimentSales.Domain.csproj" /><ProjectReference Include="../AgoneSentimentSales.Shared/AgoneSentimentSales.Shared.csproj" /></ItemGroup></Project>

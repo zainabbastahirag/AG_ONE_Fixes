@@ -1,4 +1,4 @@
-using AgoneSentimentSales.Core.Monitoring;
+using AgoneSentimentSales.Domain.Monitoring;
 
 namespace AgoneSentimentSales.Infrastructure.Services;
 

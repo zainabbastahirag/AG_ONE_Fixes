@@ -12,13 +12,8 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Quartz.Extensions.Hosting" Version="3.13.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.1" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\AgoneSentimentSales.Core\AgoneSentimentSales.Core.csproj" />
-    <ProjectReference Include="..\AgoneSentimentSales.Application\AgoneSentimentSales.Application.csproj" />
-    <ProjectReference Include="..\AgoneSentimentSales.Infrastructure\AgoneSentimentSales.Infrastructure.csproj" />
-  </ItemGroup>
-
-</Project>
+  <ItemGroup><ProjectReference Include="../AgoneSentimentSales.Domain/AgoneSentimentSales.Domain.csproj" /><ProjectReference Include="../AgoneSentimentSales.Shared/AgoneSentimentSales.Shared.csproj" /><ProjectReference Include="../AgoneSentimentSales.Infrastructure/AgoneSentimentSales.Infrastructure.csproj" /><ProjectReference Include="../AgoneSentimentSales.UI/AgoneSentimentSales.UI.csproj" /></ItemGroup></Project>

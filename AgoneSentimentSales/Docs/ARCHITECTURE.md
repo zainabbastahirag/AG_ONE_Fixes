@@ -1,62 +1,50 @@
-# AG ONE Sentiment Sales — Architecture
+# AgoneSentimentSales — Clean Architecture
 
-Aligned with **AGONEAIHub** (ONE Series) layered architecture.
+Five layers only. **One startup project:** `AgoneSentimentSales.API`.
 
-## Project Layers
+## Layer map
 
-```
-AgoneSentimentSales.API
-  ├── Controllers/         Research, Export
-  ├── Middleware/          ApiLoggingMiddleware, JobMonitoringMiddleware
-  └── Extensions/          MonitoringExtensions (DI)
+| Layer | Project | Responsibility |
+|-------|---------|----------------|
+| **API** | `AgoneSentimentSales.API` | HTTP controllers, SignalR hubs, DI composition, middleware, static host for UI assets |
+| **UI** | `AgoneSentimentSales.UI` | Razor/static presentation assets (AG ONE styling); served via API `wwwroot` |
+| **Infrastructure** | `AgoneSentimentSales.Infrastructure` | EF Core + SQL Server, scrapers, Quartz jobs, Excel export, external integrations |
+| **Shared** | `AgoneSentimentSales.Shared` | DTOs, constants (`DataSourceTypes`), cross-layer contracts |
+| **Domain** | `AgoneSentimentSales.Domain` | Entities, enums, interfaces (no framework dependencies) |
 
-AgoneSentimentSales.Core            Zero-dependency kernel
-  ├── Entities/            LseCompany, ItBudgetBreakdown, …
-  ├── Interfaces/          IMarketResearchService, IExcelExportService, …
-  ├── Enums/               OffshoringStatus, DigitalMaturity, …
-  └── Monitoring/          IJobTracker
-
-AgoneSentimentSales.Application     API DTOs
-  └── DTOs/                ResearchDtos
-
-AgoneSentimentSales.Infrastructure  External I/O
-  ├── Configuration/       OpenAISettings, ResearchSettings
-  ├── Data/                SentimentSalesDbContext
-  └── Services/            MarketResearch, ExcelExport, ResearchAgent, …
-
-AgoneSentimentSales.Shared          Shared helpers (future SDK)
-CSS: `AgoneSentimentSales.API/wwwroot/css/agone.css`
-*(UI served from API `wwwroot` — optional static HTML)*
-```
-
-## Middleware Pipeline
+## Dependency rule
 
 ```
-Request → CORS → ApiLoggingMiddleware → JobMonitoringMiddleware → Controllers
+API → UI, Infrastructure, Shared, Domain
+Infrastructure → Domain, Shared
+UI → Shared
+Shared → (none)
+Domain → (none)
 ```
 
-## External Services (Roadmap)
+API must not reference Infrastructure implementation details in controllers except via interfaces registered in `ServiceRegistrationExtensions`.
 
-| Service | Config | Purpose |
-|---------|--------|---------|
-| Azure OpenAI | `OpenAI` | Agentic enrichment, summarisation |
-| SQL Server | `ConnectionStrings:DefaultConnection` | Production persistence |
-| LSE / market data API | TBD | Live market cap & listings |
-| LinkedIn / web research | TBD | Contact verification (compliant) |
+## Data store
 
-## Dependency Injection
+- **SQL Server**, schema **`sentimentsales`**
+- EF Core migrations in `Infrastructure/Migrations`
+- Quartz for background research pipeline and daily refresh (02:00 UTC cron)
 
-| Type | Lifetime |
-|------|----------|
-| DbContext | Scoped |
-| Research services | Scoped |
-| IJobTracker | Singleton |
+## Public data sources
 
-Database: **SQL Server** only, schema `sentimentsales`, EF migrations on startup.
+| Source type | Scraper | Typical fields |
+|-------------|---------|----------------|
+| AnnualReport | `AnnualReportScraper` | IT spend, capex/opex |
+| LinkedIn | `LinkedInScraper` | Executives, hiring |
+| JobBoard | `JobBoardScraper` | Digital roles, trends |
+| PressRelease | `PressReleaseScraper` | IT announcements |
+| CompanyWebsite | `CompanyWebsiteScraper` | Strategy, partners |
 
+`ScraperOrchestrator` runs all sources per company; each fact is stored as `SourceExtractionEvent` with **source attribution**.
 
-## Extended documentation
+## Real-time & export
 
-- **[CORE_ARCHITECTURE.md](./CORE_ARCHITECTURE.md)** — full system design
-- **[SYSTEM_FLOW.md](./SYSTEM_FLOW.md)** — step-by-step flows (Mermaid)
-- **[diagrams/AgoneSentimentSales-Full-Flow.drawio](./diagrams/AgoneSentimentSales-Full-Flow.drawio)** — 5-page Draw.io diagram
+- **SignalR** hub `/hubs/extraction` — live feed on `/monitor.html`
+- **Excel** — 9 sheets including *Source Attribution* and *Source Summary Dashboard*
+
+See [CORE_ARCHITECTURE.md](CORE_ARCHITECTURE.md) and [SYSTEM_FLOW.md](SYSTEM_FLOW.md) for diagrams.

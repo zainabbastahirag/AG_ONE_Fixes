@@ -26,7 +26,7 @@ namespace AgoneSentimentSales.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("AgoneSentimentSales.Core.Entities.ApiRequestLog", b =>
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.ApiRequestLog", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -59,7 +59,7 @@ namespace AgoneSentimentSales.Infrastructure.Migrations
                     b.ToTable("ApiRequestLogs", "sentimentsales");
                 });
 
-            modelBuilder.Entity("AgoneSentimentSales.Core.Entities.ExecutiveContact", b =>
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.ExecutiveContact", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -107,7 +107,7 @@ namespace AgoneSentimentSales.Infrastructure.Migrations
                     b.ToTable("ExecutiveContacts", "sentimentsales");
                 });
 
-            modelBuilder.Entity("AgoneSentimentSales.Core.Entities.ItBudgetBreakdown", b =>
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.ItBudgetBreakdown", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -179,7 +179,7 @@ namespace AgoneSentimentSales.Infrastructure.Migrations
                     b.ToTable("ItBudgets", "sentimentsales");
                 });
 
-            modelBuilder.Entity("AgoneSentimentSales.Core.Entities.LeadGenerationData", b =>
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.LeadGenerationData", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -225,7 +225,7 @@ namespace AgoneSentimentSales.Infrastructure.Migrations
                     b.ToTable("LeadGenerationData", "sentimentsales");
                 });
 
-            modelBuilder.Entity("AgoneSentimentSales.Core.Entities.LseCompany", b =>
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.LseCompany", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -291,7 +291,7 @@ namespace AgoneSentimentSales.Infrastructure.Migrations
                     b.ToTable("Companies", "sentimentsales");
                 });
 
-            modelBuilder.Entity("AgoneSentimentSales.Core.Entities.OutsourcingPartner", b =>
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.OutsourcingPartner", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -333,7 +333,7 @@ namespace AgoneSentimentSales.Infrastructure.Migrations
                     b.ToTable("OutsourcingPartners", "sentimentsales");
                 });
 
-            modelBuilder.Entity("AgoneSentimentSales.Core.Entities.ResearchJob", b =>
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.ResearchJob", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -369,7 +369,7 @@ namespace AgoneSentimentSales.Infrastructure.Migrations
                     b.ToTable("ResearchJobs", "sentimentsales");
                 });
 
-            modelBuilder.Entity("AgoneSentimentSales.Core.Entities.TechnologyStrategy", b =>
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.TechnologyStrategy", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -415,9 +415,9 @@ namespace AgoneSentimentSales.Infrastructure.Migrations
                     b.ToTable("TechnologyStrategies", "sentimentsales");
                 });
 
-            modelBuilder.Entity("AgoneSentimentSales.Core.Entities.ExecutiveContact", b =>
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.ExecutiveContact", b =>
                 {
-                    b.HasOne("AgoneSentimentSales.Core.Entities.LseCompany", "Company")
+                    b.HasOne("AgoneSentimentSales.Domain.Entities.LseCompany", "Company")
                         .WithMany("ExecutiveContacts")
                         .HasForeignKey("LseCompanyId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -426,51 +426,51 @@ namespace AgoneSentimentSales.Infrastructure.Migrations
                     b.Navigation("Company");
                 });
 
-            modelBuilder.Entity("AgoneSentimentSales.Core.Entities.ItBudgetBreakdown", b =>
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.ItBudgetBreakdown", b =>
                 {
-                    b.HasOne("AgoneSentimentSales.Core.Entities.LseCompany", "Company")
+                    b.HasOne("AgoneSentimentSales.Domain.Entities.LseCompany", "Company")
                         .WithOne("ItBudget")
-                        .HasForeignKey("AgoneSentimentSales.Core.Entities.ItBudgetBreakdown", "LseCompanyId")
+                        .HasForeignKey("AgoneSentimentSales.Domain.Entities.ItBudgetBreakdown", "LseCompanyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Company");
                 });
 
-            modelBuilder.Entity("AgoneSentimentSales.Core.Entities.LeadGenerationData", b =>
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.LeadGenerationData", b =>
                 {
-                    b.HasOne("AgoneSentimentSales.Core.Entities.LseCompany", "Company")
+                    b.HasOne("AgoneSentimentSales.Domain.Entities.LseCompany", "Company")
                         .WithOne("LeadGeneration")
-                        .HasForeignKey("AgoneSentimentSales.Core.Entities.LeadGenerationData", "LseCompanyId")
+                        .HasForeignKey("AgoneSentimentSales.Domain.Entities.LeadGenerationData", "LseCompanyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Company");
                 });
 
-            modelBuilder.Entity("AgoneSentimentSales.Core.Entities.OutsourcingPartner", b =>
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.OutsourcingPartner", b =>
                 {
-                    b.HasOne("AgoneSentimentSales.Core.Entities.LseCompany", "Company")
+                    b.HasOne("AgoneSentimentSales.Domain.Entities.LseCompany", "Company")
                         .WithOne("OutsourcingPartner")
-                        .HasForeignKey("AgoneSentimentSales.Core.Entities.OutsourcingPartner", "LseCompanyId")
+                        .HasForeignKey("AgoneSentimentSales.Domain.Entities.OutsourcingPartner", "LseCompanyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Company");
                 });
 
-            modelBuilder.Entity("AgoneSentimentSales.Core.Entities.TechnologyStrategy", b =>
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.TechnologyStrategy", b =>
                 {
-                    b.HasOne("AgoneSentimentSales.Core.Entities.LseCompany", "Company")
+                    b.HasOne("AgoneSentimentSales.Domain.Entities.LseCompany", "Company")
                         .WithOne("TechnologyStrategy")
-                        .HasForeignKey("AgoneSentimentSales.Core.Entities.TechnologyStrategy", "LseCompanyId")
+                        .HasForeignKey("AgoneSentimentSales.Domain.Entities.TechnologyStrategy", "LseCompanyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Company");
                 });
 
-            modelBuilder.Entity("AgoneSentimentSales.Core.Entities.LseCompany", b =>
+            modelBuilder.Entity("AgoneSentimentSales.Domain.Entities.LseCompany", b =>
                 {
                     b.Navigation("ExecutiveContacts");
 
