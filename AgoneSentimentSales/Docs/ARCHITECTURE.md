@@ -53,3 +53,10 @@ Request → CORS → ApiLoggingMiddleware → JobMonitoringMiddleware → Contro
 | IJobTracker | Singleton |
 
 Database: **SQL Server** only, schema `sentimentsales`, EF migrations on startup.
+
+
+## Extended documentation
+
+- **[CORE_ARCHITECTURE.md](./CORE_ARCHITECTURE.md)** — full system design
+- **[SYSTEM_FLOW.md](./SYSTEM_FLOW.md)** — step-by-step flows (Mermaid)
+- **[diagrams/AgoneSentimentSales-Full-Flow.drawio](./diagrams/AgoneSentimentSales-Full-Flow.drawio)** — 5-page Draw.io diagram

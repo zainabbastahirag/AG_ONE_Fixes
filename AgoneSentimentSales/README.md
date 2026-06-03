@@ -49,3 +49,11 @@ dotnet run --project AgoneSentimentSales.API
 Tables are created under schema **sentimentsales** (e.g. `sentimentsales.Companies`, `sentimentsales.ItBudgets`).
 
 **Startup project:** `AgoneSentimentSales.API` only.
+
+## Architecture & flows
+
+| Doc | Description |
+|-----|-------------|
+| [CORE_ARCHITECTURE.md](Docs/CORE_ARCHITECTURE.md) | How the system works |
+| [SYSTEM_FLOW.md](Docs/SYSTEM_FLOW.md) | Full flow diagrams (Mermaid) |
+| [AgoneSentimentSales-Full-Flow.drawio](Docs/diagrams/AgoneSentimentSales-Full-Flow.drawio) | Draw.io — open in [diagrams.net](https://app.diagrams.net) |
