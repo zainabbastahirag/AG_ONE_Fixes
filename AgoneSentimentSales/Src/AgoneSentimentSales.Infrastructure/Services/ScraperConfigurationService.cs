@@ -3,6 +3,7 @@ using AgoneSentimentSales.Domain.Interfaces;
 using AgoneSentimentSales.Infrastructure.Data;
 using AgoneSentimentSales.Shared.Constants;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.SqlClient;
 
 namespace AgoneSentimentSales.Infrastructure.Services;
 
@@ -61,7 +62,15 @@ public class ScraperConfigurationService : IScraperConfigurationService
 
     public async Task EnsureSeedDataAsync(CancellationToken cancellationToken = default)
     {
-        if (await _db.ScraperConfigurations.AnyAsync(cancellationToken)) return;
+        try
+        {
+            if (await _db.ScraperConfigurations.AnyAsync(cancellationToken)) return;
+        }
+        catch (SqlException ex) when (ex.Number == 208)
+        {
+            throw new InvalidOperationException(
+                "Table sentimentsales.ScraperConfigurations is missing. Run: ./scripts/setup-database.sh or dotnet ef database update", ex);
+        }
 
         var defaults = new[]
         {
