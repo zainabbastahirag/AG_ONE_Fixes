@@ -1,0 +1,31 @@
+
+@page "/companies"
+@inject ResearchApiClient Api
+
+<PageTitle>Companies</PageTitle>
+<h1 class="h4-headline">LSE Company Profiles</h1>
+
+@if (_companies == null) { <p>Loading...</p> }
+else
+{
+    <table class="agone-data-table">
+        <thead><tr><th>Rank</th><th>Company</th><th>Ticker</th><th>Sector</th><th>Mkt Cap (£B)</th><th>Offshoring</th><th>Locations</th><th>Lead Score</th></tr></thead>
+        <tbody>
+        @foreach (var c in _companies)
+        {
+            <tr>
+                <td>@c.Rank</td><td>@c.CompanyName</td><td>@c.Ticker</td><td>@c.Sector</td>
+                <td>@c.MarketCapGbpB.ToString("N1")</td>
+                <td><span class="@GetStatusClass(c.OffshoringStatus)">@c.OffshoringStatus</span></td>
+                <td>@c.PrimaryOffshoreLocations</td><td>@c.LeadScore</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    List<CompanySummaryDto>? _companies;
+    protected override async Task OnInitializedAsync() => _companies = await Api.GetCompaniesAsync();
+    static string GetStatusClass(string s) => s switch { "Confirmed" => "agone-status-confirmed", "Partial" => "agone-status-partial", _ => "" };
+}

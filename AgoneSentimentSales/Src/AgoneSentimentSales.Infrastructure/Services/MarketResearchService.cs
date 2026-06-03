@@ -1,0 +1,191 @@
+using AgoneSentimentSales.Core.Entities;
+using AgoneSentimentSales.Core.Enums;
+using AgoneSentimentSales.Core.Interfaces;
+using AgoneSentimentSales.Core.Monitoring;
+using AgoneSentimentSales.Infrastructure.Configuration;
+using AgoneSentimentSales.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+
+namespace AgoneSentimentSales.Infrastructure.Services;
+
+public class MarketResearchService : IMarketResearchService
+{
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly ICompanyDataProvider _dataProvider;
+    private readonly IResearchAgentService _agent;
+    private readonly IExcelExportService _excelExport;
+    private readonly IJobTracker _jobTracker;
+    private readonly ResearchSettings _settings;
+    private readonly ILogger<MarketResearchService> _logger;
+
+    public MarketResearchService(
+        IServiceScopeFactory scopeFactory,
+        ICompanyDataProvider dataProvider,
+        IResearchAgentService agent,
+        IExcelExportService excelExport,
+        IJobTracker jobTracker,
+        IOptions<ResearchSettings> settings,
+        ILogger<MarketResearchService> logger)
+    {
+        _scopeFactory = scopeFactory;
+        _dataProvider = dataProvider;
+        _agent = agent;
+        _excelExport = excelExport;
+        _jobTracker = jobTracker;
+        _settings = settings.Value;
+        _logger = logger;
+    }
+
+    public async Task<ResearchJob> StartResearchJobAsync(int companyCount = 100, CancellationToken cancellationToken = default)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<SentimentSalesDbContext>();
+        var job = new ResearchJob
+        {
+            TargetCompanyCount = companyCount,
+            Status = ResearchJobStatus.Running
+        };
+        db.ResearchJobs.Add(job);
+        await db.SaveChangesAsync(cancellationToken);
+        var jobId = job.Id;
+
+        _ = Task.Run(async () =>
+        {
+            using var bgScope = _scopeFactory.CreateScope();
+            var bgDb = bgScope.ServiceProvider.GetRequiredService<SentimentSalesDbContext>();
+            var bgAgent = bgScope.ServiceProvider.GetRequiredService<IResearchAgentService>();
+            var bgExcel = bgScope.ServiceProvider.GetRequiredService<IExcelExportService>();
+            var bgJob = await bgDb.ResearchJobs.FindAsync(jobId);
+            if (bgJob == null) return;
+
+            using (_jobTracker.BeginScope(jobId))
+            {
+                try
+                {
+                    await RunJobAsync(bgDb, bgAgent, bgExcel, bgJob, companyCount, CancellationToken.None);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Research job {JobId} failed", jobId);
+                    bgJob.Status = ResearchJobStatus.Failed;
+                    bgJob.ErrorMessage = ex.Message;
+                    await bgDb.SaveChangesAsync();
+                }
+            }
+        }, cancellationToken);
+
+        return job;
+    }
+
+    private async Task RunJobAsync(SentimentSalesDbContext db, IResearchAgentService agent, IExcelExportService excelExport, ResearchJob job, int companyCount, CancellationToken cancellationToken)
+    {
+        var existing = await db.Companies.ToListAsync(cancellationToken);
+        db.Companies.RemoveRange(existing);
+        await db.SaveChangesAsync(cancellationToken);
+
+        var seeds = await _dataProvider.GetTopCompaniesByMarketCapAsync(companyCount, cancellationToken);
+        var enriched = new List<LseCompany>();
+        var i = 0;
+        foreach (var seed in seeds)
+        {
+            var company = await agent.EnrichCompanyProfileAsync(seed, cancellationToken);
+            db.Companies.Add(company);
+            enriched.Add(company);
+            i++;
+            _jobTracker.ReportProgress(i, seeds.Count, company.CompanyName);
+            job.ProcessedCount = i;
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        Directory.CreateDirectory(_settings.ExportDirectory);
+        var path = await excelExport.SaveWorkbookAsync(enriched, _settings.ExportDirectory, cancellationToken);
+        job.OutputFilePath = path;
+        job.Status = ResearchJobStatus.Completed;
+        job.CompletedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<ResearchJob?> GetJobAsync(Guid jobId, CancellationToken cancellationToken = default)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<SentimentSalesDbContext>();
+        return await db.ResearchJobs.AsNoTracking().FirstOrDefaultAsync(j => j.Id == jobId, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<LseCompany>> GetCompaniesAsync(string? sector = null, CancellationToken cancellationToken = default)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<SentimentSalesDbContext>();
+        var q = db.Companies
+            .Include(c => c.ItBudget)
+            .Include(c => c.TechnologyStrategy)
+            .Include(c => c.ExecutiveContacts)
+            .Include(c => c.OutsourcingPartner)
+            .Include(c => c.LeadGeneration)
+            .AsNoTracking()
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(sector))
+            q = q.Where(c => c.Sector == sector);
+
+        return await q.OrderBy(c => c.Rank).ToListAsync(cancellationToken);
+    }
+
+    public async Task<LseCompany?> GetCompanyByIdAsync(int id, CancellationToken cancellationToken = default)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<SentimentSalesDbContext>();
+        return await db.Companies
+            .Include(c => c.ItBudget)
+            .Include(c => c.TechnologyStrategy)
+            .Include(c => c.ExecutiveContacts)
+            .Include(c => c.OutsourcingPartner)
+            .Include(c => c.LeadGeneration)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+    }
+
+    public async Task<DashboardSummary> GetDashboardSummaryAsync(CancellationToken cancellationToken = default)
+    {
+        var companies = await GetCompaniesAsync(cancellationToken: cancellationToken);
+        if (companies.Count == 0)
+            return new DashboardSummary(0, 0, 0, 0, 0, 0, [], []);
+
+        var confirmed = companies.Count(c => c.OffshoringStatus == OffshoringStatus.Confirmed);
+        var totalIt = companies.Where(c => c.ItBudget != null).Sum(c => c.ItBudget!.EstimatedItBudgetGbpM) / 1000m;
+        var offshore = companies.Where(c => c.ItBudget != null).Sum(c => c.ItBudget!.OffshoreResourceCostGbpM) / 1000m;
+        var indiaOps = companies.Count(c => c.PrimaryOffshoreLocations.Contains("India", StringComparison.OrdinalIgnoreCase));
+        var multiPartner = companies.Count(c => (c.OutsourcingPartner?.PrimaryPartners?.Split(',').Length ?? 0) > 2);
+
+        var sectors = companies
+            .GroupBy(c => c.Sector)
+            .Select(g => new SectorBreakdown(
+                g.Key,
+                g.Count(),
+                g.Where(x => x.ItBudget != null).Sum(x => x.ItBudget!.EstimatedItBudgetGbpM) / 1000m,
+                g.Where(x => x.ItBudget != null).DefaultIfEmpty().Average(x => x?.ItBudget?.ItAsPercentOfRevenue ?? 0)))
+            .OrderByDescending(s => s.EstItBudgetGbpB)
+            .ToList();
+
+        var partnerCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (var c in companies.Where(c => c.OutsourcingPartner != null))
+        {
+            foreach (var p in c.OutsourcingPartner!.PrimaryPartners.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                partnerCounts[p] = partnerCounts.GetValueOrDefault(p) + 1;
+            }
+        }
+
+        var topPartners = partnerCounts
+            .OrderByDescending(kv => kv.Value)
+            .Take(15)
+            .Select((kv, idx) => new PartnerRank(idx + 1, kv.Key, kv.Value))
+            .ToList();
+
+        return new DashboardSummary(
+            companies.Count, confirmed, totalIt, offshore, indiaOps, multiPartner, sectors, topPartners);
+    }
+}

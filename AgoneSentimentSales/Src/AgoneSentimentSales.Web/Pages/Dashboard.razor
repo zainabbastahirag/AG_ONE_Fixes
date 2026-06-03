@@ -1,0 +1,35 @@
+
+@page "/dashboard"
+@inject ResearchApiClient Api
+
+<PageTitle>Dashboard</PageTitle>
+<h1 class="h4-headline">LSE IT Offshoring Dashboard</h1>
+
+@if (_dash == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="metrics-grid">
+        <div class="agone-mp-card-metrics-type1"><div class="body-text-small-regular">Companies Profiled</div><div class="subtitle-large-bold">@_dash.TotalCompanies</div></div>
+        <div class="agone-mp-card-metrics-type1"><div class="body-text-small-regular">Confirmed Offshoring</div><div class="subtitle-large-bold">@_dash.ConfirmedOffshoring</div></div>
+        <div class="agone-mp-card-metrics-type1"><div class="body-text-small-regular">Est. IT Budget</div><div class="subtitle-large-bold">£@_dash.TotalEstimatedItBudgetGbpB.ToString("N1")B+</div></div>
+        <div class="agone-mp-card-metrics-type1"><div class="body-text-small-regular">India Operations</div><div class="subtitle-large-bold">@_dash.CompaniesWithIndiaOperations</div></div>
+    </div>
+    <h2 class="subtitle-large-bold">Sector Breakdown</h2>
+    <table class="agone-data-table">
+        <thead><tr><th>Sector</th><th>Companies</th><th>IT Budget (£B)</th><th>Avg IT %</th></tr></thead>
+        <tbody>
+        @foreach (var s in _dash.Sectors)
+        {
+            <tr><td>@s.Sector</td><td>@s.CompanyCount</td><td>@s.EstItBudgetGbpB.ToString("N1")</td><td>@s.AvgItPercentRevenue.ToString("N2")%</td></tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    DashboardSummaryDto? _dash;
+    protected override async Task OnInitializedAsync() => _dash = await Api.GetDashboardAsync();
+}
