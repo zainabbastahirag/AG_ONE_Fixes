@@ -27,8 +27,13 @@ using (var scope = app.Services.CreateScope())
         try
         {
             log.LogInformation("Applying migrations (attempt {Attempt})...", attempt);
-            db.Database.Migrate();
+            var pending = (await db.Database.GetPendingMigrationsAsync()).ToList();
+            if (pending.Count > 0)
+                log.LogInformation("Pending migrations: {Migrations}", string.Join(", ", pending));
+            await db.Database.MigrateAsync();
             migrated = true;
+            log.LogInformation("Database up to date. Applied: {Applied}",
+                string.Join(", ", await db.Database.GetAppliedMigrationsAsync()));
         }
         catch (Exception ex) when (attempt < 10)
         {
