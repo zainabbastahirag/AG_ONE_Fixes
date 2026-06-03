@@ -31,8 +31,12 @@ public class QuartzResearchJobScheduler : IResearchJobScheduler
     public async Task ScheduleDailyRefreshAsync(CancellationToken cancellationToken = default)
     {
         var scheduler = await _schedulerFactory.GetScheduler(cancellationToken);
+        var jobKey = new JobKey("daily-refresh", "sentimentsales");
+        if (await scheduler.CheckExists(jobKey, cancellationToken))
+            return;
+
         await scheduler.ScheduleJob(
-            JobBuilder.Create<DailyRefreshJob>().WithIdentity("daily-refresh", "sentimentsales").Build(),
+            JobBuilder.Create<DailyRefreshJob>().WithIdentity(jobKey).Build(),
             TriggerBuilder.Create().WithIdentity("daily-refresh-trigger", "sentimentsales").WithCronSchedule("0 0 2 * * ?").Build(),
             cancellationToken);
     }

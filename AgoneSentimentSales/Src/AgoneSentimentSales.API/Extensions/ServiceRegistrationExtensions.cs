@@ -6,6 +6,7 @@ using AgoneSentimentSales.Infrastructure.Jobs;
 using AgoneSentimentSales.Infrastructure.Scrapers;
 using AgoneSentimentSales.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using Quartz;
 
 namespace AgoneSentimentSales.API.Extensions;
@@ -14,7 +15,13 @@ public static class ServiceRegistrationExtensions
     public static IServiceCollection AddSentimentSalesServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<OpenAISettings>(configuration.GetSection(OpenAISettings.SectionName));
-        services.Configure<ResearchSettings>(configuration.GetSection(ResearchSettings.SectionName));
+        services.AddOptions<ResearchSettings>()
+            .Bind(configuration.GetSection(ResearchSettings.SectionName))
+            .PostConfigure<IHostEnvironment>((opts, env) =>
+            {
+                if (!Path.IsPathRooted(opts.ExportDirectory))
+                    opts.ExportDirectory = Path.Combine(env.ContentRootPath, opts.ExportDirectory);
+            });
         var conn = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is required.");
         services.AddDbContext<SentimentSalesDbContext>(o =>

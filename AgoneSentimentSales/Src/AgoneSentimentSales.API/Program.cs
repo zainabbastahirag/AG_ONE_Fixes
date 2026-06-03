@@ -20,15 +20,25 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<SentimentSalesDbContext>();
     var log = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Database");
-    try
+    var migrated = false;
+    for (var attempt = 1; attempt <= 10 && !migrated; attempt++)
     {
-        log.LogInformation("Applying migrations to schema {Schema}...", SentimentSalesDbContext.SchemaName);
-        db.Database.Migrate();
-    }
-    catch (Exception ex)
-    {
-        log.LogError(ex, "SQL Server migration failed.");
-        throw;
+        try
+        {
+            log.LogInformation("Applying migrations (attempt {Attempt})...", attempt);
+            db.Database.Migrate();
+            migrated = true;
+        }
+        catch (Exception ex) when (attempt < 10)
+        {
+            log.LogWarning(ex, "SQL Server not ready, retrying in 3s...");
+            await Task.Delay(3000);
+        }
+        catch (Exception ex)
+        {
+            log.LogError(ex, "SQL Server migration failed.");
+            throw;
+        }
     }
 
     var scheduler = scope.ServiceProvider.GetRequiredService<IResearchJobScheduler>();

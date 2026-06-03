@@ -83,6 +83,8 @@ public class MarketResearchService : IMarketResearchService
                 job.Status = ResearchJobStatus.Failed;
                 job.ErrorMessage = ex.Message;
                 await db.SaveChangesAsync(cancellationToken);
+                await _progress.PublishProgressAsync(jobId, ResearchPhases.Failed, job.ProcessedCount, job.TargetCompanyCount,
+                    message: ex.Message, cancellationToken: cancellationToken);
             }
         }
     }
@@ -125,9 +127,10 @@ public class MarketResearchService : IMarketResearchService
 
         await _progress.PublishProgressAsync(job.Id, ResearchPhases.ExcelExport, seeds.Count, seeds.Count,
             message: "Building professional Excel workbook with dashboard and source attribution", cancellationToken: cancellationToken);
-        Directory.CreateDirectory(_settings.ExportDirectory);
+        var exportDir = Path.GetFullPath(_settings.ExportDirectory);
+        Directory.CreateDirectory(exportDir);
         var events = await db.SourceExtractionEvents.Where(e => e.ResearchJobId == job.Id).ToListAsync(cancellationToken);
-        var path = await _excelExport.SaveWorkbookAsync(enriched, events, _settings.ExportDirectory, cancellationToken);
+        var path = await _excelExport.SaveWorkbookAsync(enriched, events, exportDir, cancellationToken);
         job.OutputFilePath = path;
         job.Status = ResearchJobStatus.Completed;
         job.CompletedAt = DateTime.UtcNow;
@@ -136,11 +139,20 @@ public class MarketResearchService : IMarketResearchService
         await db.SaveChangesAsync(cancellationToken);
     }
 
-    public Task<ResearchJob?> GetJobAsync(Guid jobId, CancellationToken cancellationToken = default)
+    public async Task<ResearchJob?> GetJobAsync(Guid jobId, CancellationToken cancellationToken = default)
     {
         using var scope = _scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<SentimentSalesDbContext>();
-        return db.ResearchJobs.AsNoTracking().FirstOrDefaultAsync(j => j.Id == jobId, cancellationToken)!;
+        return await db.ResearchJobs.AsNoTracking().FirstOrDefaultAsync(j => j.Id == jobId, cancellationToken);
+    }
+
+    public async Task<ResearchJob?> GetLatestJobAsync(CancellationToken cancellationToken = default)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<SentimentSalesDbContext>();
+        return await db.ResearchJobs.AsNoTracking()
+            .OrderByDescending(j => j.CreatedAt)
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyList<SourceExtractionEvent>> GetExtractionEventsAsync(Guid jobId, CancellationToken cancellationToken = default)

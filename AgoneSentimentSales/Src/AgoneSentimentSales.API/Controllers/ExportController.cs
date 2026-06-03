@@ -24,12 +24,27 @@ public class ExportController : ControllerBase
     public async Task<IActionResult> DownloadExcel([FromQuery] Guid? jobId, CancellationToken ct)
     {
         var companies = await _research.GetCompaniesAsync(cancellationToken: ct);
-        if (companies.Count == 0) return BadRequest("No research data. Run POST /api/research/start first.");
+        if (companies.Count == 0)
+            return BadRequest(new { error = "No research data. Click 'Run Research' on the live tracker first." });
+
         var events = jobId.HasValue
             ? await _research.GetExtractionEventsAsync(jobId.Value, ct)
             : await _db.SourceExtractionEvents.AsNoTracking().ToListAsync(ct);
+
         var bytes = await _excel.ExportWorkbookAsync(companies, events, ct);
         return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            $"LSE_TOP100_IT_OFFSHORING_{DateTime.UtcNow:yyyyMMdd}.xlsx");
+            $"LSE_TOP100_IT_OFFSHORING_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xlsx");
     }
+
+    [HttpGet("excel/info")]
+    public ActionResult<object> ExcelInfo() => Ok(new
+    {
+        sheets = new[]
+        {
+            "LSE Dashboard Summary", "LSE Company Profiles", "LSE IT Budget Breakdown",
+            "LSE Technology Strategy", "LSE Executive Contacts", "LSE Outsourcing Partners",
+            "LSE Lead Generation Data", "Source Attribution", "Source Summary Dashboard"
+        },
+        downloadUrl = "/api/export/excel"
+    });
 }
