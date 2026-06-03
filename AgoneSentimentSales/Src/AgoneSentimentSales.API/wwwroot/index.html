@@ -10,49 +10,44 @@
   <div class="agone-app-shell">
     <aside class="agone-sidebar-container">
       <div class="agone-sidebar-header">AG ONE<br>Sentiment Sales</div>
-      <a class="agone-menu-item" href="#home">Home</a>
-      <a class="agone-menu-item" href="#dashboard">Dashboard</a>
+      <a class="agone-menu-item selected" href="/">Home</a>
+      <a class="agone-menu-item" href="/dashboard.html">CEO Dashboard</a>
+      <a class="agone-menu-item" href="/monitor.html">Live Scraper</a>
+      <a class="agone-menu-item" href="/swagger">API Docs</a>
     </aside>
     <div class="agone-main-content">
       <header class="agone-header">
-        <span class="h4-headline" style="font-size:18px">LSE IT Offshoring Research</span>
-        <span class="agone-ai-badge">API + SQL Server</span>
+        <span class="h4-headline" style="font-size:18px">Agentic LSE IT Offshoring Research</span>
+        <span class="agone-ai-badge">Autonomous Agent</span>
       </header>
       <main class="agone-page-container">
-        <h1 class="h3-headline">Market Research</h1>
-        <p>Single startup: <strong>AgoneSentimentSales.API</strong> — database schema <code>sentimentsales</code></p>
+        <h1 class="h3-headline">Market Research Agent</h1>
+        <p class="body-text-medium-regular">
+          Autonomous system that researches the <strong>top 100 LSE companies</strong>, profiles IT offshoring to India/Asia,
+          builds a live dashboard, and exports a <strong>professional Excel workbook</strong> — matching your CEO research brief.
+        </p>
         <div class="actions-row">
-          <button class="agone-btn-primary-medium" id="btnStart">Start Research (100)</button>
-          <button class="agone-btn-secondary-medium" id="btnDash">Load Dashboard</button>
+          <a class="agone-btn-primary-medium" href="/dashboard.html" style="display:inline-flex;align-items:center;text-decoration:none;color:inherit">Open CEO Dashboard</a>
+          <a class="agone-btn-secondary-medium" href="/monitor.html" style="display:inline-flex;align-items:center;text-decoration:none;color:inherit">Live Source Monitor</a>
+          <button class="agone-btn-secondary-medium" id="btnStart">Quick Start (20 cos.)</button>
           <a class="agone-btn-secondary-medium" href="/api/export/excel" style="display:inline-flex;align-items:center;text-decoration:none;color:inherit">Download Excel</a>
-          <a class="agone-btn-secondary-medium" href="/swagger" style="display:inline-flex;align-items:center;text-decoration:none;color:inherit">Swagger</a>
         </div>
-        <pre id="out" style="background:#fff;padding:16px;border-radius:8px;border:1px solid #D6DBE6;max-height:400px;overflow:auto"></pre>
-        <div id="metrics" class="metrics-grid"></div>
+        <pre id="out" style="background:#fff;padding:16px;border-radius:8px;border:1px solid #D6DBE6;max-height:200px;overflow:auto;margin-top:16px"></pre>
+        <p class="body-text-medium-regular" style="margin-top:24px">
+          <strong>Design doc:</strong> <code>Docs/DESIGN_DOCUMENT.md</code> — system diagrams, CEO prompt mapping, agent pipeline.
+        </p>
       </main>
-      <footer class="agone-footer">Schema: sentimentsales.Companies, sentimentsales.ItBudgets, …</footer>
+      <footer class="agone-footer">Clean architecture: API · UI · Infrastructure · Shared · Domain · SQL Server · Quartz</footer>
     </div>
   </div>
   <script>
     const out = document.getElementById('out');
-    const log = (x) => { out.textContent = typeof x === 'string' ? x : JSON.stringify(x, null, 2); };
     document.getElementById('btnStart').onclick = async () => {
-      log('Starting...');
+      out.textContent = 'Starting agentic research...';
       const r = await fetch('/api/research/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ companyCount: 20 }) });
-      log(await r.json());
-    };
-    document.getElementById('btnDash').onclick = async () => {
-      const r = await fetch('/api/research/dashboard');
-      const d = await r.json();
-      log(d);
-      const m = document.getElementById('metrics');
-      m.innerHTML = '';
-      [['Companies', d.totalCompanies], ['Confirmed Offshoring', d.confirmedOffshoring], ['IT Budget £B', d.totalEstimatedItBudgetGbpB?.toFixed(1)]].forEach(([t,v]) => {
-        const el = document.createElement('div');
-        el.className = 'agone-mp-card-metrics-type1';
-        el.innerHTML = '<div>'+t+'</div><div class="h4-headline" style="font-size:20px">'+v+'</div>';
-        m.appendChild(el);
-      });
+      const j = await r.json();
+      out.textContent = JSON.stringify(j, null, 2);
+      window.location.href = '/dashboard.html';
     };
   </script>
 </body>

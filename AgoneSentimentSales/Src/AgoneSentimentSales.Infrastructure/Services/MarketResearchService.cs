@@ -2,6 +2,7 @@ using AgoneSentimentSales.Domain.Entities;
 using AgoneSentimentSales.Domain.Enums;
 using AgoneSentimentSales.Domain.Interfaces;
 using AgoneSentimentSales.Domain.Monitoring;
+using AgoneSentimentSales.Shared.DTOs;
 using AgoneSentimentSales.Infrastructure.Configuration;
 using AgoneSentimentSales.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -21,6 +22,7 @@ public class MarketResearchService : IMarketResearchService
     private readonly IResearchJobScheduler _scheduler;
     private readonly IJobTracker _jobTracker;
     private readonly ResearchSettings _settings;
+    private readonly IResearchProgressPublisher _progress;
     private readonly ILogger<MarketResearchService> _logger;
 
     public MarketResearchService(
@@ -31,6 +33,7 @@ public class MarketResearchService : IMarketResearchService
         IExcelExportService excelExport,
         IResearchJobScheduler scheduler,
         IJobTracker jobTracker,
+        IResearchProgressPublisher progress,
         IOptions<ResearchSettings> settings,
         ILogger<MarketResearchService> logger)
     {
@@ -41,6 +44,7 @@ public class MarketResearchService : IMarketResearchService
         _excelExport = excelExport;
         _scheduler = scheduler;
         _jobTracker = jobTracker;
+        _progress = progress;
         _settings = settings.Value;
         _logger = logger;
     }
@@ -85,34 +89,50 @@ public class MarketResearchService : IMarketResearchService
 
     private async Task RunJobAsync(SentimentSalesDbContext db, ResearchJob job, int companyCount, CancellationToken cancellationToken)
     {
+        await _progress.PublishProgressAsync(job.Id, ResearchPhases.Initializing, 0, companyCount,
+            message: "Agentic research job started", cancellationToken: cancellationToken);
+
         var existing = await db.Companies.ToListAsync(cancellationToken);
         db.Companies.RemoveRange(existing);
         await db.SaveChangesAsync(cancellationToken);
 
+        await _progress.PublishProgressAsync(job.Id, ResearchPhases.LoadingCompanies, 0, companyCount,
+            message: "Loading top LSE companies by market cap", cancellationToken: cancellationToken);
         var seeds = await _dataProvider.GetTopCompaniesByMarketCapAsync(companyCount, cancellationToken);
+
         var enriched = new List<LseCompany>();
         var i = 0;
         foreach (var seed in seeds)
         {
+            await _progress.PublishProgressAsync(job.Id, ResearchPhases.AgentEnrichment, i, seeds.Count,
+                seed.CompanyName, "ICT analyst agent enriching IT budget, strategy, executives", cancellationToken);
             var company = await _agent.EnrichCompanyProfileAsync(seed, cancellationToken);
             db.Companies.Add(company);
             await db.SaveChangesAsync(cancellationToken);
 
+            await _progress.PublishProgressAsync(job.Id, ResearchPhases.PublicSourceScraping, i, seeds.Count,
+                company.CompanyName, "Scraping annual reports, LinkedIn, job boards, press, websites", cancellationToken);
             await _scraperOrchestrator.RunAllSourcesAsync(company, job.Id, cancellationToken);
 
             enriched.Add(company);
             i++;
             _jobTracker.ReportProgress(i, seeds.Count, company.CompanyName);
             job.ProcessedCount = i;
+            await _progress.PublishProgressAsync(job.Id, ResearchPhases.Persisting, i, seeds.Count,
+                company.CompanyName, cancellationToken: cancellationToken);
             await db.SaveChangesAsync(cancellationToken);
         }
 
+        await _progress.PublishProgressAsync(job.Id, ResearchPhases.ExcelExport, seeds.Count, seeds.Count,
+            message: "Building professional Excel workbook with dashboard and source attribution", cancellationToken: cancellationToken);
         Directory.CreateDirectory(_settings.ExportDirectory);
         var events = await db.SourceExtractionEvents.Where(e => e.ResearchJobId == job.Id).ToListAsync(cancellationToken);
         var path = await _excelExport.SaveWorkbookAsync(enriched, events, _settings.ExportDirectory, cancellationToken);
         job.OutputFilePath = path;
         job.Status = ResearchJobStatus.Completed;
         job.CompletedAt = DateTime.UtcNow;
+        await _progress.PublishProgressAsync(job.Id, ResearchPhases.Completed, seeds.Count, seeds.Count,
+            message: path, cancellationToken: cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
     }
 

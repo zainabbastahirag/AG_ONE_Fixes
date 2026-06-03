@@ -49,5 +49,6 @@ app.UseMiddleware<ApiLoggingMiddleware>();
 app.UseMiddleware<JobMonitoringMiddleware>();
 app.MapControllers();
 app.MapHub<ExtractionHub>("/hubs/extraction");
+app.MapHub<ResearchProgressHub>("/hubs/research-progress");
 app.MapFallbackToFile("index.html");
 app.Run();

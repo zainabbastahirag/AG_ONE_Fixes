@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CEO Research Dashboard — AG ONE Sentiment Sales</title>
+  <link href="/css/agone.css" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+  <style>
+    .phase-bar { height: 8px; background: #D6DBE6; border-radius: 4px; overflow: hidden; margin: 12px 0; }
+    .phase-fill { height: 100%; background: linear-gradient(90deg,#296DF5,#7742FF); transition: width .4s; }
+    .phase-log { font-size: 13px; color: #4A5D7A; max-height: 120px; overflow-y: auto; }
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(180px,1fr)); gap: 12px; margin: 20px 0; }
+    .sector-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; }
+    .sector-table th, .sector-table td { padding: 10px; border-bottom: 1px solid #D6DBE6; text-align: left; }
+    .sector-table th { background: #4472C4; color: #fff; }
+  </style>
+</head>
+<body>
+<div class="agone-app-shell">
+  <aside class="agone-sidebar-container">
+    <div class="agone-sidebar-header">AG ONE<br>Research Agent</div>
+    <a class="agone-menu-item" href="/">Home</a>
+    <a class="agone-menu-item selected" href="/dashboard.html">CEO Dashboard</a>
+    <a class="agone-menu-item" href="/monitor.html">Source Monitor</a>
+    <a class="agone-menu-item" href="/swagger">API</a>
+  </aside>
+  <div class="agone-main-content">
+    <header class="agone-header">
+      <span class="subtitle-large-bold">LSE Top 100 — Agentic IT Offshoring Research</span>
+      <span class="agone-ai-badge" id="statusBadge">Idle</span>
+    </header>
+    <main class="agone-page-container">
+      <p class="body-text-medium-regular">
+        Autonomous agent profiles <strong>top 100 LSE companies</strong> for IT offshoring to India/Asia:
+        IT budgets, technology strategy, executive contacts, and lead data — exported to professional Excel.
+      </p>
+      <div class="actions-row">
+        <button class="agone-btn-primary-medium" id="btnRun">Run Full Research (100)</button>
+        <button class="agone-btn-secondary-medium" id="btnRun20">Quick Run (20)</button>
+        <a class="agone-btn-secondary-medium" href="/api/export/excel" id="excelLink" style="display:inline-flex;align-items:center;text-decoration:none;color:inherit">Download Excel</a>
+      </div>
+      <h3 class="subtitle-large-bold">Agent progress</h3>
+      <div id="phaseLabel" class="body-text-medium-regular">—</div>
+      <div class="phase-bar"><div class="phase-fill" id="phaseFill" style="width:0%"></div></div>
+      <div class="phase-log" id="phaseLog"></div>
+      <h3 class="subtitle-large-bold">Live KPIs</h3>
+      <div class="metrics-grid" id="metrics"></div>
+      <h3 class="subtitle-large-bold">Sector breakdown</h3>
+      <table class="sector-table" id="sectorTable"><thead><tr><th>Sector</th><th>Companies</th><th>Est. IT Budget (£B)</th><th>Avg IT % Revenue</th></tr></thead><tbody></tbody></table>
+    </main>
+  </div>
+</div>
+<script>
+const phaseFill = document.getElementById('phaseFill');
+const phaseLabel = document.getElementById('phaseLabel');
+const phaseLog = document.getElementById('phaseLog');
+const statusBadge = document.getElementById('statusBadge');
+let progressConn, currentJobId;
+
+function logPhase(msg) {
+  const d = document.createElement('div');
+  d.textContent = new Date().toLocaleTimeString() + ' — ' + msg;
+  phaseLog.prepend(d);
+}
+
+async function loadDashboard() {
+  const r = await fetch('/api/research/dashboard');
+  const d = await r.json();
+  const m = document.getElementById('metrics');
+  m.innerHTML = '';
+  [
+    ['Companies profiled', d.totalCompanies],
+    ['Confirmed offshoring', d.confirmedOffshoring],
+    ['Total IT budget (£B)', d.totalEstimatedItBudgetGbpB?.toFixed(1)],
+    ['Offshore spend (£B)', d.totalOffshoreSpendGbpB?.toFixed(1)],
+    ['India operations', d.companiesWithIndiaOperations],
+    ['Multi-partner deals', d.companiesWithMultiplePartners]
+  ].forEach(([t,v]) => {
+    const el = document.createElement('div');
+    el.className = 'agone-mp-card-metrics-type1';
+    el.innerHTML = '<div>'+t+'</div><div class="h4-headline" style="font-size:22px">'+v+'</div>';
+    m.appendChild(el);
+  });
+  const tbody = document.querySelector('#sectorTable tbody');
+  tbody.innerHTML = (d.sectors || []).map(s =>
+    `<tr><td>${s.sector}</td><td>${s.companyCount}</td><td>${s.estItBudgetGbpB?.toFixed(2)}</td><td>${s.avgItPercentRevenue?.toFixed(1)}%</td></tr>`
+  ).join('');
+}
+
+async function connectProgress(jobId) {
+  currentJobId = jobId;
+  document.getElementById('excelLink').href = '/api/export/excel?jobId=' + jobId;
+  progressConn = new signalR.HubConnectionBuilder().withUrl('/hubs/research-progress').build();
+  progressConn.on('ResearchProgress', p => {
+    statusBadge.textContent = p.phase;
+    const pct = p.total > 0 ? Math.round(p.processed / p.total * 100) : 0;
+    phaseFill.style.width = pct + '%';
+    phaseLabel.textContent = `${p.phase}: ${p.processed}/${p.total}` + (p.companyName ? ` — ${p.companyName}` : '');
+    if (p.message) logPhase(p.message);
+    if (p.phase === 'Completed') {
+      statusBadge.textContent = 'Complete';
+      loadDashboard();
+    }
+  });
+  await progressConn.start();
+  await progressConn.invoke('JoinJob', jobId);
+  statusBadge.textContent = 'Running';
+}
+
+async function startResearch(count) {
+  phaseLog.innerHTML = '';
+  phaseFill.style.width = '0%';
+  logPhase('Starting agentic research job...');
+  const r = await fetch('/api/research/start', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ companyCount: count })
+  });
+  const j = await r.json();
+  logPhase('Job ' + j.jobId);
+  await connectProgress(j.jobId);
+  window.open('/monitor.html', '_blank');
+}
+
+document.getElementById('btnRun').onclick = () => startResearch(100);
+document.getElementById('btnRun20').onclick = () => startResearch(20);
+loadDashboard();
+</script>
+</body>
+</html>

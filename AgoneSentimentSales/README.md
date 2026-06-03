@@ -47,6 +47,10 @@ Schema: **`sentimentsales`** (`Companies`, `SourceExtractionEvents`, `SourcedDat
 
 | Doc | Description |
 |-----|-------------|
+| **[DESIGN_DOCUMENT.md](Docs/DESIGN_DOCUMENT.md)** | **CEO design doc — system & flow diagrams** |
+| [PRD.md](Docs/PRD.md) | CEO research requirements |
+| **[DESIGN_DOCUMENT.md](Docs/DESIGN_DOCUMENT.md)** | **CEO design doc — system & flow diagrams** |
+| [PRD.md](Docs/PRD.md) | CEO research requirements |
 | [ARCHITECTURE.md](Docs/ARCHITECTURE.md) | Layer reference |
 | [CLEAN_ARCHITECTURE_FLOW.md](Docs/CLEAN_ARCHITECTURE_FLOW.md) | Mermaid flow diagrams |
 | [CORE_ARCHITECTURE.md](Docs/CORE_ARCHITECTURE.md) | Detailed system design |
