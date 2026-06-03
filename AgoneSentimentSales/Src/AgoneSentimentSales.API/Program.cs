@@ -2,6 +2,7 @@ using AgoneSentimentSales.API.Extensions;
 using AgoneSentimentSales.API.Hubs;
 using AgoneSentimentSales.API.Middleware;
 using AgoneSentimentSales.Domain.Interfaces;
+using AgoneSentimentSales.Infrastructure.Services;
 using AgoneSentimentSales.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -40,6 +41,9 @@ using (var scope = app.Services.CreateScope())
             throw;
         }
     }
+
+    var scraperConfig = scope.ServiceProvider.GetRequiredService<IScraperConfigurationService>();
+    await scraperConfig.EnsureSeedDataAsync();
 
     var scheduler = scope.ServiceProvider.GetRequiredService<IResearchJobScheduler>();
     await scheduler.ScheduleDailyRefreshAsync();

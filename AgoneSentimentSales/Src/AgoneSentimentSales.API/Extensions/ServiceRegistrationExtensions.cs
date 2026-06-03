@@ -44,6 +44,9 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<IDataSourceScraper, JobBoardScraper>();
         services.AddScoped<IDataSourceScraper, PressReleaseScraper>();
         services.AddScoped<IDataSourceScraper, CompanyWebsiteScraper>();
+        services.AddScoped<IDataSourceScraper, InvestorRelationsScraper>();
+        services.AddScoped<IReportsDataService, ReportsDataService>();
+        services.AddScoped<IScraperConfigurationService, ScraperConfigurationService>();
         services.AddScoped<DbExtractionEventPublisher>();
         services.AddScoped<SignalRExtractionEventPublisher>();
         services.AddScoped<IResearchProgressPublisher, SignalRResearchProgressPublisher>();

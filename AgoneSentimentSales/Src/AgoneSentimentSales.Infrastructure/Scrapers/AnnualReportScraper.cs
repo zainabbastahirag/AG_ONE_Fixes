@@ -1,4 +1,5 @@
 using AgoneSentimentSales.Domain.Entities;
+using AgoneSentimentSales.Domain.Interfaces;
 using AgoneSentimentSales.Shared.Constants;
 using Microsoft.Extensions.Logging;
 
@@ -6,32 +7,22 @@ namespace AgoneSentimentSales.Infrastructure.Scrapers;
 
 public class AnnualReportScraper : BasePublicDataScraper
 {
-    public AnnualReportScraper(IHttpClientFactory httpClientFactory, ILogger<AnnualReportScraper> logger)
-        : base(httpClientFactory, logger) { }
+    public AnnualReportScraper(IHttpClientFactory httpClientFactory, IScraperConfigurationService configService, ILogger<AnnualReportScraper> logger)
+        : base(httpClientFactory, configService, logger) { }
 
     public override string SourceType => DataSourceTypes.AnnualReport;
     public override string SourceLabel => "Annual Reports";
 
     protected override Task<IReadOnlyList<SourceExtractionEvent>> ExtractFactsAsync(
-        LseCompany company, Guid jobId, CancellationToken cancellationToken)
+        LseCompany company, Guid jobId, ScraperConfiguration? config, CancellationToken cancellationToken)
     {
-        var ticker = company.Ticker.ToLowerInvariant();
-        var url = BuildUrl(company, ticker);
-        var events = new List<SourceExtractionEvent>
-        {
-            CreateEvent(company, jobId, "OffshoringStatus", "Evidence from Annual Reports", url, "Public Annual Reports scan", 0.80),
-            CreateEvent(company, jobId, "LeadGeneration.ItAnnouncements", "Transformation signal", url, "Recent disclosure", 0.75),
-            CreateEvent(company, jobId, "TechnologyStrategy.KeyTechInitiatives", "Tech programme mention", url, "Strategy content", 0.78)
-        };
-        return Task.FromResult<IReadOnlyList<SourceExtractionEvent>>(events);
+        var url = ResolveUrl(company, config);
+        IReadOnlyList<SourceExtractionEvent> events =
+        [
+            CreateEvent(company, jobId, config, "OffshoringStatus", "Evidence from Annual Reports", url, "Public annual filing scan", 0.80),
+            CreateEvent(company, jobId, config, "ItBudget.EstimatedItBudgetGbpM", "IT spend disclosure", url, "Capex/Opex narrative", 0.76),
+            CreateEvent(company, jobId, config, "TechnologyStrategy.KeyTechInitiatives", "Technology programme", url, "Strategy section", 0.78)
+        ];
+        return Task.FromResult(events);
     }
-
-    private string BuildUrl(LseCompany company, string ticker) => SourceType switch
-    {
-        DataSourceTypes.AnnualReport => $"https://www.londonstockexchange.com/stock/{company.Ticker}/",
-        DataSourceTypes.LinkedIn => $"https://www.linkedin.com/company/{ticker}",
-        DataSourceTypes.JobBoard => $"https://www.glassdoor.co.uk/Search/results.htm?keyword={ticker}",
-        DataSourceTypes.PressRelease => $"https://www.google.com/search?q={ticker}+press+release+digital",
-        _ => $"https://www.{ticker}.com"
-    };
 }

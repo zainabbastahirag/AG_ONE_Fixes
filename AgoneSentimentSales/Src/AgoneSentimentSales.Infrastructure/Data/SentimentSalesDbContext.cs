@@ -19,6 +19,7 @@ public class SentimentSalesDbContext : DbContext
     
     public DbSet<SourceExtractionEvent> SourceExtractionEvents => Set<SourceExtractionEvent>();
     public DbSet<SourcedDataPoint> SourcedDataPoints => Set<SourcedDataPoint>();
+    public DbSet<ScraperConfiguration> ScraperConfigurations => Set<ScraperConfiguration>();
     public DbSet<ApiRequestLog> ApiRequestLogs => Set<ApiRequestLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -67,6 +68,12 @@ public class SentimentSalesDbContext : DbContext
         modelBuilder.Entity<ResearchJob>(e =>
         {
             e.ToTable("ResearchJobs", SchemaName);
+        });
+
+        modelBuilder.Entity<ScraperConfiguration>(e =>
+        {
+            e.ToTable("ScraperConfigurations", SchemaName);
+            e.HasIndex(x => x.SourceType).IsUnique();
         });
 
         modelBuilder.Entity<ApiRequestLog>(e =>
