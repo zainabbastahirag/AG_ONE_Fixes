@@ -35,3 +35,17 @@ dotnet run --project AgoneSentimentSales.Web
 5. LSE Executive Contacts  
 6. LSE Outsourcing Partners  
 7. LSE Lead Generation Data  
+
+
+## SQL Server (required)
+
+```bash
+docker compose up -d sqlserver
+# wait ~30s, then:
+cd Src
+dotnet run --project AgoneSentimentSales.API
+```
+
+Tables are created under schema **sentimentsales** (e.g. `sentimentsales.Companies`, `sentimentsales.ItBudgets`).
+
+**Startup project:** `AgoneSentimentSales.API` only.

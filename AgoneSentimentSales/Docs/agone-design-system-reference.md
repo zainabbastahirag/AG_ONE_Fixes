@@ -1,21 +1,13 @@
-# AG ONE Design System Reference
+# AG ONE Design System (CSS only)
 
-The canonical **full CSS framework** (tokens, typography, header, sidebar, buttons, marketplace cards) is defined in the AG ONE product specification.
+Styles live in the API project (no separate DesignSystem project):
 
-This repository ships a **focused subset** in:
+`Src/AgoneSentimentSales.API/wwwroot/css/agone.css`
 
-`Src/AgoneSentimentSales.DesignSystem/wwwroot/css/agone.css`
-
-For parity with other AG ONE apps (AI Hub, Marketplace), copy the complete `agone.css` from `AgoneDesignSystem.Styles` into that path and rebuild the DesignSystem project.
-
-### Usage in Blazor WASM
+Referenced from `wwwroot/index.html`:
 
 ```html
-<link href="_content/AgoneSentimentSales.DesignSystem/css/agone.css" rel="stylesheet" />
+<link href="/css/agone.css" rel="stylesheet" />
 ```
 
-### Key classes used by Sentiment Sales
-- Layout: `agone-app-shell`, `agone-sidebar-container`, `agone-header`, `agone-page-container`
-- Actions: `agone-btn-primary-medium`, `agone-btn-secondary-medium`
-- Data: `agone-data-table`, `agone-mp-card-metrics-type1`
-- Status: `agone-status-confirmed`, `agone-status-partial`, `agone-ai-badge`
+Copy the full AG ONE `agone.css` from your design system package over this file for complete token parity.

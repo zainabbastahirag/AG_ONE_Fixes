@@ -68,7 +68,7 @@ AgoneSentimentSales/
 cd AgoneSentimentSales/Src
 dotnet build
 dotnet run --project AgoneSentimentSales.API --urls http://localhost:5080
-dotnet run --project AgoneSentimentSales.Web
+# Web removed — use API wwwroot at http://localhost:5080/
 ```
 
 - API Swagger: `http://localhost:5080/swagger`
@@ -81,7 +81,7 @@ dotnet run --project AgoneSentimentSales.Web
 |---------|---------|
 | `OpenAI` | Azure OpenAI endpoint & deployment |
 | `AgoneSentimentSales` | Export path, default company count |
-| `ConnectionStrings:DefaultConnection` | SQL Server (empty = InMemory) |
+| `ConnectionStrings:DefaultConnection` | SQL Server (required) |
 
 ## Design System
 - Package: `AgoneSentimentSales.DesignSystem` → `_content/.../css/agone.css`
@@ -94,3 +94,11 @@ dotnet run --project AgoneSentimentSales.Web
 | Public data accuracy | Human-in-loop validation; confidence flags |
 | Contact compliance | LinkedIn URLs only; no scraping behind login |
 | Background job scope | `IServiceScopeFactory` per job |
+
+## SQL Server setup
+
+```bash
+docker compose up -d sqlserver
+```
+
+Tables: `sentimentsales.Companies`, `sentimentsales.ItBudgets`, `sentimentsales.TechnologyStrategies`, `sentimentsales.ExecutiveContacts`, `sentimentsales.OutsourcingPartners`, `sentimentsales.LeadGenerationData`, `sentimentsales.ResearchJobs`, `sentimentsales.ApiRequestLogs`

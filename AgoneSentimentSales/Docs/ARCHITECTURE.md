@@ -25,8 +25,8 @@ AgoneSentimentSales.Infrastructure  External I/O
   └── Services/            MarketResearch, ExcelExport, ResearchAgent, …
 
 AgoneSentimentSales.Shared          Shared helpers (future SDK)
-AgoneSentimentSales.DesignSystem    agone.css (Razor class library)
-AgoneSentimentSales.Web             Blazor WASM frontend
+CSS: `AgoneSentimentSales.API/wwwroot/css/agone.css`
+*(UI served from API `wwwroot` — optional static HTML)*
 ```
 
 ## Middleware Pipeline
@@ -52,4 +52,4 @@ Request → CORS → ApiLoggingMiddleware → JobMonitoringMiddleware → Contro
 | Research services | Scoped |
 | IJobTracker | Singleton |
 
-Dev: **EF Core InMemory** when connection string is empty.
+Database: **SQL Server** only, schema `sentimentsales`, EF migrations on startup.

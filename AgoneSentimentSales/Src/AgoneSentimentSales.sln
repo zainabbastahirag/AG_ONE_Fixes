@@ -9,13 +9,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgoneSentimentSales.Applica
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgoneSentimentSales.Infrastructure", "AgoneSentimentSales.Infrastructure\AgoneSentimentSales.Infrastructure.csproj", "{4AE3FB40-5DE9-462F-8065-C67E3F980DD6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgoneSentimentSales.Shared", "AgoneSentimentSales.Shared\AgoneSentimentSales.Shared.csproj", "{F9A0D4FF-B570-48CF-B747-9C991FB3CA40}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgoneSentimentSales.API", "AgoneSentimentSales.API\AgoneSentimentSales.API.csproj", "{3277E3C8-5AAC-43FE-BE45-BE818812A8FC}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgoneSentimentSales.Web", "AgoneSentimentSales.Web\AgoneSentimentSales.Web.csproj", "{9BECEA21-B522-4B72-AE0D-66FD99791E81}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgoneSentimentSales.DesignSystem", "AgoneSentimentSales.DesignSystem\AgoneSentimentSales.DesignSystem.csproj", "{8CF213F5-51AA-460D-BB5C-1DD01AB72330}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -38,21 +32,9 @@ Global
 		{4AE3FB40-5DE9-462F-8065-C67E3F980DD6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4AE3FB40-5DE9-462F-8065-C67E3F980DD6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4AE3FB40-5DE9-462F-8065-C67E3F980DD6}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F9A0D4FF-B570-48CF-B747-9C991FB3CA40}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F9A0D4FF-B570-48CF-B747-9C991FB3CA40}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F9A0D4FF-B570-48CF-B747-9C991FB3CA40}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F9A0D4FF-B570-48CF-B747-9C991FB3CA40}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3277E3C8-5AAC-43FE-BE45-BE818812A8FC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3277E3C8-5AAC-43FE-BE45-BE818812A8FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3277E3C8-5AAC-43FE-BE45-BE818812A8FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3277E3C8-5AAC-43FE-BE45-BE818812A8FC}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9BECEA21-B522-4B72-AE0D-66FD99791E81}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9BECEA21-B522-4B72-AE0D-66FD99791E81}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9BECEA21-B522-4B72-AE0D-66FD99791E81}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9BECEA21-B522-4B72-AE0D-66FD99791E81}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8CF213F5-51AA-460D-BB5C-1DD01AB72330}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8CF213F5-51AA-460D-BB5C-1DD01AB72330}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8CF213F5-51AA-460D-BB5C-1DD01AB72330}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8CF213F5-51AA-460D-BB5C-1DD01AB72330}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

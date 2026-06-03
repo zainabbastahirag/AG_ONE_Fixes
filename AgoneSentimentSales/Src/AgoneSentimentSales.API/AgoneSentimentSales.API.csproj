@@ -19,7 +19,6 @@
     <ProjectReference Include="..\AgoneSentimentSales.Core\AgoneSentimentSales.Core.csproj" />
     <ProjectReference Include="..\AgoneSentimentSales.Application\AgoneSentimentSales.Application.csproj" />
     <ProjectReference Include="..\AgoneSentimentSales.Infrastructure\AgoneSentimentSales.Infrastructure.csproj" />
-    <ProjectReference Include="..\AgoneSentimentSales.Shared\AgoneSentimentSales.Shared.csproj" />
   </ItemGroup>
 
 </Project>

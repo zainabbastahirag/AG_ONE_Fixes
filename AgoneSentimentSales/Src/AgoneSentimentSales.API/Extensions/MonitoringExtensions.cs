@@ -14,11 +14,15 @@ public static class MonitoringExtensions
         services.Configure<OpenAISettings>(configuration.GetSection(OpenAISettings.SectionName));
         services.Configure<ResearchSettings>(configuration.GetSection(ResearchSettings.SectionName));
 
-        var conn = configuration.GetConnectionString("DefaultConnection");
-        if (string.IsNullOrWhiteSpace(conn))
-            services.AddDbContext<SentimentSalesDbContext>(o => o.UseInMemoryDatabase("SentimentSales"));
-        else
-            services.AddDbContext<SentimentSalesDbContext>(o => o.UseSqlServer(conn, b => b.MigrationsHistoryTable("__EFMigrationsHistory", "sentimentsales")));
+        var conn = configuration.GetConnectionString("DefaultConnection")
+            ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is required for SQL Server.");
+
+        services.AddDbContext<SentimentSalesDbContext>(o =>
+            o.UseSqlServer(conn, sql =>
+            {
+                sql.MigrationsHistoryTable("__EFMigrationsHistory", SentimentSalesDbContext.SchemaName);
+                sql.EnableRetryOnFailure(3);
+            }));
 
         services.AddScoped<IMarketResearchService, MarketResearchService>();
         services.AddScoped<IExcelExportService, ExcelExportService>();

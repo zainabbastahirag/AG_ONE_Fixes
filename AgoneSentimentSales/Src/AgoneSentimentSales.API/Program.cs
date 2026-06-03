@@ -1,6 +1,7 @@
 using AgoneSentimentSales.API.Extensions;
 using AgoneSentimentSales.API.Middleware;
 using AgoneSentimentSales.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,8 +16,22 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<SentimentSalesDbContext>();
-    db.Database.EnsureCreated();
+    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Database");
+    try
+    {
+        logger.LogInformation("Applying EF Core migrations to schema {Schema}...", SentimentSalesDbContext.SchemaName);
+        db.Database.Migrate();
+        logger.LogInformation("Database ready: sentimentsales.* tables");
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "SQL Server migration failed. Ensure SQL Server is running and ConnectionStrings:DefaultConnection is valid.");
+        throw;
+    }
 }
+
+app.UseDefaultFiles();
+app.UseStaticFiles();
 
 if (app.Environment.IsDevelopment())
 {
@@ -28,4 +43,5 @@ app.UseCors();
 app.UseMiddleware<ApiLoggingMiddleware>();
 app.UseMiddleware<JobMonitoringMiddleware>();
 app.MapControllers();
+app.MapFallbackToFile("index.html");
 app.Run();

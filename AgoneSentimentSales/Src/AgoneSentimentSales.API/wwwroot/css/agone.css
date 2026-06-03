@@ -1,11 +1,9 @@
-/* AG ONE Design System - Sentiment Sales */
+/* AG ONE Design System - Sentiment Sales API wwwroot */
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&display=swap');
 :root {
   --color-primary-500: #296DF5;
-  --color-primary-600: #0A50DC;
   --color-neutral-900: #171D27;
   --color-neutral-800: #283243;
-  --color-neutral-700: #3C4C67;
   --color-neutral-400: #8C9EBB;
   --color-neutral-50: #E5E8F0;
   --gradient-p500-s500-135: linear-gradient(135deg, #296DF5 0%, #7742FF 100%);
@@ -14,28 +12,23 @@
   --card-shadow: 0 0 20px 5px rgba(69,74,146,0.2);
 }
 body { margin: 0; font-family: var(--font-family); background: var(--gradient-background-color); color: var(--color-neutral-800); }
-.h3-headline { font-size: 39px; font-weight: 700; color: var(--color-neutral-900); margin: 0 0 8px; }
-.h4-headline { font-size: 31px; font-weight: 700; color: var(--color-neutral-900); margin: 0; }
-.subtitle-large-bold { font-size: 20px; font-weight: 700; }
-.body-text-medium-regular { font-size: 16px; }
+.h3-headline { font-size: 32px; font-weight: 700; color: var(--color-neutral-900); }
+.h4-headline { font-size: 24px; font-weight: 700; color: var(--color-neutral-900); }
 .agone-app-shell { display: flex; min-height: 100vh; }
+.agone-sidebar-container { width: 260px; background: #05153D; flex-shrink: 0; padding-top: 16px; }
+.agone-menu-item { display: block; padding: 12px 24px; color: rgba(255,255,255,0.75); text-decoration: none; }
+.agone-menu-item:hover { background: rgba(74,122,255,0.35); color: #84F4FB; }
 .agone-main-content { flex: 1; display: flex; flex-direction: column; }
-.agone-page-container { padding: 24px 32px; }
 .agone-header { height: 65px; background: #fff; border-bottom: 1px solid var(--color-neutral-50); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
-.agone-sidebar-container { width: 280px; background: #05153D; flex-shrink: 0; }
-.agone-sidebar-header { padding: 24px; color: #84F4FB; font-weight: 700; }
-.agone-menu-item { display: block; padding: 12px 24px; color: rgba(255,255,255,0.7); text-decoration: none; }
-.agone-menu-item.selected, .agone-menu-item:hover { background: rgba(74,122,255,0.35); color: #84F4FB; }
+.agone-page-container { padding: 24px 32px; flex: 1; }
 .agone-btn-primary-medium { background: var(--gradient-p500-s500-135); color: #fff; border: none; border-radius: 6px; height: 38px; padding: 0 16px; font-weight: 600; cursor: pointer; }
 .agone-btn-secondary-medium { background: #fff; color: var(--color-primary-500); border: 1px solid var(--color-primary-500); border-radius: 6px; height: 38px; padding: 0 16px; font-weight: 600; cursor: pointer; }
 .agone-mp-card-metrics-type1 { border: 1px solid #D6DBE6; border-radius: 12px; background: #fff; padding: 16px 24px; box-shadow: var(--card-shadow); }
-.agone-footer { text-align: center; padding: 8px; font-size: 12px; color: var(--color-neutral-400); background: #fff; }
-.agone-data-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; }
+.agone-data-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; }
 .agone-data-table th { background: #4472C4; color: #fff; padding: 10px; text-align: left; }
 .agone-data-table td { padding: 10px; border-bottom: 1px solid #E5E8F0; }
 .agone-data-table tr:nth-child(even) td { background: #DEEAF6; }
-.agone-status-confirmed { background: #C6EFCE; color: #006100; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
-.agone-status-partial { background: #FFEB9C; color: #9C6500; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+.metrics-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(200px,1fr)); gap: 16px; margin: 16px 0; }
+.actions-row { display: flex; gap: 12px; flex-wrap: wrap; margin: 16px 0; }
+.agone-footer { text-align: center; padding: 8px; font-size: 12px; color: var(--color-neutral-400); background: #fff; }
 .agone-ai-badge { background: linear-gradient(90deg,#296DF5,#08E1ED); color: #fff; padding: 4px 10px; border-radius: 999px; font-size: 11px; }
-.metrics-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 16px; margin-bottom: 24px; }
-.actions-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
