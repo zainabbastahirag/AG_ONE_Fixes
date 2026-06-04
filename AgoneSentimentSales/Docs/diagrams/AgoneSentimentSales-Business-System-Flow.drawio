@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" agent="AG ONE Sentiment Sales" version="22.1.0" type="device">
+  <diagram id="business-flow" name="Business System Flow">
+    <mxGraphModel dx="2400" dy="1600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2400" pageHeight="1700" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Title -->
+        <mxCell id="title" value="AG ONE Sentiment Sales — Business &amp; Domain System Flow&#xa;(How the web portal works: data sources → research → storage → reports)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=22;fontStyle=1;fontColor=#05153D;" vertex="1" parent="1">
+          <mxGeometry x="400" y="20" width="1600" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="subtitle" value="Non-technical view for business stakeholders · LSE Top 100 IT Offshoring &amp; Lead Generation" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=13;fontColor=#7288AC;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="500" y="68" width="1400" height="24" as="geometry"/>
+        </mxCell>
+
+        <!-- SWIMLANE: WHO -->
+        <mxCell id="lane1" value="WHO — Business users" style="swimlane;horizontal=0;startSize=36;fillColor=#05153D;fontColor=#FFFFFF;fontStyle=1;strokeColor=#05153D;" vertex="1" parent="1">
+          <mxGeometry x="40" y="110" width="2320" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="u1" value="Sales &amp; Digital Team&#xa;Start research, view leads, download Excel" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF3FF;strokeColor=#296DF5;fontSize=12;" vertex="1" parent="lane1">
+          <mxGeometry x="50" y="50" width="220" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="u2" value="Marketplace Programme&#xa;Qualified company intelligence" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF3FF;strokeColor=#296DF5;fontSize=12;" vertex="1" parent="lane1">
+          <mxGeometry x="300" y="50" width="200" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="u3" value="Leadership / Chairman brief&#xa;Top 100 LSE · IT offshoring to India/Asia" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8D6;strokeColor=#CC9500;fontSize=12;" vertex="1" parent="lane1">
+          <mxGeometry x="530" y="50" width="240" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="u4" value="Research Analyst&#xa;Configure scrapers, verify sources" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF3FF;strokeColor=#296DF5;fontSize=12;" vertex="1" parent="lane1">
+          <mxGeometry x="800" y="50" width="200" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- SWIMLANE: PORTAL -->
+        <mxCell id="lane2" value="WEB PORTAL — What users see (one application)" style="swimlane;horizontal=0;startSize=36;fillColor=#296DF5;fontColor=#FFFFFF;fontStyle=1;strokeColor=#083DA6;" vertex="1" parent="1">
+          <mxGeometry x="40" y="240" width="2320" height="200" as="geometry"/>
+        </mxCell>
+        <mxCell id="portal" value="AG ONE Sentiment Sales Web Portal&#xa;(Browser — single URL)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#296DF5;fontStyle=1;fontSize=14;" vertex="1" parent="lane2">
+          <mxGeometry x="50" y="50" width="280" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1" value="Live Tracker&#xa;Charts &amp; progress" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DEEAF6;strokeColor=#4472C4;fontSize=11;" vertex="1" parent="lane2">
+          <mxGeometry x="360" y="45" width="110" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="p2" value="Dashboard&#xa;KPIs &amp; sectors" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DEEAF6;strokeColor=#4472C4;fontSize=11;" vertex="1" parent="lane2">
+          <mxGeometry x="490" y="45" width="110" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="p3" value="Company&#xa;Profiles" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DEEAF6;strokeColor=#4472C4;fontSize=11;" vertex="1" parent="lane2">
+          <mxGeometry x="620" y="45" width="100" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="p4" value="IT Budget&#xa;Breakdown" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DEEAF6;strokeColor=#4472C4;fontSize=11;" vertex="1" parent="lane2">
+          <mxGeometry x="740" y="45" width="100" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="p5" value="Technology&#xa;Strategy" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DEEAF6;strokeColor=#4472C4;fontSize=11;" vertex="1" parent="lane2">
+          <mxGeometry x="860" y="45" width="100" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="p6" value="Executive&#xa;Contacts" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DEEAF6;strokeColor=#4472C4;fontSize=11;" vertex="1" parent="lane2">
+          <mxGeometry x="980" y="45" width="100" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="p7" value="Outsourcing&#xa;Partners" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DEEAF6;strokeColor=#4472C4;fontSize=11;" vertex="1" parent="lane2">
+          <mxGeometry x="1100" y="45" width="100" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="p8" value="Lead&#xa;Generation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DEEAF6;strokeColor=#4472C4;fontSize=11;" vertex="1" parent="lane2">
+          <mxGeometry x="1220" y="45" width="100" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="p9" value="Source&#xa;Attribution&#xa;(who said what)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C6EFCE;strokeColor=#0AA956;fontSize=11;" vertex="1" parent="lane2">
+          <mxGeometry x="1340" y="40" width="110" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="p10" value="Scraper&#xa;Activity&#xa;(when scraped)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C6EFCE;strokeColor=#0AA956;fontSize=11;" vertex="1" parent="lane2">
+          <mxGeometry x="1470" y="40" width="110" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="p11" value="Scraper&#xa;Configuration&#xa;(URLs &amp; limits)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEB9C;strokeColor=#CC9500;fontSize=11;" vertex="1" parent="lane2">
+          <mxGeometry x="1600" y="40" width="120" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="p12" value="Export &amp;&#xa;Reports&#xa;(Excel download)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C6EFCE;strokeColor=#0AA956;fontSize=11;fontStyle=1" vertex="1" parent="lane2">
+          <mxGeometry x="1740" y="40" width="110" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="portalNote" value="Sidebar menu = same structure as Excel workbook sheets · Live updates while research runs" style="text;html=1;fontSize=11;fontColor=#4A5D7A;fontStyle=2;" vertex="1" parent="lane2">
+          <mxGeometry x="50" y="125" width="700" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- SWIMLANE: MAIN FLOW -->
+        <mxCell id="lane3" value="END-TO-END BUSINESS FLOW — From button click to sales-ready intelligence" style="swimlane;horizontal=0;startSize=36;fillColor=#EFE9FF;fontColor=#4A148C;fontStyle=1;strokeColor=#7742FF;" vertex="1" parent="1">
+          <mxGeometry x="40" y="450" width="2320" height="280" as="geometry"/>
+        </mxCell>
+        <mxCell id="f1" value="① START&#xa;User clicks&#xa;&quot;Run Research&quot;&#xa;(20 or 100 companies)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#C6EFCE;strokeColor=#0AA956;fontSize=11;fontStyle=1" vertex="1" parent="lane3">
+          <mxGeometry x="40" y="55" width="130" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="f2" value="② IDENTIFY&#xa;Load Top LSE companies&#xa;by market cap&#xa;Grouped by industry" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7742FF;fontSize=11;" vertex="1" parent="lane3">
+          <mxGeometry x="200" y="60" width="150" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="f3" value="③ ANALYSE&#xa;ICT Analyst Agent&#xa;builds each profile:&#xa;· Offshoring status&#xa;· IT budget estimate&#xa;· Tech strategy&#xa;· Executives&#xa;· Lead score" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7742FF;fontSize=11;" vertex="1" parent="lane3">
+          <mxGeometry x="380" y="45" width="170" height="110" as="geometry"/>
+        </mxCell>
+        <mxCell id="f4" value="④ SCRAPE&#xa;For each company,&#xa;scraper bots visit&#xa;public sources&#xa;(per your config)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7742FF;fontSize=11;" vertex="1" parent="lane3">
+          <mxGeometry x="580" y="60" width="140" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="f5" value="⑤ ATTRIBUTE&#xa;Every fact tagged:&#xa;· Which source&#xa;· Which URL&#xa;· When scraped&#xa;· Confidence" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C6EFCE;strokeColor=#0AA956;fontSize=11;" vertex="1" parent="lane3">
+          <mxGeometry x="750" y="55" width="140" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="f6" value="⑥ STORE&#xa;Save to company&#xa;intelligence&#xa;database&#xa;(see below)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#D8E7FE;strokeColor=#296DF5;fontSize=11;fontStyle=1" vertex="1" parent="lane3">
+          <mxGeometry x="920" y="55" width="120" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="f7" value="⑦ SHOW LIVE&#xa;Portal updates&#xa;charts &amp; tables&#xa;in real time" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF3FF;strokeColor=#296DF5;fontSize=11;" vertex="1" parent="lane3">
+          <mxGeometry x="1070" y="60" width="130" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="f8" value="⑧ EXPORT&#xa;Generate professional&#xa;Excel workbook&#xa;(9 sheets + dashboard)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C6EFCE;strokeColor=#0AA956;fontSize=11;fontStyle=1" vertex="1" parent="lane3">
+          <mxGeometry x="1230" y="60" width="150" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="f9" value="⑨ USE&#xa;Sales uses leads,&#xa;contacts &amp; budgets&#xa;for outreach" style="ellipse;whiteSpace=wrap;html=1;fillColor=#C6EFCE;strokeColor=#0AA956;fontSize=11;fontStyle=1" vertex="1" parent="lane3">
+          <mxGeometry x="1410" y="55" width="130" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="sched" value="Also runs automatically&#xa;every night (scheduled refresh)&#xa;to keep data current" style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF8D6;strokeColor=#CC9500;fontSize=10;align=left;spacingLeft=8;" vertex="1" parent="lane3">
+          <mxGeometry x="1580" y="55" width="200" height="70" as="geometry"/>
+        </mxCell>
+
+        <!-- Flow arrows lane3 -->
+        <mxCell id="ef1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#7742FF;endArrow=block;endFill=1;" edge="1" parent="lane3" source="f1" target="f2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ef2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#7742FF;endArrow=block;endFill=1;" edge="1" parent="lane3" source="f2" target="f3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ef3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#7742FF;endArrow=block;endFill=1;" edge="1" parent="lane3" source="f3" target="f4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ef4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#7742FF;endArrow=block;endFill=1;" edge="1" parent="lane3" source="f4" target="f5"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ef5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#7742FF;endArrow=block;endFill=1;" edge="1" parent="lane3" source="f5" target="f6"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ef6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#7742FF;endArrow=block;endFill=1;" edge="1" parent="lane3" source="f6" target="f7"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ef7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#7742FF;endArrow=block;endFill=1;" edge="1" parent="lane3" source="f7" target="f8"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ef8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#0AA956;endArrow=block;endFill=1;" edge="1" parent="lane3" source="f8" target="f9"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <!-- SWIMLANE: DATA SOURCES -->
+        <mxCell id="lane4" value="WHERE DATA COMES FROM — Public domain sources (configurable)" style="swimlane;horizontal=0;startSize=36;fillColor=#FFF8D6;fontColor=#7F6000;fontStyle=1;strokeColor=#CC9500;" vertex="1" parent="1">
+          <mxGeometry x="40" y="740" width="1100" height="200" as="geometry"/>
+        </mxCell>
+        <mxCell id="ds0" value="Internet — Public information only&#xa;(no login / licensed feeds in MVP)" style="text;html=1;fontSize=11;fontStyle=2;fontColor=#7F6000;" vertex="1" parent="lane4">
+          <mxGeometry x="30" y="42" width="280" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="ds1" value="Annual Reports&#xa;&amp; Investor filings&#xa;IT spend, strategy" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#4472C4;fontSize=11;" vertex="1" parent="lane4">
+          <mxGeometry x="40" y="80" width="130" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="ds2" value="LinkedIn&#xa;Executives,&#xa;hiring signals" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7742FF;fontSize=11;" vertex="1" parent="lane4">
+          <mxGeometry x="190" y="80" width="120" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="ds3" value="Job Boards&#xa;IT &amp; digital&#xa;role trends" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CC9500;fontSize=11;" vertex="1" parent="lane4">
+          <mxGeometry x="330" y="80" width="120" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="ds4" value="Press &amp; News&#xa;Transformation&#xa;announcements" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0AA956;fontSize=11;" vertex="1" parent="lane4">
+          <mxGeometry x="470" y="80" width="120" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="ds5" value="Company&#xa;Websites&#xa;Careers, IR pages" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF6733;fontSize=11;" vertex="1" parent="lane4">
+          <mxGeometry x="610" y="80" width="120" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="ds6" value="Investor&#xa;Relations&#xa;Capex / Opex" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#296DF5;fontSize=11;" vertex="1" parent="lane4">
+          <mxGeometry x="750" y="80" width="120" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="ds7" value="Other public&#xa;sources&#xa;(add via config)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F7F9;strokeColor=#7288AC;fontSize=11;dashed=1;" vertex="1" parent="lane4">
+          <mxGeometry x="890" y="80" width="120" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="dsNote" value="You configure: website link template · how many items to scrape per company · on/off per source" style="text;html=1;fontSize=10;fontColor=#7F6000;" vertex="1" parent="lane4">
+          <mxGeometry x="40" y="160" width="500" height="24" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrow scrape to sources -->
+        <mxCell id="toSources" value="Scraper bots&#xa;read from" style="text;html=1;fontSize=10;fontColor=#7742FF;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="620" y="720" width="80" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="arrowScrapeToSrc" style="endArrow=classic;startArrow=none;strokeWidth=2;strokeColor=#CC9500;dashed=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="f4" target="ds3">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="650" y="730"/>
+              <mxPoint x="390" y="730"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- SWIMLANE: STORAGE -->
+        <mxCell id="lane5" value="WHERE DATA IS STORED — Company intelligence database (domain view)" style="swimlane;horizontal=0;startSize=36;fillColor=#D8E7FE;fontColor=#083DA6;fontStyle=1;strokeColor=#296DF5;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="740" width="1200" height="200" as="geometry"/>
+        </mxCell>
+        <mxCell id="db" value="Central Research Database&#xa;(SQL Server — sentimentsales schema)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#FFFFFF;strokeColor=#296DF5;fontSize=12;fontStyle=1" vertex="1" parent="lane5">
+          <mxGeometry x="40" y="55" width="180" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="st1" value="Company&#xa;Profiles&#xa;Rank, sector,&#xa;offshoring" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#296DF5;fontSize=10;" vertex="1" parent="lane5">
+          <mxGeometry x="250" y="70" width="90" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="st2" value="IT Budget&#xa;Capex, Opex,&#xa;10 categories" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#296DF5;fontSize=10;" vertex="1" parent="lane5">
+          <mxGeometry x="360" y="70" width="90" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="st3" value="Technology&#xa;Strategy&#xa;AI, cloud, digital" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#296DF5;fontSize=10;" vertex="1" parent="lane5">
+          <mxGeometry x="470" y="70" width="90" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="st4" value="Executive&#xa;Contacts&#xa;CIO, CTO, CDO…" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#296DF5;fontSize=10;" vertex="1" parent="lane5">
+          <mxGeometry x="580" y="70" width="90" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="st5" value="Outsourcing&#xa;Partners&#xa;TCS, Infosys…" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#296DF5;fontSize=10;" vertex="1" parent="lane5">
+          <mxGeometry x="690" y="70" width="90" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="st6" value="Lead&#xa;Generation&#xa;Asia, hiring, news" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#296DF5;fontSize=10;" vertex="1" parent="lane5">
+          <mxGeometry x="800" y="70" width="90" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="st7" value="Source&#xa;Attribution Log&#xa;What · Where · When" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C6EFCE;strokeColor=#0AA956;fontSize=10;fontStyle=1" vertex="1" parent="lane5">
+          <mxGeometry x="910" y="65" width="110" height="75" as="geometry"/>
+        </mxCell>
+        <mxCell id="st8" value="Scraper&#xa;Settings&#xa;URLs &amp; limits" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEB9C;strokeColor=#CC9500;fontSize=10;" vertex="1" parent="lane5">
+          <mxGeometry x="1040" y="70" width="90" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="st9" value="Research&#xa;Job History&#xa;Status, Excel path" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#296DF5;fontSize=10;" vertex="1" parent="lane5">
+          <mxGeometry x="1150" y="70" width="90" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="storeNote" value="Portal reads from here · Excel export built from here · Full audit trail of research jobs" style="text;html=1;fontSize=10;fontColor=#083DA6;fontStyle=2;" vertex="1" parent="lane5">
+          <mxGeometry x="250" y="155" width="500" height="24" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrow store -->
+        <mxCell id="arrowToStore" style="endArrow=classic;strokeWidth=2;strokeColor=#296DF5;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="f6" target="db">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1100" y="545"/>
+              <mxPoint x="1100" y="830"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrowStoreToPortal" style="endArrow=classic;strokeWidth=2;strokeColor=#296DF5;dashed=1;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="db" target="portal">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1280" y="700"/>
+              <mxPoint x="190" y="700"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lblPortal" value="Portal displays&#xa;stored intelligence" style="text;html=1;fontSize=10;fontColor=#296DF5;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="700" y="680" width="120" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- SWIMLANE: OUTPUTS -->
+        <mxCell id="lane6" value="BUSINESS OUTPUTS — What the organisation receives" style="swimlane;horizontal=0;startSize=36;fillColor=#C6EFCE;fontColor=#006100;fontStyle=1;strokeColor=#0AA956;" vertex="1" parent="1">
+          <mxGeometry x="40" y="960" width="2320" height="140" as="geometry"/>
+        </mxCell>
+        <mxCell id="o1" value="Live web dashboard&#xa;Real-time charts &amp; tables&#xa;Per-sheet views" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0AA956;fontSize=11;" vertex="1" parent="lane6">
+          <mxGeometry x="50" y="50" width="180" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="o2" value="Excel workbook&#xa;9 professional sheets&#xa;Chairman-format dashboard" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0AA956;fontSize=11;fontStyle=1" vertex="1" parent="lane6">
+          <mxGeometry x="260" y="50" width="200" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="o3" value="Qualified marketing leads&#xa;Companies offshoring to India/Asia&#xa;With contacts &amp; IT spend estimates" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0AA956;fontSize=11;" vertex="1" parent="lane6">
+          <mxGeometry x="490" y="50" width="220" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="o4" value="Source evidence pack&#xa;Prove where each fact came from&#xa;For client &amp; compliance conversations" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0AA956;fontSize=11;" vertex="1" parent="lane6">
+          <mxGeometry x="740" y="50" width="220" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="o5" value="Marketplace programme input&#xa;Structured company intelligence&#xa;For digital sales &amp; listings" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0AA956;fontSize=11;" vertex="1" parent="lane6">
+          <mxGeometry x="990" y="50" width="220" height="65" as="geometry"/>
+        </mxCell>
+
+        <!-- User to portal -->
+        <mxCell id="userToPortal" style="endArrow=classic;strokeWidth=2;strokeColor=#296DF5;exitX=0.5;exitY=1;entryX=0.2;entryY=0;" edge="1" parent="1" source="u1" target="portal">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="portalToFlow" style="endArrow=classic;strokeWidth=2;strokeColor=#296DF5;dashed=1;exitX=0.5;exitY=1;entryX=0.1;entryY=0;" edge="1" parent="1" source="portal" target="f1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="190" y="440"/>
+              <mxPoint x="110" y="440"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Legend -->
+        <mxCell id="legendBox" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D6DBE6;" vertex="1" parent="1">
+          <mxGeometry x="1280" y="960" width="400" height="140" as="geometry"/>
+        </mxCell>
+        <mxCell id="legendTitle" value="Legend" style="text;html=1;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1300" y="970" width="80" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="leg1" value="Green = outputs &amp; completion" style="text;html=1;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1300" y="995" width="200" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="leg2" value="Purple = research &amp; analysis steps" style="text;html=1;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1300" y="1015" width="220" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="leg3" value="Yellow = external public data sources" style="text;html=1;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1300" y="1035" width="240" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="leg4" value="Blue = storage &amp; portal" style="text;html=1;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1300" y="1055" width="180" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="leg5" value="Dashed arrow = data flow direction" style="text;html=1;fontSize=10;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="1300" y="1075" width="200" height="18" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="footer" value="Open in https://app.diagrams.net · AG ONE Sentiment Sales · Aventra Group · June 2026" style="text;html=1;fontSize=10;fontColor=#7288AC;align=right;" vertex="1" parent="1">
+          <mxGeometry x="1700" y="1650" width="660" height="20" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
