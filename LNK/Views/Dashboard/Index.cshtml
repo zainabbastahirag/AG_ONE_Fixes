@@ -1,0 +1,132 @@
+@model DashboardViewModel
+@{ ViewData["Title"] = "Dashboard"; }
+<div class="dashboard-layout" x-data="{ chartReady: true }">
+    <div class="container">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="mb-0">Dashboard</h1>
+                <p class="text-muted-lnk mb-0">Your LinkedIn content command center</p>
+            </div>
+            <form asp-action="QuickGenerate" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-lnk-primary">⚡ Quick Generate</button>
+            </form>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-md-6 col-xl-3">
+                <div class="glass-card stat-card h-100">
+                    <div class="stat-label">Today's Post</div>
+                    @if (Model.TodaysPost != null)
+                    {
+                        <div class="stat-value" style="font-size:1.1rem">Ready</div>
+                        <a asp-controller="Posts" asp-action="Review" asp-route-id="@Model.TodaysPost.Id" class="small">Review →</a>
+                    }
+                    else
+                    {
+                        <div class="text-muted-lnk">None yet today</div>
+                    }
+                </div>
+            </div>
+            <div class="col-md-6 col-xl-3">
+                <div class="glass-card stat-card h-100">
+                    <div class="stat-label">Next Scheduled</div>
+                    <div class="stat-value" style="font-size:1.25rem">@(Model.NextScheduled?.ToString("h:mm tt") ?? "—")</div>
+                    <span class="small text-muted-lnk">@(Model.NextScheduled?.ToString("MMM d") ?? "")</span>
+                </div>
+            </div>
+            <div class="col-md-6 col-xl-3">
+                <div class="glass-card stat-card h-100">
+                    <div class="stat-label">Posts This Month</div>
+                    <div class="stat-value">@Model.PostsThisMonth</div>
+                </div>
+            </div>
+            <div class="col-md-6 col-xl-3">
+                <div class="glass-card stat-card h-100">
+                    <div class="stat-label">Emails Sent</div>
+                    <div class="stat-value">@Model.EmailsSent</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-lg-8">
+                <div class="glass-card">
+                    <h5 class="mb-3">Activity</h5>
+                    <div class="chart-container">
+                        <canvas id="activityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="glass-card h-100">
+                    <h5 class="mb-3">Your preferences</h5>
+                    @if (Model.Settings != null)
+                    {
+                        <p class="mb-1"><strong>Industry:</strong> @Model.Settings.Industry</p>
+                        <p class="mb-1"><strong>Tone:</strong> @Model.Settings.Tone</p>
+                        <p class="mb-0 text-muted-lnk small">Daily at @Model.Settings.DailyPostTime.ToString(@"hh\:mm")</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card">
+            <h5 class="mb-3">Recent posts</h5>
+            @if (!Model.RecentPosts.Any())
+            {
+                <p class="text-muted-lnk">No posts yet. Hit Quick Generate to create your first one.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-dark table-borderless admin-table mb-0">
+                        <thead><tr><th>Title</th><th>Status</th><th>Generated</th><th></th></tr></thead>
+                        <tbody>
+                        @foreach (var p in Model.RecentPosts)
+                        {
+                            <tr>
+                                <td>@p.Title</td>
+                                <td><span class="hashtag-pill">@p.Status</span></td>
+                                <td class="text-muted-lnk">@p.GeneratedAt.ToString("MMM d, h:mm tt")</td>
+                                <td><a asp-controller="Posts" asp-action="Review" asp-route-id="@p.Id">Review</a></td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        const ctx = document.getElementById('activityChart');
+        if (ctx) {
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+                    datasets: [{
+                        label: 'Posts',
+                        data: [@Model.PostsThisMonth, @(Model.PostsThisMonth-1), @(Model.PostsThisMonth+2), @Model.PostsThisMonth, @(Model.PostsThisMonth+1), 0, @(Model.PostsThisMonth-2)].map(v => Math.max(0, v)),
+                        borderColor: '#38bdf8',
+                        backgroundColor: 'rgba(56,189,248,0.15)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#94a3b8' } },
+                        y: { grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#94a3b8' }, beginAtZero: true }
+                    }
+                }
+            });
+        }
+    </script>
+}

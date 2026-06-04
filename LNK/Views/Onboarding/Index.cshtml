@@ -1,0 +1,49 @@
+@model OnboardingViewModel
+@{ ViewData["Title"] = "Onboarding"; var tones = ViewBag.Tones as string[] ?? Array.Empty<string>(); var lengths = ViewBag.Lengths as string[] ?? Array.Empty<string>(); }
+<div class="dashboard-layout">
+    <div class="container col-lg-8">
+        <div class="glass-card">
+            <h2 class="mb-1">Let's personalize your posts</h2>
+            <p class="text-muted-lnk mb-4">Tell us about your brand voice and schedule.</p>
+            <form asp-action="Index" method="post">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="All" class="text-danger mb-3"></div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="Industry" class="form-label"></label>
+                        <input asp-for="Industry" class="form-control" placeholder="e.g. SaaS, Finance" />
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Tone" class="form-label"></label>
+                        <select asp-for="Tone" class="form-select">
+                            @foreach (var t in tones) { <option value="@t">@t</option> }
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="Topics" class="form-label"></label>
+                        <input asp-for="Topics" class="form-control" />
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Keywords" class="form-label"></label>
+                        <input asp-for="Keywords" class="form-control" placeholder="Optional keywords" />
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="PostLength" class="form-label"></label>
+                        <select asp-for="PostLength" class="form-select">
+                            @foreach (var l in lengths) { <option value="@l">@l</option> }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="DailyPostTime" class="form-label"></label>
+                        <input asp-for="DailyPostTime" type="time" class="form-control" />
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Timezone" class="form-label"></label>
+                        <input asp-for="Timezone" class="form-control" />
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-lnk-primary mt-4">Complete setup →</button>
+            </form>
+        </div>
+    </div>
+</div>

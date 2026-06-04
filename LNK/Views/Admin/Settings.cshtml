@@ -1,0 +1,14 @@
+@{ ViewData["Title"] = "Settings"; var settings = ViewBag.Settings as IEnumerable<AppSetting> ?? Enumerable.Empty<AppSetting>(); }
+<div class="dashboard-layout"><div class="container">
+<h1 class="mb-4"><a asp-action="Index" class="text-muted-lnk">Admin</a> / Settings</h1>
+@foreach (var s in settings) {
+<div class="glass-card mb-3">
+<form asp-action="UpdateSetting" method="post" class="row g-2 align-items-end">
+@Html.AntiForgeryToken()
+<div class="col-md-3"><label class="form-label">@s.Key</label></div>
+<div class="col-md-7"><input name="value" class="form-control" value="@s.Value" /></div>
+<div class="col-md-2"><input type="hidden" name="key" value="@s.Key" /><button type="submit" class="btn btn-lnk-primary w-100">Save</button></div>
+</form>
+</div>
+}
+</div></div>

@@ -1,0 +1,77 @@
+@model PostReviewViewModel
+@{ ViewData["Title"] = "Review Post"; var p = Model.Post; }
+<div class="dashboard-layout">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="mb-0">Review your post</h1>
+                <p class="text-muted-lnk mb-0">@p.Title · @p.GeneratedAt.ToString("MMM d, yyyy")</p>
+            </div>
+            <span class="hashtag-pill">@p.Status</span>
+        </div>
+        <div class="row g-4">
+            <div class="col-lg-5">
+                @if (!string.IsNullOrEmpty(p.ImageUrl))
+                {
+                    <img src="@p.ImageUrl" alt="Post visual" class="review-image mb-3" />
+                }
+                <div class="glass-card">
+                    <h6 class="text-muted-lnk">Hashtags</h6>
+                    @foreach (var tag in p.Hashtags.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        <span class="hashtag-pill">@tag</span>
+                    }
+                </div>
+            </div>
+            <div class="col-lg-7">
+                <div class="glass-card mb-4">
+                    <div class="post-preview" id="postText">@Model.ClipboardText</div>
+                </div>
+
+                <div class="glass-card mb-4" x-data="{ editing: false }">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">Edit content</h5>
+                        <button type="button" class="btn btn-sm btn-lnk-ghost" @@click="editing = !editing" x-text="editing ? 'Cancel' : 'Edit'"></button>
+                    </div>
+                    <form asp-action="Update" method="post" x-show="editing" x-cloak>
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@p.Id" />
+                        <div class="mb-3">
+                            <label class="form-label">Hook</label>
+                            <textarea name="hook" class="form-control" rows="2">@p.Hook</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Content</label>
+                            <textarea name="content" class="form-control" rows="6">@p.Content</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Call to action</label>
+                            <input name="callToAction" class="form-control" value="@p.CallToAction" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Hashtags</label>
+                            <input name="hashtags" class="form-control" value="@p.Hashtags" />
+                        </div>
+                        <button type="submit" class="btn btn-lnk-primary">Save changes</button>
+                    </form>
+                </div>
+
+                <div class="d-flex flex-wrap gap-2">
+                    <form asp-action="Regenerate" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@p.Id" />
+                        <button type="submit" class="btn btn-lnk-ghost">↻ Regenerate</button>
+                    </form>
+                    <button type="button" class="btn btn-lnk-ghost" data-copy="@Model.ClipboardText">Copy Post</button>
+                    <a href="https://www.linkedin.com/feed/" target="_blank" rel="noopener" class="btn btn-lnk-ghost">Open LinkedIn</a>
+                    <button type="button" class="btn btn-lnk-primary" data-copy-linkedin="@Model.ClipboardText">Copy &amp; Open LinkedIn</button>
+                    <form asp-action="EmailPost" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@p.Id" />
+                        <button type="submit" class="btn btn-lnk-ghost">Email me</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
