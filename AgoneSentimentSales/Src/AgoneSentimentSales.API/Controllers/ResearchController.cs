@@ -14,8 +14,22 @@ public class ResearchController : ControllerBase
     [HttpPost("start")]
     public async Task<ActionResult<ResearchJobResponse>> Start([FromBody] StartResearchRequest request, CancellationToken ct)
     {
-        var job = await _research.StartResearchJobAsync(request.CompanyCount, ct);
-        return Ok(new ResearchJobResponse(job.Id, job.Status.ToString(), job.ProcessedCount, job.TargetCompanyCount, job.OutputFilePath, job.ErrorMessage));
+        try
+        {
+            var job = await _research.StartResearchJobAsync(request.CompanyCount, ct);
+            return Ok(new ResearchJobResponse(job.Id, job.Status.ToString(), job.ProcessedCount, job.TargetCompanyCount, job.OutputFilePath, job.ErrorMessage));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { error = ex.Message });
+        }
+    }
+
+    [HttpGet("jobs/recent")]
+    public async Task<ActionResult<IReadOnlyList<ResearchJobResponse>>> RecentJobs([FromQuery] int take = 20, CancellationToken ct = default)
+    {
+        var jobs = await _research.GetRecentJobsAsync(take, ct);
+        return Ok(jobs.Select(j => new ResearchJobResponse(j.Id, j.Status.ToString(), j.ProcessedCount, j.TargetCompanyCount, j.OutputFilePath, j.ErrorMessage)).ToList());
     }
 
     [HttpGet("jobs/{jobId:guid}")]

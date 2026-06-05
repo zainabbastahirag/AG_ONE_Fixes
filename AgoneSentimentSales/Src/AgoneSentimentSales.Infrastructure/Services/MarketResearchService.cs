@@ -53,6 +53,10 @@ public class MarketResearchService : IMarketResearchService
     {
         using var scope = _scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<SentimentSalesDbContext>();
+
+        if (await db.ResearchJobs.AnyAsync(j => j.Status == ResearchJobStatus.Running, cancellationToken))
+            throw new InvalidOperationException("A research job is already running. Wait for it to complete before starting another.");
+
         var job = new ResearchJob { TargetCompanyCount = companyCount, Status = ResearchJobStatus.Pending };
         db.ResearchJobs.Add(job);
         await db.SaveChangesAsync(cancellationToken);
@@ -146,6 +150,17 @@ public class MarketResearchService : IMarketResearchService
         return await db.ResearchJobs.AsNoTracking().FirstOrDefaultAsync(j => j.Id == jobId, cancellationToken);
     }
 
+
+    public async Task<IReadOnlyList<ResearchJob>> GetRecentJobsAsync(int take = 20, CancellationToken cancellationToken = default)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<SentimentSalesDbContext>();
+        return await db.ResearchJobs.AsNoTracking()
+            .OrderByDescending(j => j.CreatedAt)
+            .Take(Math.Clamp(take, 1, 100))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<ResearchJob?> GetLatestJobAsync(CancellationToken cancellationToken = default)
     {
         using var scope = _scopeFactory.CreateScope();
@@ -195,7 +210,7 @@ public class MarketResearchService : IMarketResearchService
         var confirmed = companies.Count(c => c.OffshoringStatus == OffshoringStatus.Confirmed);
         var totalIt = companies.Where(c => c.ItBudget != null).Sum(c => c.ItBudget!.EstimatedItBudgetGbpM) / 1000m;
         var offshore = companies.Where(c => c.ItBudget != null).Sum(c => c.ItBudget!.OffshoreResourceCostGbpM) / 1000m;
-        var indiaOps = companies.Count(c => c.PrimaryOffshoreLocations.Contains("India", StringComparison.OrdinalIgnoreCase));
+        var indiaOps = companies.Count(c => (c.PrimaryOffshoreLocations ?? string.Empty).Contains("India", StringComparison.OrdinalIgnoreCase));
         var multiPartner = companies.Count(c => (c.OutsourcingPartner?.PrimaryPartners?.Split(',').Length ?? 0) > 2);
 
         var sectors = companies.GroupBy(c => c.Sector)

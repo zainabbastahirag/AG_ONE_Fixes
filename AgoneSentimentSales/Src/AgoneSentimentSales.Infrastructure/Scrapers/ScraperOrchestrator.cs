@@ -26,7 +26,7 @@ public class ScraperOrchestrator : IScraperOrchestrator
     public async Task<IReadOnlyList<SourceExtractionEvent>> RunAllSourcesAsync(
         LseCompany company, Guid jobId, CancellationToken cancellationToken = default)
     {
-        var configs = await _configService.GetAllAsync(cancellationToken);
+        var configs = await _configService.GetEnabledAsync(cancellationToken);
         var configByType = configs.ToDictionary(c => c.SourceType, StringComparer.OrdinalIgnoreCase);
         var all = new List<SourceExtractionEvent>();
 

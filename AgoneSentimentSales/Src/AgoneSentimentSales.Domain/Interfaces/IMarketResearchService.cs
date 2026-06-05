@@ -12,6 +12,7 @@ public interface IMarketResearchService
     Task<DashboardSummary> GetDashboardSummaryAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<SourceExtractionEvent>> GetExtractionEventsAsync(Guid jobId, CancellationToken cancellationToken = default);
     Task<ResearchJob?> GetLatestJobAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ResearchJob>> GetRecentJobsAsync(int take = 20, CancellationToken cancellationToken = default);
 }
 
 public record DashboardSummary(

@@ -22,6 +22,12 @@
     const r = await fetch(path, opts);
     if (!r.ok) {
       const t = await r.text();
+      try {
+        const j = JSON.parse(t);
+        if (j.error) throw new Error(j.error);
+      } catch (e) {
+        if (e instanceof Error && e.message !== t) throw e;
+      }
       throw new Error(t || r.statusText);
     }
     const ct = r.headers.get('content-type') || '';
@@ -419,7 +425,13 @@
     state.progressLabels = [];
     state.progressData = [];
     Object.keys(state.sourceCounts).forEach(k => delete state.sourceCounts[k]);
-    const j = await api('/api/research/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ companyCount: n }) });
+    let j;
+    try {
+      j = await api('/api/research/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ companyCount: n }) });
+    } catch (e) {
+      if (e.message && e.message.includes('already running')) { toast('A research job is already running'); return; }
+      throw e;
+    }
     state.jobId = j.jobId;
     $('jobSelect').value = j.jobId;
     $('btnExcel').href = '/api/export/excel?jobId=' + j.jobId;
@@ -432,14 +444,18 @@
     const sel = $('jobSelect');
     const cur = sel.value;
     try {
-      const latest = await api('/api/tracker/live');
-      const opts = '<option value="">All jobs / latest</option>';
-      if (latest.latestJob) {
-        const j = latest.latestJob;
-        sel.innerHTML = opts + '<option value="' + j.jobId + '">' + j.status + ' · ' + j.processedCount + '/' + j.targetCount + '</option>';
-        if (cur) sel.value = cur;
-      } else sel.innerHTML = opts;
-    } catch (_) {}
+      const jobs = await api('/api/research/jobs/recent?take=15');
+      let html = '<option value="">All jobs / latest</option>';
+      jobs.forEach(j => {
+        const id = j.jobId;
+        html += '<option value="' + id + '">' + esc(j.status) + ' · ' + j.processedCount + '/' + j.targetCount + ' · ' + id.slice(0, 8) + '</option>';
+      });
+      sel.innerHTML = html;
+      if (cur && [...sel.options].some(o => o.value === cur)) sel.value = cur;
+      else if (jobs[0]) { sel.value = jobs[0].jobId; state.jobId = jobs[0].jobId; }
+    } catch (_) {
+      sel.innerHTML = '<option value="">All jobs / latest</option>';
+    }
   }
 
   $('jobSelect').onchange = () => {

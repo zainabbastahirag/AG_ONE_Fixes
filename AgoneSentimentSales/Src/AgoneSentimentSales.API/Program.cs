@@ -31,6 +31,18 @@ using (var scope = app.Services.CreateScope())
             if (pending.Count > 0)
                 log.LogInformation("Pending migrations: {Migrations}", string.Join(", ", pending));
             await db.Database.MigrateAsync();
+            var stuck = await db.ResearchJobs.Where(j => j.Status == AgoneSentimentSales.Domain.Enums.ResearchJobStatus.Running
+                || j.Status == AgoneSentimentSales.Domain.Enums.ResearchJobStatus.Pending).ToListAsync();
+            foreach (var j in stuck)
+            {
+                j.Status = AgoneSentimentSales.Domain.Enums.ResearchJobStatus.Failed;
+                j.ErrorMessage = "Interrupted — reset on application startup.";
+            }
+            if (stuck.Count > 0)
+            {
+                await db.SaveChangesAsync();
+                log.LogWarning("Reset {Count} stuck research job(s) to Failed", stuck.Count);
+            }
             migrated = true;
             log.LogInformation("Database up to date. Applied: {Applied}",
                 string.Join(", ", await db.Database.GetAppliedMigrationsAsync()));

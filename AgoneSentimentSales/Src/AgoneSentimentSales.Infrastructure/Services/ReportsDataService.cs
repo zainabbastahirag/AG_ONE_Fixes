@@ -169,11 +169,18 @@ public class ReportsDataService : IReportsDataService
 
     private async Task<object> GetSourceSummaryAsync(Guid? jobId, CancellationToken ct)
     {
-        var events = jobId.HasValue
-            ? await _research.GetExtractionEventsAsync(jobId.Value, ct)
-            : await _db.SourceExtractionEvents.AsNoTracking().ToListAsync(ct);
+        List<Domain.Entities.SourceExtractionEvent> events;
+        if (jobId.HasValue)
+            events = (await _research.GetExtractionEventsAsync(jobId.Value, ct)).ToList();
+        else
+            events = await _db.SourceExtractionEvents.AsNoTracking()
+                .OrderByDescending(e => e.ExtractedAt).Take(5000).ToListAsync(ct);
+
         return events.GroupBy(e => e.SourceType).Select(g => new SourceSummaryDto(
-            g.Key, g.First().SourceLabel, g.Count(), g.Average(x => x.ConfidenceScore))).OrderByDescending(s => s.FactCount).ToList();
+            g.Key,
+            g.Select(x => x.SourceLabel).FirstOrDefault() ?? g.Key,
+            g.Count(),
+            g.Average(x => x.ConfidenceScore))).OrderByDescending(s => s.FactCount).ToList();
     }
 
     private async Task<object> GetScraperActivityAsync(Guid? jobId, CancellationToken ct)

@@ -27,9 +27,16 @@ public class ExportController : ControllerBase
         if (companies.Count == 0)
             return BadRequest(new { error = "No research data. Click 'Run Research' on the live tracker first." });
 
-        var events = jobId.HasValue
-            ? await _research.GetExtractionEventsAsync(jobId.Value, ct)
-            : await _db.SourceExtractionEvents.AsNoTracking().ToListAsync(ct);
+        IReadOnlyList<Domain.Entities.SourceExtractionEvent> events;
+        if (jobId.HasValue)
+            events = await _research.GetExtractionEventsAsync(jobId.Value, ct);
+        else
+        {
+            var latest = await _research.GetLatestJobAsync(ct);
+            events = latest != null
+                ? await _research.GetExtractionEventsAsync(latest.Id, ct)
+                : await _db.SourceExtractionEvents.AsNoTracking().OrderByDescending(e => e.ExtractedAt).Take(5000).ToListAsync(ct);
+        }
 
         var bytes = await _excel.ExportWorkbookAsync(companies, events, ct);
         return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

@@ -59,7 +59,7 @@ public class ExcelExportService : IExcelExportService
         var partial = companies.Count(c => c.OffshoringStatus == OffshoringStatus.Partial);
         var totalItB = companies.Where(c => c.ItBudget != null).Sum(c => c.ItBudget!.EstimatedItBudgetGbpM) / 1000m;
         var offshoreB = companies.Where(c => c.ItBudget != null).Sum(c => c.ItBudget!.OffshoreResourceCostGbpM) / 1000m;
-        var india = companies.Count(c => c.PrimaryOffshoreLocations.Contains("India", StringComparison.OrdinalIgnoreCase));
+        var india = companies.Count(c => (c.PrimaryOffshoreLocations ?? string.Empty).Contains("India", StringComparison.OrdinalIgnoreCase));
 
         var row = 4;
         ApplySectionHeader(ws, row, "KEY STATISTICS");
