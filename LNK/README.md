@@ -1,98 +1,212 @@
-# LNK — AI-Powered LinkedIn Posts
+# LNK — AI-Powered LinkedIn Posts (Full Solution)
 
-LNK is a single-project ASP.NET Core 8 MVC SaaS application that generates professional LinkedIn posts daily using Ollama, emails them to users, and provides a premium review experience.
+LNK is a **single-project** ASP.NET Core 8 MVC application. It generates professional LinkedIn posts with **Ollama**, emails them daily, and gives you a premium review page to copy content and open LinkedIn — no LinkedIn API required.
 
-## Stack
+Open **`LNK.sln`** in Visual Studio 2022 or run from the command line.
 
-- ASP.NET Core 8 MVC
-- Entity Framework Core + SQL Server
-- ASP.NET Identity
-- Quartz.NET (scheduled generation)
-- Ollama (local LLM)
-- Bootstrap 5, HTMX, Alpine.js, Chart.js, Three.js
-- Serilog, MailKit
+---
+
+## What you get
+
+- Premium dark SaaS UI (Bootstrap 5, Alpine.js, HTMX, Chart.js, Three.js hero)
+- ASP.NET Identity — register, login, remember me
+- Onboarding — industry, topics, keywords, tone, length, schedule
+- Dashboard — stats, Chart.js activity, quick generate, recent posts
+- Review page — edit, regenerate, copy, open LinkedIn, copy & open + toast
+- Quartz.NET — daily post generation + HTML email
+- Admin — users, posts, email logs, system settings
+- EF Core Code First — migrations applied automatically on startup
+
+---
+
+## Prerequisites (local only — no Docker)
+
+| Tool | Purpose |
+|------|---------|
+| [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) | Build & run |
+| **SQL Server** | Database — use one of the options below |
+| [Ollama](https://ollama.com) | Local AI (`ollama pull llama3.2`) |
+| SMTP (optional) | Emails — Gmail, SendGrid, or [Papercut SMTP](https://github.com/ChangemakerStudios/Papercut-SMTP) for dev |
+
+### SQL Server options (pick one)
+
+**A) SQL Server Express / Developer (recommended)**  
+Install from [Microsoft SQL Server](https://www.microsoft.com/sql-server/sql-server-downloads).  
+Use SSMS to create a database named `LNK`, or let the app create it on first run.
+
+**B) LocalDB (Visual Studio)**  
+Connection string:
+```
+Server=(localdb)\mssqllocaldb;Database=LNK;Trusted_Connection=True;TrustServerCertificate=True;
+```
+
+**C) Existing SQL Server instance**  
+Update `ConnectionStrings:DefaultConnection` in `appsettings.json`.
+
+---
 
 ## Quick start
 
-### Prerequisites
+### 1. Clone / open the project
 
-- [.NET 8 SDK](https://dotnet.microsoft.com/download)
-- SQL Server (local or Docker)
-- [Ollama](https://ollama.com) with a model (e.g. `ollama pull llama3.2`)
-- SMTP server (optional; use [Mailpit](https://github.com/axllent/mailpit) on port 1025 for dev)
+```
+LNK/
+├── LNK.sln          ← open this in Visual Studio
+├── LNK.csproj
+├── Program.cs
+├── appsettings.json
+├── Controllers/
+├── Models/
+├── ViewModels/
+├── Services/
+├── Data/
+├── Jobs/
+├── EmailTemplates/
+├── Helpers/
+├── Views/
+├── wwwroot/
+└── Configuration/
+```
 
-### Run locally
+### 2. Configure `appsettings.json`
 
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=localhost;Database=LNK;Trusted_Connection=True;TrustServerCertificate=True;"
+  },
+  "Ollama": {
+    "BaseUrl": "http://localhost:11434",
+    "Model": "llama3.2"
+  },
+  "Email": {
+    "Host": "localhost",
+    "Port": 25,
+    "FromAddress": "hello@lnk.app",
+    "AppBaseUrl": "https://localhost:7254"
+  }
+}
+```
+
+Set `Email:AppBaseUrl` to the URL you use when running the app (see `Properties/launchSettings.json`).
+
+For **Windows Authentication** to SQL Server, use `Trusted_Connection=True`.  
+For **SQL login**, use: `Server=localhost;Database=LNK;User Id=sa;Password=YourPassword;TrustServerCertificate=True;`
+
+### 3. Start Ollama
+
+```bash
+ollama pull llama3.2
+ollama serve
+```
+
+### 4. Run the app
+
+**Visual Studio:** Set `LNK` as startup project → F5 (HTTPS profile).
+
+**Command line:**
 ```bash
 cd LNK
 dotnet restore
-dotnet run
+dotnet run --launch-profile https
 ```
 
-The app applies EF migrations and seeds demo data on startup.
+Open: **https://localhost:7254** (or the URL shown in the console).
 
-Open http://localhost:5000 (or the URL shown in the console).
+On first run the app will:
+- Apply EF Core migrations
+- Seed admin + demo users (if `App:SeedDemoData` is true)
 
-### Demo accounts
+---
+
+## Demo accounts
 
 | Role  | Email           | Password        |
 |-------|-----------------|-----------------|
 | Admin | admin@lnk.app   | Lnk@Admin123!   |
 | User  | demo@lnk.app    | Lnk@Demo123!    |
 
-### Configuration
+---
 
-Edit `appsettings.json` or set environment variables:
+## User flow
 
-| Key | Description |
-|-----|-------------|
-| `ConnectionStrings__DefaultConnection` | SQL Server connection |
-| `Ollama__BaseUrl` | Ollama API URL (default `http://localhost:11434`) |
-| `Ollama__Model` | Model name (default `llama3.2`) |
-| `Email__Host` / `Email__Port` | SMTP settings |
-| `Email__AppBaseUrl` | Public URL for review links in emails |
+1. **Landing** — `/` — Three.js hero, pricing, FAQ  
+2. **Register** — `/Account/Register`  
+3. **Onboarding** — industry, topics, tone, daily time  
+4. **Dashboard** — stats, quick generate, recent posts  
+5. **Review** — `/Posts/Review/{id}` — copy & open LinkedIn  
+6. **Daily job** — Quartz checks every 15 minutes; generates + emails when your scheduled time is due  
 
-### Docker
+---
 
+## Email (optional for testing)
+
+Without SMTP, posts still generate — only email delivery fails (logged in `EmailLogs`).
+
+**Dev on Windows:** Install [Papercut SMTP](https://github.com/ChangemakerStudios/Papercut-SMTP) and set:
+```json
+"Email": { "Host": "localhost", "Port": 25, "UseSsl": false }
+```
+
+**Gmail:** Use an app password and set `Username` / `Password` in `Email` section (see `Configuration/EmailSettings.cs`).
+
+---
+
+## Admin
+
+Sign in as `admin@lnk.app` → **Admin** in the nav:
+
+- `/Admin/Users`
+- `/Admin/Posts`
+- `/Admin/EmailLogs`
+- `/Admin/Settings`
+
+---
+
+## Database tables
+
+| Table | Purpose |
+|-------|---------|
+| AspNetUsers | Identity users |
+| UserSettings | Industry, topics, tone, schedule |
+| Posts | Generated LinkedIn content |
+| Schedules | Per-user Quartz schedule |
+| EmailLogs | Send history |
+| Settings | App-wide key/value config |
+
+Migrations live in `Data/Migrations/`. To add a new migration:
 ```bash
-docker build -t lnk-app .
-docker run -p 8080:8080 \
-  -e ConnectionStrings__DefaultConnection="Server=host.docker.internal,1433;Database=LNK;..." \
-  -e Ollama__BaseUrl="http://host.docker.internal:11434" \
-  lnk-app
+dotnet ef migrations add YourMigrationName --project LNK.csproj
 ```
 
-### SQL Server via Docker
+---
 
-```bash
-docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=Your_password123" \
-  -p 1433:1433 -d mcr.microsoft.com/mssql/server:2022-latest
-```
+## Environment variables
 
-## Project structure
+Override any `appsettings.json` value:
 
 ```
-Controllers/   MVC controllers
-Models/        EF entities
-ViewModels/    View models
-Services/      Ollama, email, post generation
-Data/          DbContext, migrations, seeder
-Jobs/          Quartz daily post job
-EmailTemplates/ HTML email templates
-Helpers/       Formatting utilities
-Views/         Razor views
-wwwroot/       CSS, JS, Three.js hero
-Configuration/ Options classes
+ConnectionStrings__DefaultConnection=Server=...
+Ollama__BaseUrl=http://localhost:11434
+Ollama__Model=llama3.2
+Email__Host=smtp.example.com
+Email__AppBaseUrl=https://your-domain.com
 ```
 
-## Features
+---
 
-- Premium dark landing page with Three.js network hero
-- User onboarding (industry, topics, tone, schedule)
-- Dashboard with stats, Chart.js activity, quick generate
-- Post review: edit, regenerate, copy, open LinkedIn
-- Daily Quartz job: generate → save → email
-- Admin area: users, posts, email logs, settings
+## Troubleshooting
+
+| Issue | Fix |
+|-------|-----|
+| Cannot connect to SQL Server | Check instance name, enable TCP, use `TrustServerCertificate=True` |
+| Ollama errors | Ensure `ollama serve` is running; app falls back to template content if Ollama is down |
+| Emails not sending | Check `EmailLogs` table; configure SMTP host/port |
+| Migrations fail | Delete DB and restart, or run `dotnet ef database update` |
+
+Logs are written to `logs/lnk-*.log` (Serilog).
+
+---
 
 ## License
 
