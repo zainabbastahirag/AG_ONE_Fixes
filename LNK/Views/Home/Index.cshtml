@@ -5,90 +5,39 @@
 
 <section class="hero-section">
     <canvas id="hero-canvas"></canvas>
-    <div class="hero-glow"></div>
+    <div class="hero-aurora"></div>
     <div class="container position-relative">
-        <div class="row align-items-center min-vh-100">
-            <div class="col-lg-7 hero-content">
-                <p class="text-uppercase small text-muted-lnk mb-3 letter-spacing">AI-Powered LinkedIn Content</p>
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6 hero-content">
+                <div class="hero-badge">✦ AI-Powered · Daily Delivery · Zero Writer's Block</div>
                 <h1 class="hero-title">Never Run Out Of LinkedIn Content</h1>
-                <p class="hero-sub">AI generates professional LinkedIn posts and delivers them directly to your inbox every day.</p>
-                <div class="d-flex flex-wrap gap-3">
-                    <a asp-controller="Account" asp-action="Register" class="btn btn-lnk-primary btn-lg">Start Free</a>
-                    <a href="#how-it-works" class="btn btn-lnk-ghost btn-lg">Watch Demo</a>
+                <p class="hero-sub">AI generates professional LinkedIn posts and delivers them directly to your inbox every day. Schedule, review, copy, and publish in under 60 seconds.</p>
+                <div class="hero-cta d-flex flex-wrap gap-3">
+                    <a asp-controller="Account" asp-action="Register" class="btn btn-lnk-primary btn-lg">Start Free →</a>
+                    <a href="#how-it-works" class="btn btn-lnk-ghost btn-lg">See how it works</a>
                 </div>
-                <p class="small text-muted-lnk mt-4">No credit card required · Cancel anytime</p>
+                <p class="small text-muted mt-4 mb-0">Free to start · No credit card · Cancel anytime</p>
             </div>
-        </div>
-    </div>
-</section>
-
-<section id="features" class="section">
-    <div class="container">
-        <h2 class="section-title">Built for busy professionals</h2>
-        <p class="section-sub">Everything you need to show up consistently on LinkedIn — without the grind.</p>
-        <div class="row g-4">
-            <div class="col-md-4">
-                <div class="glass-card h-100">
-                    <div class="feature-icon">✨</div>
-                    <h5>AI-Generated Posts</h5>
-                    <p class="text-muted-lnk mb-0">Hooks, body copy, CTAs, and hashtags tailored to your industry and tone.</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="glass-card h-100">
-                    <div class="feature-icon">📬</div>
-                    <h5>Daily Email Delivery</h5>
-                    <p class="text-muted-lnk mb-0">Wake up to polished content in your inbox, ready to review and publish.</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="glass-card h-100">
-                    <div class="feature-icon">⚡</div>
-                    <h5>One-Click Publish</h5>
-                    <p class="text-muted-lnk mb-0">Copy, open LinkedIn, and post in seconds from our beautiful review page.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section id="how-it-works" class="section bg-deep">
-    <div class="container">
-        <h2 class="section-title">How it works</h2>
-        <p class="section-sub">Three steps to consistent LinkedIn presence.</p>
-        <div class="row g-4">
-            <div class="col-md-4 text-center">
-                <div class="step-num mx-auto mb-3">1</div>
-                <h5>Set your preferences</h5>
-                <p class="text-muted-lnk">Industry, topics, tone, and daily delivery time.</p>
-            </div>
-            <div class="col-md-4 text-center">
-                <div class="step-num mx-auto mb-3">2</div>
-                <h5>AI crafts your post</h5>
-                <p class="text-muted-lnk">Ollama generates professional content on your schedule.</p>
-            </div>
-            <div class="col-md-4 text-center">
-                <div class="step-num mx-auto mb-3">3</div>
-                <h5>Review & publish</h5>
-                <p class="text-muted-lnk">Edit if needed, copy, and open LinkedIn instantly.</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section id="screenshots" class="section">
-    <div class="container">
-        <h2 class="section-title">Designed for clarity</h2>
-        <div class="row g-4 justify-content-center">
-            <div class="col-lg-10">
-                <div class="screenshot-frame glass-card p-0">
-                    <div class="p-4" style="background: linear-gradient(135deg, #1e293b, #0f172a); min-height: 320px;">
-                        <div class="d-flex gap-2 mb-4"><span class="rounded-circle bg-danger" style="width:12px;height:12px"></span><span class="rounded-circle bg-warning" style="width:12px;height:12px"></span><span class="rounded-circle bg-success" style="width:12px;height:12px"></span></div>
-                        <div class="glass-card mb-3"><strong>Today's Post</strong><p class="text-muted-lnk small mb-0 mt-2">Your audience doesn't need more noise — they need clarity...</p></div>
-                        <div class="row g-3">
-                            <div class="col-4"><div class="glass-card text-center py-3"><div class="stat-value" style="font-size:1.5rem">12</div><div class="stat-label">This month</div></div></div>
-                            <div class="col-4"><div class="glass-card text-center py-3"><div class="stat-value" style="font-size:1.5rem">9:00</div><div class="stat-label">Next post</div></div></div>
-                            <div class="col-4"><div class="glass-card text-center py-3"><div class="stat-value" style="font-size:1.5rem">✓</div><div class="stat-label">Emailed</div></div></div>
+            <div class="col-lg-6 hero-mockup">
+                <div class="mockup-frame">
+                    <div class="mockup-bar">
+                        <span class="mockup-dot" style="background:#ef4444"></span>
+                        <span class="mockup-dot" style="background:#eab308"></span>
+                        <span class="mockup-dot" style="background:#22c55e"></span>
+                    </div>
+                    <div class="mockup-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="lnk-brand" style="font-size:1.1rem">LNK</span>
+                            <span class="nav-pill">Scheduled 9:00 AM</span>
+                        </div>
+                        <div class="glass-card glass-card-static mb-2 p-3">
+                            <div class="small text-muted mb-1">Today's post · Ready</div>
+                            <div style="font-weight:600;font-size:0.95rem">Your audience doesn't need more noise — they need clarity.</div>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-4"><div class="glass-card glass-card-static text-center py-2 p-2"><div class="stat-value" style="font-size:1.25rem">12</div><div class="stat-label" style="font-size:0.7rem">This month</div></div></div>
+                            <div class="col-4"><div class="glass-card glass-card-static text-center py-2 p-2"><div class="stat-value" style="font-size:1.25rem">9:00</div><div class="stat-label" style="font-size:0.7rem">Next email</div></div></div>
+                            <div class="col-4"><div class="glass-card glass-card-static text-center py-2 p-2"><div class="stat-value" style="font-size:1.25rem">✓</div><div class="stat-label" style="font-size:0.7rem">Delivered</div></div></div>
                         </div>
                     </div>
                 </div>
@@ -97,36 +46,99 @@
     </div>
 </section>
 
-<section id="pricing" class="section bg-deep">
+<section id="features" class="section">
+    <div class="container text-center">
+        <span class="section-label">Why LNK</span>
+        <h2 class="section-title">Built for busy leaders</h2>
+        <p class="section-sub">Show up on LinkedIn consistently — without spending hours writing.</p>
+        <div class="row g-4 text-start">
+            <div class="col-md-4">
+                <div class="glass-card h-100 card-glow">
+                    <div class="feature-icon">✨</div>
+                    <h5 class="fw-bold">AI-crafted posts</h5>
+                    <p class="text-muted mb-0">Hooks, body, CTAs, and hashtags tuned to your industry, tone, and keywords.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="glass-card h-100">
+                    <div class="feature-icon">◷</div>
+                    <h5 class="fw-bold">Smart scheduling</h5>
+                    <p class="text-muted mb-0">Pick your daily time. LNK generates and emails your post automatically — see your full calendar.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="glass-card h-100">
+                    <div class="feature-icon">📬</div>
+                    <h5 class="fw-bold">Beautiful emails</h5>
+                    <p class="text-muted mb-0">Wake up to a branded inbox delivery with preview, review link, and one-click publish flow.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="how-it-works" class="section" style="background:rgba(10,15,30,0.5)">
+    <div class="container text-center">
+        <span class="section-label">Workflow</span>
+        <h2 class="section-title">From zero to published in 3 steps</h2>
+        <div class="row g-4 mt-2">
+            <div class="col-md-4"><div class="glass-card"><div class="stat-value mb-2" style="font-size:1.5rem">1</div><h5>Set preferences</h5><p class="text-muted small mb-0">Industry, topics, tone, post length, and daily delivery time.</p></div></div>
+            <div class="col-md-4"><div class="glass-card"><div class="stat-value mb-2" style="font-size:1.5rem">2</div><h5>AI + schedule</h5><p class="text-muted small mb-0">Ollama crafts your post on schedule. A premium email lands in your inbox.</p></div></div>
+            <div class="col-md-4"><div class="glass-card"><div class="stat-value mb-2" style="font-size:1.5rem">3</div><h5>Review & publish</h5><p class="text-muted small mb-0">Edit if needed, then Copy & Open LinkedIn — done in one click.</p></div></div>
+        </div>
+    </div>
+</section>
+
+<section id="email-preview" class="section">
     <div class="container">
-        <h2 class="section-title">Simple pricing</h2>
-        <p class="section-sub">Start free. Upgrade when you're ready to scale.</p>
-        <div class="row g-4 justify-content-center">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6">
+                <span class="section-label">Inbox experience</span>
+                <h2 class="section-title">Emails people actually open</h2>
+                <p class="text-muted">Every morning, a beautifully designed email with your post preview, schedule time, and a direct link to review and copy.</p>
+                <ul class="list-unstyled text-muted">
+                    <li class="mb-2">✓ Branded LNK header with gradient</li>
+                    <li class="mb-2">✓ Hook preview + content snippet</li>
+                    <li class="mb-2">✓ One-tap review & copy button</li>
+                </ul>
+            </div>
+            <div class="col-lg-6">
+                <div class="email-preview-card">
+                    <div class="email-preview-header">
+                        <div style="font-size:1.5rem;font-weight:800;color:#fff">LNK</div>
+                        <div style="color:rgba(255,255,255,0.85);font-size:0.85rem;margin-top:0.5rem">Your post is ready · 9:00 AM</div>
+                    </div>
+                    <div class="email-preview-body">
+                        <p style="font-weight:600;margin:0 0 0.5rem">Hi Sarah, your LinkedIn post is ready</p>
+                        <p class="small text-muted">"Your audience doesn't need more noise — they need clarity..."</p>
+                        <div class="btn btn-lnk-primary btn-lnk-sm w-100 mt-3">Review & Copy Post →</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="pricing" class="section" style="background:rgba(10,15,30,0.5)">
+    <div class="container text-center">
+        <span class="section-label">Pricing</span>
+        <h2 class="section-title">Simple, transparent</h2>
+        <div class="row g-4 justify-content-center mt-2">
             <div class="col-md-5">
-                <div class="glass-card pricing-card h-100 text-center">
+                <div class="glass-card h-100 text-center">
                     <h5>Starter</h5>
-                    <div class="price-amount my-3">$0</div>
-                    <p class="text-muted-lnk">5 posts / month</p>
-                    <ul class="list-unstyled text-muted-lnk text-start mb-4">
-                        <li>✓ Daily AI posts</li>
-                        <li>✓ Email delivery</li>
-                        <li>✓ Review dashboard</li>
-                    </ul>
-                    <a asp-controller="Account" asp-action="Register" class="btn btn-lnk-ghost w-100">Get Started</a>
+                    <div class="stat-value my-3">$0</div>
+                    <p class="text-muted">5 posts / month</p>
+                    <a asp-controller="Account" asp-action="Register" class="btn btn-lnk-ghost w-100">Get started</a>
                 </div>
             </div>
             <div class="col-md-5">
-                <div class="glass-card pricing-card featured h-100 text-center">
-                    <span class="badge bg-primary mb-2">Popular</span>
+                <div class="glass-card h-100 text-center pricing-featured">
+                    <span class="nav-pill mb-2">Most popular</span>
                     <h5>Pro</h5>
-                    <div class="price-amount my-3">$19</div>
-                    <p class="text-muted-lnk">per month</p>
-                    <ul class="list-unstyled text-muted-lnk text-start mb-4">
-                        <li>✓ Unlimited posts</li>
-                        <li>✓ All tone options</li>
-                        <li>✓ Priority generation</li>
-                    </ul>
-                    <a asp-controller="Account" asp-action="Register" class="btn btn-lnk-primary w-100">Start Free Trial</a>
+                    <div class="stat-value my-3">$19</div>
+                    <p class="text-muted">per month · unlimited</p>
+                    <a asp-controller="Account" asp-action="Register" class="btn btn-lnk-primary w-100">Start free trial</a>
                 </div>
             </div>
         </div>
@@ -134,30 +146,19 @@
 </section>
 
 <section id="faq" class="section">
-    <div class="container col-lg-8">
-        <h2 class="section-title">FAQ</h2>
-        <div class="faq-item"><h6>Do you post to LinkedIn automatically?</h6><p class="text-muted-lnk mb-0">No. LNK generates content and helps you copy and open LinkedIn — you stay in control.</p></div>
-        <div class="faq-item"><h6>What AI model powers LNK?</h6><p class="text-muted-lnk mb-0">We use Ollama locally or on your server — fully configurable in appsettings.</p></div>
-        <div class="faq-item"><h6>Can I edit posts before publishing?</h6><p class="text-muted-lnk mb-0">Yes. Every post has a full review page with edit, regenerate, and copy actions.</p></div>
-    </div>
-</section>
-
-<section class="section bg-deep">
-    <div class="container">
-        <h2 class="section-title">Loved by professionals</h2>
-        <div class="row g-4">
-            <div class="col-md-4"><div class="glass-card testimonial-card h-100"><p>"LNK saved me 5 hours a week. My engagement doubled."</p><p class="small text-muted-lnk mb-0">— Sarah K., SaaS Founder</p></div></div>
-            <div class="col-md-4"><div class="glass-card testimonial-card h-100"><p>"Finally, LinkedIn content that sounds like me."</p><p class="small text-muted-lnk mb-0">— Marcus T., Executive Coach</p></div></div>
-            <div class="col-md-4"><div class="glass-card testimonial-card h-100"><p>"The daily email workflow is brilliant. I never miss a post."</p><p class="small text-muted-lnk mb-0">— Priya M., Product Leader</p></div></div>
+    <div class="container col-lg-7">
+        <h2 class="section-title text-center mb-4">FAQ</h2>
+        <div class="glass-card">
+            <div class="mb-4"><h6>Can I change my schedule?</h6><p class="text-muted small mb-0">Yes — update your daily time, timezone, or pause delivery anytime from the Schedule page.</p></div>
+            <div class="mb-4"><h6>Does LNK post to LinkedIn for me?</h6><p class="text-muted small mb-0">No. You stay in control — we generate, email, and help you copy & open LinkedIn instantly.</p></div>
+            <div><h6>What AI powers LNK?</h6><p class="text-muted small mb-0">Ollama runs locally or on your server. Fully configurable in appsettings.</p></div>
         </div>
     </div>
 </section>
 
-<footer class="lnk-footer">
-    <div class="container text-center">
-        <a asp-controller="Account" asp-action="Register" class="btn btn-lnk-primary btn-lg mb-4">Start Free Today</a>
-        <p class="mb-0">&copy; @DateTime.UtcNow.Year LNK</p>
-    </div>
+<footer class="lnk-footer text-center">
+    <a asp-controller="Account" asp-action="Register" class="btn btn-lnk-primary btn-lg mb-4">Start Free Today</a>
+    <p class="mb-0 small">© @DateTime.UtcNow.Year LNK</p>
 </footer>
 
 @section Scripts {

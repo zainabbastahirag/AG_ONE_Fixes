@@ -28,6 +28,11 @@
     nodeGroup.add(mesh);
   }
   scene.add(nodeGroup);
+  const ringGeo = new THREE.TorusGeometry(18, 0.08, 8, 64);
+  const ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0x6366f1, transparent: true, opacity: 0.35 }));
+  ring.rotation.x = Math.PI / 2.5;
+  scene.add(ring);
+
 
   const lineMat = new THREE.LineBasicMaterial({ color: 0x818cf8, transparent: true, opacity: 0.35 });
   const lines = [];
@@ -77,6 +82,7 @@
   function animate() {
     requestAnimationFrame(animate);
     const t = clock.getElapsedTime();
+    ring.rotation.z = t * 0.12;
     nodeGroup.rotation.y = t * 0.08 + mouseX * 0.15;
     nodeGroup.rotation.x = mouseY * 0.08;
     nodes.forEach((n, i) => {

@@ -1,4 +1,5 @@
 using LNK.Data;
+using LNK.Helpers;
 using LNK.Models;
 using LNK.Services;
 using LNK.ViewModels;
@@ -31,17 +32,25 @@ public class DashboardController : Controller
         if (!user.OnboardingCompleted) return RedirectToAction("Index", "Onboarding");
 
         var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+        var settings = await _db.UserSettings.FirstOrDefaultAsync(s => s.UserId == user.Id);
+        var schedule = await _db.Schedules.FirstOrDefaultAsync(s => s.UserId == user.Id);
+        var allPosts = await _db.Posts.Where(p => p.UserId == user.Id).OrderByDescending(p => p.GeneratedAt).ToListAsync();
+        var monthPosts = allPosts.Where(p => p.GeneratedAt >= monthStart).ToList();
+
         var vm = new DashboardViewModel
         {
-            TodaysPost = await _db.Posts.Where(p => p.UserId == user.Id)
-                .OrderByDescending(p => p.GeneratedAt)
-                .FirstOrDefaultAsync(p => p.GeneratedAt.Date == DateTime.UtcNow.Date),
-            NextScheduled = (await _db.Schedules.FirstOrDefaultAsync(s => s.UserId == user.Id))?.NextRunAt
-                ?? DateTime.UtcNow.Date.AddDays(1).Add((await _db.UserSettings.FirstAsync(s => s.UserId == user.Id)).DailyPostTime),
-            PostsThisMonth = await _db.Posts.CountAsync(p => p.UserId == user.Id && p.GeneratedAt >= monthStart),
+            DisplayName = user.DisplayName ?? user.Email ?? "there",
+            TodaysPost = allPosts.FirstOrDefault(p => p.GeneratedAt.Date == DateTime.UtcNow.Date),
+            NextScheduled = schedule?.NextRunAt ?? DateTime.UtcNow.Date.AddDays(1).Add(settings?.DailyPostTime ?? TimeSpan.FromHours(9)),
+            PostsThisMonth = monthPosts.Count,
             EmailsSent = await _db.EmailLogs.CountAsync(e => e.UserId == user.Id && e.Success && e.SentAt >= monthStart),
-            RecentPosts = await _db.Posts.Where(p => p.UserId == user.Id).OrderByDescending(p => p.GeneratedAt).Take(6).ToListAsync(),
-            Settings = await _db.UserSettings.FirstOrDefaultAsync(s => s.UserId == user.Id)
+            EmailsFailed = await _db.EmailLogs.CountAsync(e => e.UserId == user.Id && !e.Success && e.SentAt >= monthStart),
+            RecentPosts = allPosts.Take(8).ToList(),
+            Settings = settings,
+            Schedule = schedule,
+            UpcomingSlots = settings != null ? ScheduleHelper.BuildUpcomingSlots(settings, schedule, allPosts, 5) : [],
+            RecentEmails = await _db.EmailLogs.Where(e => e.UserId == user.Id).OrderByDescending(e => e.SentAt).Take(5).ToListAsync(),
+            WeeklyPosts = ScheduleHelper.BuildWeeklyChart(allPosts)
         };
         return View(vm);
     }
@@ -55,6 +64,7 @@ public class DashboardController : Controller
         if (settings == null) return RedirectToAction("Index", "Onboarding");
 
         var post = await _generator.GenerateForUserAsync(user, settings);
+        TempData["Toast"] = "Fresh post generated — review and publish when ready.";
         return RedirectToAction("Review", "Posts", new { id = post.Id });
     }
 }

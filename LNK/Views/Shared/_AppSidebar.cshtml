@@ -1,0 +1,27 @@
+@{
+    var ctrl = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var act = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+}
+<aside class="app-sidebar d-none d-lg-block">
+    <a class="sidebar-link @(ctrl == "Dashboard" ? "active" : "")" asp-controller="Dashboard" asp-action="Index">
+        <span class="icon">◈</span> Overview
+    </a>
+    <a class="sidebar-link @(ctrl == "Schedule" ? "active" : "")" asp-controller="Schedule" asp-action="Index">
+        <span class="icon">◷</span> Schedule &amp; Email
+    </a>
+    <div class="sidebar-label">Content</div>
+    <a class="sidebar-link @(ctrl == "Posts" ? "active" : "")" asp-controller="Dashboard" asp-action="Index" asp-fragment="recent">
+        <span class="icon">✎</span> My Posts
+    </a>
+    <form asp-controller="Dashboard" asp-action="QuickGenerate" method="post" class="px-2 mt-2">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="btn btn-lnk-primary w-100 btn-lnk-sm">⚡ Quick Generate</button>
+    </form>
+    @if (User.IsInRole("Admin"))
+    {
+        <div class="sidebar-label">Admin</div>
+        <a class="sidebar-link @(ctrl == "Admin" ? "active" : "")" asp-controller="Admin" asp-action="Index">
+            <span class="icon">⚙</span> Admin
+        </a>
+    }
+</aside>

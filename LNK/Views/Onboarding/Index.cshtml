@@ -1,6 +1,6 @@
 @model OnboardingViewModel
 @{ ViewData["Title"] = "Onboarding"; var tones = ViewBag.Tones as string[] ?? Array.Empty<string>(); var lengths = ViewBag.Lengths as string[] ?? Array.Empty<string>(); }
-<div class="dashboard-layout">
+<div class="auth-page"><div class="auth-card glass-card card-glow" style="max-width:640px">
     <div class="container col-lg-8">
         <div class="glass-card">
             <h2 class="mb-1">Let's personalize your posts</h2>
@@ -45,5 +45,4 @@
                 <button type="submit" class="btn btn-lnk-primary mt-4">Complete setup →</button>
             </form>
         </div>
-    </div>
-</div>
+    </div></div>
