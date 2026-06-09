@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Resume Optimizer</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="header__brand">
+        <div class="header__logo" aria-hidden="true">✦</div>
+        <div>
+          <h1>AI Resume Optimizer</h1>
+          <p class="header__tagline">Powered by local Ollama — your data stays on your machine</p>
+        </div>
+      </div>
+      <div class="header__status" id="ollamaStatus">
+        <span class="status-dot"></span>
+        <span>Checking Ollama…</span>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="panel panel--input">
+        <div class="panel__header">
+          <h2>Your Resume</h2>
+          <button type="button" class="btn btn--ghost" id="loadSample">Load sample</button>
+        </div>
+        <textarea
+          id="resumeInput"
+          class="textarea"
+          placeholder="Paste your full resume here — experience, skills, education, projects…"
+          rows="14"
+        ></textarea>
+
+        <label class="field-label" for="jobDescription">
+          Target job description <span class="optional">(optional — improves keyword matching)</span>
+        </label>
+        <textarea
+          id="jobDescription"
+          class="textarea textarea--compact"
+          placeholder="Paste the job posting you're applying to for tailored ATS scoring and keyword suggestions…"
+          rows="5"
+        ></textarea>
+
+        <div class="controls">
+          <div class="control-group">
+            <label class="field-label" for="modelSelect">Ollama model</label>
+            <select id="modelSelect" class="select">
+              <option value="llama3.2">llama3.2</option>
+            </select>
+          </div>
+          <button type="button" class="btn btn--primary" id="analyzeBtn">
+            <span class="btn__label">Analyze Resume</span>
+            <span class="btn__spinner" hidden></span>
+          </button>
+        </div>
+
+        <p class="hint" id="errorMessage" hidden></p>
+      </section>
+
+      <section class="panel panel--results" id="resultsPanel" hidden>
+        <div class="score-card" id="atsScoreCard">
+          <div class="score-card__ring">
+            <svg viewBox="0 0 120 120" class="score-ring">
+              <circle class="score-ring__bg" cx="60" cy="60" r="52"></circle>
+              <circle class="score-ring__fill" id="scoreRingFill" cx="60" cy="60" r="52"></circle>
+            </svg>
+            <div class="score-card__value">
+              <span id="atsScore">—</span>
+              <small>/ 100</small>
+            </div>
+          </div>
+          <div class="score-card__details">
+            <h2>ATS Score</h2>
+            <p id="atsSummary">Run an analysis to see how well your resume passes applicant tracking systems.</p>
+            <ul class="score-breakdown" id="scoreBreakdown"></ul>
+          </div>
+        </div>
+
+        <div class="result-grid">
+          <article class="result-card">
+            <div class="result-card__header">
+              <span class="result-card__icon" aria-hidden="true">🔑</span>
+              <h3>Missing Keywords</h3>
+            </div>
+            <div class="keyword-tags" id="missingKeywords">
+              <p class="placeholder">Keywords to add will appear here.</p>
+            </div>
+          </article>
+
+          <article class="result-card result-card--wide">
+            <div class="result-card__header">
+              <span class="result-card__icon" aria-hidden="true">✏️</span>
+              <h3>Better Bullet Points</h3>
+            </div>
+            <div class="bullet-list" id="betterBullets">
+              <p class="placeholder">Improved bullet suggestions will appear here.</p>
+            </div>
+          </article>
+
+          <article class="result-card result-card--wide">
+            <div class="result-card__header">
+              <span class="result-card__icon" aria-hidden="true">💬</span>
+              <h3>Interview Questions</h3>
+            </div>
+            <ol class="question-list" id="interviewQuestions">
+              <li class="placeholder">Likely interview questions based on your resume will appear here.</li>
+            </ol>
+          </article>
+        </div>
+      </section>
+
+      <section class="empty-state" id="emptyState">
+        <div class="empty-state__icon" aria-hidden="true">📄</div>
+        <h2>Ready to optimize</h2>
+        <p>Paste your resume on the left and click <strong>Analyze Resume</strong>. Make sure Ollama is running locally.</p>
+        <code class="empty-state__cmd">ollama serve</code>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>Runs entirely on your machine via <a href="https://ollama.com" target="_blank" rel="noopener">Ollama</a>. No cloud API keys required.</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
