@@ -1,0 +1,337 @@
+<mxfile host="app.diagrams.net" modified="2026-06-11T11:15:33.000Z" agent="AG-ONE-Doc-Generator" version="22.1.0" type="device">
+  <diagram id="37ce8ded-c9de-4b68-a4cb-c88304dc9e87" name="1-High-Level-Architecture">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="z1" value="External" style="swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;fontStyle=1" vertex="1" parent="1"><mxGeometry x="20" y="20" width="280" height="520" as="geometry"/></mxCell>
+        <mxCell id="u1" value="Customer / Purchaser" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12" vertex="1" parent="z1"><mxGeometry x="60" y="60" width="200" height="80" as="geometry"/></mxCell>
+        <mxCell id="u2" value="Azure Marketplace
+(Partner Center Offer)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=0" vertex="1" parent="z1"><mxGeometry x="40" y="180" width="220" height="70" as="geometry"/></mxCell>
+        <mxCell id="u3" value="Microsoft Entra ID" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=0" vertex="1" parent="z1"><mxGeometry x="40" y="300" width="220" height="70" as="geometry"/></mxCell>
+        <mxCell id="z2" value="Azure Subscription (Publisher)" style="swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;fontStyle=1" vertex="1" parent="1"><mxGeometry x="320" y="20" width="820" height="520" as="geometry"/></mxCell>
+        <mxCell id="z3" value="Edge Layer" style="swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;fontStyle=1" vertex="1" parent="z2"><mxGeometry x="340" y="60" width="780" height="120" as="geometry"/></mxCell>
+        <mxCell id="e1" value="App Gateway / WAF" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="z3"><mxGeometry x="380" y="100" width="160" height="50" as="geometry"/></mxCell>
+        <mxCell id="e2" value="API Management" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="z3"><mxGeometry x="580" y="100" width="160" height="50" as="geometry"/></mxCell>
+        <mxCell id="z4" value="Compute" style="swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;fontStyle=1" vertex="1" parent="z2"><mxGeometry x="340" y="200" width="780" height="180" as="geometry"/></mxCell>
+        <mxCell id="c1" value="AG ONE Gateway
+Auth · IAM · Marketplace
+Landing + Webhooks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#3b82f6;strokeColor=#1e3a5f;fontSize=12;fontStyle=0" vertex="1" parent="z4"><mxGeometry x="360" y="250" width="200" height="90" as="geometry"/></mxCell>
+        <mxCell id="c2" value="AG ONE Learn
+(SaaS Product)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="z4"><mxGeometry x="590" y="250" width="150" height="90" as="geometry"/></mxCell>
+        <mxCell id="c3" value="AG ONE Work" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eeeeee;strokeColor=#999999;fontSize=12;fontStyle=0" vertex="1" parent="z4"><mxGeometry x="770" y="250" width="120" height="60" as="geometry"/></mxCell>
+        <mxCell id="c4" value="AG ONE Safe" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eeeeee;strokeColor=#999999;fontSize=12;fontStyle=0" vertex="1" parent="z4"><mxGeometry x="770" y="320" width="120" height="60" as="geometry"/></mxCell>
+        <mxCell id="z5" value="Data &amp; Events" style="swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;fontStyle=1" vertex="1" parent="z2"><mxGeometry x="340" y="400" width="780" height="120" as="geometry"/></mxCell>
+        <mxCell id="d1" value="Azure SQL
+agone-prod" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12" vertex="1" parent="z5"><mxGeometry x="360" y="440" width="140" height="60" as="geometry"/></mxCell>
+        <mxCell id="d2" value="Service Bus
+marketplace-events" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="z5"><mxGeometry x="530" y="440" width="140" height="60" as="geometry"/></mxCell>
+        <mxCell id="d3" value="Key Vault" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="z5"><mxGeometry x="700" y="440" width="120" height="60" as="geometry"/></mxCell>
+        <mxCell id="d4" value="App Insights" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="z5"><mxGeometry x="840" y="440" width="120" height="60" as="geometry"/></mxCell>
+        <mxCell id="f1" value="Fulfillment API v2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=0" vertex="1" parent="z2"><mxGeometry x="560" y="560" width="220" height="50" as="geometry"/></mxCell>
+        <mxCell id="a1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="u1" target="u2" value="Subscribe"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="u2" target="c1" value="Redirect + token"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="c1" target="f1" value="Resolve / Activate"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="c1" target="d1" value="Provision tenant"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="c1" target="d2" value="Publish events"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11;dashed=1" edge="1" parent="1" source="d2" target="c2" value="Async provisioning"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="u1" target="c1" value="Login"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="c1" target="u3" value="OIDC / JWT"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a9" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="c1" target="c2" value="JWT cookie"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a10" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="c2" target="d1" value="learn.* data"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a11" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11;dashed=1" edge="1" parent="1" source="c3" target="c1" value="SSO only"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a12" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11;dashed=1" edge="1" parent="1" source="c4" target="c1" value="SSO only"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="45582974-93d5-4e19-a663-70b5abedd6ce" name="2-End-to-End-Sequence">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="s1" value="Purchaser" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="30" y="40" width="120" height="40" as="geometry"/></mxCell>
+        <mxCell id="s1L" value="" style="endArrow=none;dashed=1;html=1;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="90" y="90" as="sourcePoint"/><mxPoint x="90" y="700" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="s2" value="Azure Marketplace" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="180" y="40" width="120" height="40" as="geometry"/></mxCell>
+        <mxCell id="s2L" value="" style="endArrow=none;dashed=1;html=1;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="240" y="90" as="sourcePoint"/><mxPoint x="240" y="700" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="s3" value="AG ONE Landing" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="350" y="40" width="120" height="40" as="geometry"/></mxCell>
+        <mxCell id="s3L" value="" style="endArrow=none;dashed=1;html=1;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="410" y="90" as="sourcePoint"/><mxPoint x="410" y="700" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="s4" value="Fulfillment API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="520" y="40" width="120" height="40" as="geometry"/></mxCell>
+        <mxCell id="s4L" value="" style="endArrow=none;dashed=1;html=1;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="580" y="90" as="sourcePoint"/><mxPoint x="580" y="700" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="s5" value="AG ONE Gateway" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="690" y="40" width="120" height="40" as="geometry"/></mxCell>
+        <mxCell id="s5L" value="" style="endArrow=none;dashed=1;html=1;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="750" y="90" as="sourcePoint"/><mxPoint x="750" y="700" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="s6" value="Azure SQL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="860" y="40" width="120" height="40" as="geometry"/></mxCell>
+        <mxCell id="s6L" value="" style="endArrow=none;dashed=1;html=1;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="920" y="90" as="sourcePoint"/><mxPoint x="920" y="700" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="s7" value="AG ONE Learn" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="1030" y="40" width="120" height="40" as="geometry"/></mxCell>
+        <mxCell id="s7L" value="" style="endArrow=none;dashed=1;html=1;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1090" y="90" as="sourcePoint"/><mxPoint x="1090" y="700" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="sq0" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="s1" target="s2" value="Subscribe"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="sq1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="s2" target="s3" value="Redirect + token"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="sq2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="s3" target="s4" value="POST /resolve"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="sq3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="s4" target="s3" value="subscriptionId, planId"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="sq4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="s3" target="s5" value="Upsert MarketplaceSub"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="sq5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="s5" target="s4" value="POST /activate"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="sq6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="s5" target="s6" value="Create Tenant + Subscription"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="sq7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="s5" target="s1" value="Redirect to login"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="sq8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="s1" target="s5" value="Login"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="sq9" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="s5" target="s1" value="JWT cookie"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="sq10" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="s1" target="s7" value="Launch Learn"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="sq11" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="s7" target="s5" value="Validate JWT"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="sq12" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="s7" target="s6" value="Query learn.*"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="a5282d96-56e6-4a07-91c3-5455aba60a4b" name="3-SaaS-Onboarding-Flow">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="o0" value="Azure Marketplace Purchase" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="340" y="40" width="220" height="50" as="geometry"/></mxCell>
+        <mxCell id="o1" value="Redirect to Landing Page
+?token=..." style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11" vertex="1" parent="1"><mxGeometry x="340" y="100" width="160" height="70" as="geometry"/></mxCell>
+        <mxCell id="o2" value="Token present?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11" vertex="1" parent="1"><mxGeometry x="340" y="170" width="160" height="70" as="geometry"/></mxCell>
+        <mxCell id="o3" value="Show error" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="120" y="240" width="140" height="50" as="geometry"/></mxCell>
+        <mxCell id="o4" value="Resolve token
+Fulfillment API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="560" y="240" width="220" height="50" as="geometry"/></mxCell>
+        <mxCell id="o5" value="Valid subscription?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11" vertex="1" parent="1"><mxGeometry x="560" y="310" width="160" height="70" as="geometry"/></mxCell>
+        <mxCell id="o6" value="Store MarketplaceSubscriptions
+PendingActivation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="560" y="380" width="220" height="50" as="geometry"/></mxCell>
+        <mxCell id="o7" value="Activate subscription" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="560" y="450" width="220" height="50" as="geometry"/></mxCell>
+        <mxCell id="o8" value="Enqueue ProvisioningJob" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="560" y="520" width="220" height="50" as="geometry"/></mxCell>
+        <mxCell id="o9" value="Create core.Tenants" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="560" y="590" width="220" height="50" as="geometry"/></mxCell>
+        <mxCell id="o10" value="Create core.Subscriptions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="560" y="660" width="220" height="50" as="geometry"/></mxCell>
+        <mxCell id="o11" value="Create Admin User + Roles" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="340" y="730" width="220" height="50" as="geometry"/></mxCell>
+        <mxCell id="o12" value="Seed learn.* defaults" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="340" y="800" width="220" height="50" as="geometry"/></mxCell>
+        <mxCell id="o13" value="Welcome email" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="340" y="870" width="220" height="50" as="geometry"/></mxCell>
+        <mxCell id="o14" value="Redirect to AG ONE Login" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="340" y="940" width="220" height="50" as="geometry"/></mxCell>
+        <mxCell id="oe0" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="o0" target="o1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="oe1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="o1" target="o2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="oe2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="o2" target="o3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="oe3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="o3" target="o4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="oe4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="o4" target="o5"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="oe5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="o5" target="o6"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="oe6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="o6" target="o7"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="oe7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="o7" target="o8"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="oe8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="o8" target="o9"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="oe9" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="o9" target="o10"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="oe10" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="o10" target="o11"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="oe11" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="o11" target="o12"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="oe12" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="o12" target="o13"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="oe13" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="o13" target="o14"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="oe_err" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="o2" target="o3" value="No"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="oe_yes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="o2" target="o5" value="Yes"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="584aefe7-92ed-4827-bb86-f922f4cabfc9" name="4-Database-ER-Diagram">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="t1" value="core.Tenants
+─────────
+Id PK
+Name, Slug
+ProvisioningSource
+Status" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="40" y="40" width="200" height="120" as="geometry"/></mxCell>
+        <mxCell id="t2" value="core.Products
+─────────
+Id PK
+Code
+MarketplaceOfferId
+IsMarketplaceEnabled" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="300" y="40" width="200" height="120" as="geometry"/></mxCell>
+        <mxCell id="t3" value="core.Subscriptions
+─────────
+Id PK
+TenantId FK
+ProductId FK
+Status, PlanName
+MaxLicenses
+BillingSource" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="560" y="40" width="220" height="140" as="geometry"/></mxCell>
+        <mxCell id="t4" value="core.MarketplaceSubscriptions
+─────────
+Id PK
+AzureSubscriptionId UK
+SubscriptionId FK
+OfferId, PlanId
+SaasStatus
+PurchaserEmail
+Quantity" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="300" y="240" width="260" height="160" as="geometry"/></mxCell>
+        <mxCell id="t5" value="core.Users
+─────────
+Id PK
+TenantId FK
+Email" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="40" y="240" width="200" height="100" as="geometry"/></mxCell>
+        <mxCell id="t6" value="core.UserRoles
+─────────
+UserId FK
+RoleId FK
+TenantId, ProductId" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="40" y="400" width="200" height="100" as="geometry"/></mxCell>
+        <mxCell id="t7" value="core.MarketplaceWebhookEvents
+─────────
+IdempotencyKey UK
+Action, PayloadJson" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="300" y="480" width="200" height="80" as="geometry"/></mxCell>
+        <mxCell id="t8" value="core.TenantProvisioningJobs
+─────────
+Status, Step
+AttemptCount" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="560" y="480" width="220" height="80" as="geometry"/></mxCell>
+        <mxCell id="r1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="t1" target="t3" value="1:N"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="r2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="t2" target="t3" value="1:N"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="r3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="t3" target="t4" value="1:1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="r4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="t1" target="t5" value="1:N"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="r5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="t5" target="t6" value="1:N"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="r6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="t4" target="t7" value="1:N"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="r7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="t4" target="t8" value="1:N"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="b19a8e0a-020f-4b80-a862-8a6147f475ec" name="5-Integration-Design">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="ig" value="AG ONE Gateway — Marketplace Integration" style="swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;fontStyle=1" vertex="1" parent="1"><mxGeometry x="40" y="40" width="900" height="500" as="geometry"/></mxCell>
+        <mxCell id="i1" value="MarketplaceLanding
+Controller" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="ig"><mxGeometry x="80" y="100" width="180" height="60" as="geometry"/></mxCell>
+        <mxCell id="i2" value="MarketplaceWebhook
+Controller" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="ig"><mxGeometry x="300" y="100" width="180" height="60" as="geometry"/></mxCell>
+        <mxCell id="i3" value="MarketplaceFulfillment
+Service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="ig"><mxGeometry x="520" y="100" width="200" height="60" as="geometry"/></mxCell>
+        <mxCell id="i4" value="TenantProvisioning
+Service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="ig"><mxGeometry x="760" y="100" width="160" height="60" as="geometry"/></mxCell>
+        <mxCell id="i5" value="WebhookProcessor
+Worker" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="ig"><mxGeometry x="200" y="240" width="200" height="60" as="geometry"/></mxCell>
+        <mxCell id="i6" value="MarketplaceLifecycle
+Service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="ig"><mxGeometry x="480" y="240" width="200" height="60" as="geometry"/></mxCell>
+        <mxCell id="i7" value="Fulfillment API v2
+(Microsoft)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="ig"><mxGeometry x="300" y="380" width="220" height="60" as="geometry"/></mxCell>
+        <mxCell id="i8" value="Azure SQL
+core.* + learn.*" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="ig"><mxGeometry x="560" y="380" width="180" height="60" as="geometry"/></mxCell>
+        <mxCell id="amp" value="Azure Marketplace" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12" vertex="1" parent="ig"><mxGeometry x="80" y="380" width="160" height="70" as="geometry"/></mxCell>
+        <mxCell id="i_e1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="ig" source="amp" target="i1" value="Redirect"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="i_e2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="ig" source="amp" target="i2" value="Webhooks"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="i_e3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="ig" source="i1" target="i3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="i_e4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="ig" source="i2" target="i5"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="i_e5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="ig" source="i5" target="i3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="i_e6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="ig" source="i5" target="i6"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="i_e7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="ig" source="i3" target="i7"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="i_e8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="ig" source="i4" target="i8"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="i_e9" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="ig" source="i6" target="i8"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="57d301a3-1ea1-44e8-b977-80fe268ebf71" name="6-Authentication-Flow">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="au1" value="User" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="60" y="40" width="160" height="50" as="geometry"/></mxCell>
+        <mxCell id="au2" value="AG ONE Gateway" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="280" y="40" width="160" height="50" as="geometry"/></mxCell>
+        <mxCell id="au3" value="Azure SQL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="520" y="40" width="160" height="50" as="geometry"/></mxCell>
+        <mxCell id="au4" value="AG ONE Learn" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="760" y="40" width="160" height="50" as="geometry"/></mxCell>
+        <mxCell id="au_e0" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="au1" target="au2" value="POST /auth/login"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="au_e1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="au2" target="au3" value="Find user + check Tenant/Subscription status"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="au_e2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="au2" target="au2" value="Build JWT (tenant_id, subscription_status, permissions)"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="au_e3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="au2" target="au1" value="Set agone_sso_token cookie"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="au_e4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="au1" target="au4" value="Request with cookie"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="au_e5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="au4" target="au2" value="Validate / refresh token"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="au_e6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="au2" target="au4" value="ClaimsPrincipal"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="au_e7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="au4" target="au4" value="Enforce tenant_id on learn.* queries"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="ff8961c6-592f-4f30-b62a-543f38b40aa0" name="7-System-Flow-Steps">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="sf0" value="① Browse Azure Marketplace" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="300" y="40" width="280" height="45" as="geometry"/></mxCell>
+        <mxCell id="sf1" value="② Subscribe" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="300" y="95" width="280" height="45" as="geometry"/></mxCell>
+        <mxCell id="sf_e1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="sf0" target="sf1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="sf2" value="③ Azure: PendingFulfillmentStart" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="300" y="150" width="280" height="45" as="geometry"/></mxCell>
+        <mxCell id="sf_e2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="sf1" target="sf2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="sf3" value="④ Redirect to Landing Page" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="300" y="205" width="280" height="45" as="geometry"/></mxCell>
+        <mxCell id="sf_e3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="sf2" target="sf3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="sf4" value="⑤ Resolve token" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="300" y="260" width="280" height="45" as="geometry"/></mxCell>
+        <mxCell id="sf_e4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="sf3" target="sf4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="sf5" value="⑥ Activate subscription" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="300" y="315" width="280" height="45" as="geometry"/></mxCell>
+        <mxCell id="sf_e5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="sf4" target="sf5"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="sf6" value="⑦ Provision Tenant" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="300" y="370" width="280" height="45" as="geometry"/></mxCell>
+        <mxCell id="sf_e6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="sf5" target="sf6"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="sf7" value="⑧ Create Subscription (Learn)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="300" y="425" width="280" height="45" as="geometry"/></mxCell>
+        <mxCell id="sf_e7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="sf6" target="sf7"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="sf8" value="⑨ Map AzureSub → Tenant" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="300" y="480" width="280" height="45" as="geometry"/></mxCell>
+        <mxCell id="sf_e8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="sf7" target="sf8"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="sf9" value="⑩ Create Admin User + Roles" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="300" y="535" width="280" height="45" as="geometry"/></mxCell>
+        <mxCell id="sf_e9" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="sf8" target="sf9"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="sf10" value="⑪ Seed learn.* data" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="300" y="590" width="280" height="45" as="geometry"/></mxCell>
+        <mxCell id="sf_e10" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="sf9" target="sf10"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="sf11" value="⑫ Login via AG ONE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="300" y="645" width="280" height="45" as="geometry"/></mxCell>
+        <mxCell id="sf_e11" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="sf10" target="sf11"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="sf12" value="⑬ Issue JWT" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="300" y="700" width="280" height="45" as="geometry"/></mxCell>
+        <mxCell id="sf_e12" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="sf11" target="sf12"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="sf13" value="⑭ Launch Learn" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="300" y="755" width="280" height="45" as="geometry"/></mxCell>
+        <mxCell id="sf_e13" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="sf12" target="sf13"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="sf14" value="⑮ Validate SSO" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="300" y="810" width="280" height="45" as="geometry"/></mxCell>
+        <mxCell id="sf_e14" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="sf13" target="sf14"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="sf15" value="⑯ Access granted" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="300" y="865" width="280" height="45" as="geometry"/></mxCell>
+        <mxCell id="sf_e15" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="sf14" target="sf15"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="29940fa0-cc58-4338-8a8a-7a2ad6a20bed" name="8-Deployment-Architecture">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="dp" value="Azure Resource Group: rg-agone-prod" style="swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;fontStyle=1" vertex="1" parent="1"><mxGeometry x="20" y="20" width="1100" height="620" as="geometry"/></mxCell>
+        <mxCell id="dpu" value="Customers + Marketplace" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12" vertex="1" parent="dp"><mxGeometry x="60" y="70" width="180" height="70" as="geometry"/></mxCell>
+        <mxCell id="dpdns" value="Azure DNS
+agone / learn" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="dp"><mxGeometry x="280" y="70" width="200" height="50" as="geometry"/></mxCell>
+        <mxCell id="dpagw" value="App Gateway + WAF" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="dp"><mxGeometry x="520" y="70" width="200" height="50" as="geometry"/></mxCell>
+        <mxCell id="dpgw" value="App: agone-gateway
+Landing · Auth · Webhooks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#3b82f6;strokeColor=#1e3a5f;fontSize=12;fontStyle=0" vertex="1" parent="dp"><mxGeometry x="280" y="180" width="220" height="80" as="geometry"/></mxCell>
+        <mxCell id="dplp" value="App: agone-learn
+Product API + UI" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="dp"><mxGeometry x="540" y="180" width="220" height="80" as="geometry"/></mxCell>
+        <mxCell id="dpsql" value="Azure SQL
+agone-prod" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12" vertex="1" parent="dp"><mxGeometry x="280" y="320" width="200" height="80" as="geometry"/></mxCell>
+        <mxCell id="dpsb" value="Service Bus" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="dp"><mxGeometry x="520" y="320" width="180" height="80" as="geometry"/></mxCell>
+        <mxCell id="dpkv" value="Key Vault" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="dp"><mxGeometry x="730" y="320" width="140" height="80" as="geometry"/></mxCell>
+        <mxCell id="dpai" value="App Insights" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="dp"><mxGeometry x="900" y="320" width="160" height="80" as="geometry"/></mxCell>
+        <mxCell id="dpaks" value="Optional: AKS Scale-Out" style="swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=#eeeeee;strokeColor=#999999;fontSize=13;fontStyle=1" vertex="1" parent="dp"><mxGeometry x="280" y="450" width="560" height="120" as="geometry"/></mxCell>
+        <mxCell id="dping" value="Ingress Controller" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="dpaks"><mxGeometry x="300" y="490" width="160" height="50" as="geometry"/></mxCell>
+        <mxCell id="dppod1" value="learn-api pods" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="dpaks"><mxGeometry x="490" y="490" width="150" height="50" as="geometry"/></mxCell>
+        <mxCell id="dppod2" value="worker pods" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="dpaks"><mxGeometry x="670" y="490" width="150" height="50" as="geometry"/></mxCell>
+        <mxCell id="dp1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="dp" source="dpu" target="dpdns"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="dp2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="dp" source="dpdns" target="dpagw"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="dp3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="dp" source="dpagw" target="dpgw"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="dp4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="dp" source="dpagw" target="dplp"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="dp5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="dp" source="dpgw" target="dpsql"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="dp6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="dp" source="dpgw" target="dpsb"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="dp7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="dp" source="dplp" target="dpsql"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="dp8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="dp" source="dpgw" target="dpkv"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="1798067e-fa34-4483-89fd-f5e3e4e84669" name="9-Subscription-Lifecycle">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="st0" value="PendingFulfillmentStart" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="340" y="40" width="220" height="50" as="geometry"/></mxCell>
+        <mxCell id="st1" value="Subscribed" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="340" y="140" width="220" height="50" as="geometry"/></mxCell>
+        <mxCell id="st2" value="Suspended" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="80" y="240" width="180" height="50" as="geometry"/></mxCell>
+        <mxCell id="st3" value="Unsubscribed" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="600" y="240" width="180" height="50" as="geometry"/></mxCell>
+        <mxCell id="ls1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="st0" target="st1" value="Activate (your API)"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ls2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="st1" target="st2" value="Suspend webhook"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ls3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="st2" target="st1" value="Reinstate webhook"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ls4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="st1" target="st3" value="Unsubscribe webhook"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ls5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11" edge="1" parent="1" source="st0" target="st3" value="Timeout / cancel"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="la0" value="Subscribe → Landing page resolve + activate" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="40" y="380" width="400" height="35" as="geometry"/></mxCell>
+        <mxCell id="la1" value="ChangePlan → Update PlanName + PATCH API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="40" y="420" width="400" height="35" as="geometry"/></mxCell>
+        <mxCell id="la2" value="ChangeQuantity → Update MaxLicenses" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="40" y="460" width="400" height="35" as="geometry"/></mxCell>
+        <mxCell id="la3" value="Suspend → Block login, Status=Suspended" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="40" y="500" width="400" height="35" as="geometry"/></mxCell>
+        <mxCell id="la4" value="Reinstate → Restore Active" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="40" y="540" width="400" height="35" as="geometry"/></mxCell>
+        <mxCell id="la5" value="Unsubscribe → Cancel, soft-disable access" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=0" vertex="1" parent="1"><mxGeometry x="40" y="580" width="400" height="35" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
