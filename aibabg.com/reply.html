@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WhatsApp Reply Helper — What Should I Say? | AI Baba G</title>
+  <meta name="description" content="Paste a WhatsApp message. Baba G gives you 3 replies: polite, firm, and short. Free.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header>
+  <a href="index.html" class="logo">🙏 AI <span>Baba G</span></a>
+  <nav>
+    <a href="scam-check.html">Scam Check</a>
+    <a href="write.html">Write Letter</a>
+    <a href="reply.html">WhatsApp Reply</a>
+    <a href="explains.html">Explains</a>
+  </nav>
+</header>
+<div class="tool-page">
+  <h1>💬 WhatsApp Reply Helper</h1>
+  <p class="subtitle">Paste the message you received. Baba G suggests 3 ways to reply.</p>
+  <label style="font-weight:600;display:block;margin-bottom:0.5rem;">Message you received:</label>
+  <textarea id="incoming" rows="5" placeholder="Paste the WhatsApp message here..."></textarea>
+  <label style="font-weight:600;display:block;margin:1rem 0 0.5rem;">Situation (optional):</label>
+  <input type="text" id="situation" placeholder="e.g. boss asking me to work Sunday">
+  <button class="btn" onclick="suggestReplies()">Baba G, what should I reply?</button>
+  <div id="result" class="result"></div>
+</div>
+<section class="popular">
+  <h2>Common situations</h2>
+  <div class="popular-links">
+    <a href="reply/boss.html">Reply to boss</a>
+    <a href="reply/sorry-late.html">Sorry I'm late</a>
+    <a href="reply/money-request.html">Say no to money</a>
+    <a href="reply/invitation.html">Decline invitation</a>
+  </div>
+</section>
+<footer><p>© 2026 <a href="index.html">AI Baba G</a> — aibabg.com</p></footer>
+<script>
+function suggestReplies() {
+  const msg = document.getElementById('incoming').value.trim();
+  const sit = document.getElementById('situation').value.trim();
+  const resultEl = document.getElementById('result');
+  if (!msg && !sit) { alert('Paste a message or describe the situation, beta.'); return; }
+
+  const polite = `Thank you for letting me know. I understand. Let me check and get back to you shortly.`;
+  const firm = `Thanks for the message. I'm not able to do that right now. I'll let you know if anything changes.`;
+  const short = `Got it, thanks. Will revert soon.`;
+
+  resultEl.className = 'result show safe';
+  resultEl.innerHTML = `
+    <h3>✅ 3 ways to reply</h3>
+    <p><strong>🟢 Polite:</strong></p>
+    <pre style="background:#fff;padding:0.75rem;border-radius:8px;margin:0.5rem 0 1rem;">${polite}</pre>
+    <p><strong>🟡 Firm:</strong></p>
+    <pre style="background:#fff;padding:0.75rem;border-radius:8px;margin:0.5rem 0 1rem;">${firm}</pre>
+    <p><strong>🔵 Short:</strong></p>
+    <pre style="background:#fff;padding:0.75rem;border-radius:8px;margin:0.5rem 0 1rem;">${short}</pre>
+    <div class="baba-quote">🙏 Baba G says: "Pick polite if it's your boss or elder. Pick firm if someone is pushing too hard. Short works when you're busy."</div>
+    <p style="margin-top:1rem;font-size:0.85rem;color:var(--muted);">💡 Connect OpenAI API later for personalised replies based on the actual message.</p>
+  `;
+}
+</script>
+</body>
+</html>

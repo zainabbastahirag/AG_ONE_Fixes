@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scam Checker — Show Baba G Before You Click | AI Baba G</title>
+  <meta name="description" content="Paste any SMS, email or WhatsApp message. AI Baba G tells you if it's a scam and what to do next. Free scam checker.">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<header>
+  <a href="../index.html" class="logo">🙏 AI <span>Baba G</span></a>
+  <nav>
+    <a href="../scam-check.html">Scam Check</a>
+    <a href="../write.html">Write Letter</a>
+    <a href="../reply.html">WhatsApp Reply</a>
+    <a href="../explains.html">Explains</a>
+  </nav>
+</header>
+
+<div class="tool-page">
+  <h1>🚨 Scam Checker</h1>
+  <p class="subtitle">Paste any SMS, email, or WhatsApp message. Baba G will tell you if it's a scam.</p>
+
+  <label for="message" style="font-weight:600; display:block; margin-bottom:0.5rem;">Paste the suspicious message here:</label>
+  <textarea id="message" rows="8" placeholder="Example: Dear customer, your bank account will be blocked. Click here to verify: http://..."></textarea>
+
+  <button class="btn" id="checkBtn" onclick="checkScam()">Ask Baba G — Is this a scam?</button>
+
+  <div id="result" class="result"></div>
+</div>
+
+<section class="popular">
+  <h2>Common scam types</h2>
+  <div class="popular-links">
+    <a href="bank-sms.html">Bank SMS</a>
+    <a href="otp.html">OTP scam</a>
+    <a href="job-offer.html">Fake job offer</a>
+    <a href="whatsapp.html">WhatsApp scam</a>
+    <a href="romance.html">Romance scam</a>
+    <a href="investment.html">Investment scam</a>
+    <a href="parcel.html">Parcel/delivery scam</a>
+    <a href="prize.html">Prize/lottery scam</a>
+  </div>
+</section>
+
+<footer>
+  <p>© 2026 <a href="../index.html">AI Baba G</a> — aibabg.com</p>
+  <p style="margin-top:0.5rem; font-size:0.8rem;">⚠️ Baba G gives guidance, not legal advice. When in doubt, contact your bank directly.</p>
+</footer>
+
+<script>
+// Scam detection rules (works offline — replace with OpenAI API later)
+const SCAM_PATTERNS = [
+  { pattern: /otp|one.?time.?password|verification.?code/i, label: 'Asks for OTP or verification code', weight: 3 },
+  { pattern: /click.?here|tap.?here|verify.?now|urgent.?action/i, label: 'Urgent click/link request', weight: 2 },
+  { pattern: /account.?blocked|account.?suspended|will.?be.?closed/i, label: 'Threatens account closure', weight: 2 },
+  { pattern: /won|winner|lottery|prize|congratulations.?you/i, label: 'Unexpected prize or lottery win', weight: 3 },
+  { pattern: /investment|guaranteed.?return|double.?your.?money|crypto.?opportunity/i, label: 'Investment/get-rich promise', weight: 3 },
+  { pattern: /send.?money|wire.?transfer|gift.?card|bitcoin|usdt/i, label: 'Requests money or gift cards', weight: 3 },
+  { pattern: /dear.?customer|dear.?user|dear.?member/i, label: 'Generic greeting (not your name)', weight: 1 },
+  { pattern: /http[s]?:\/\/(?!.*\.(gov|edu))/i, label: 'Contains suspicious link', weight: 2 },
+  { pattern: /irs|tax.?refund|government|arrest.?warrant|legal.?action/i, label: 'Government/tax threat', weight: 3 },
+  { pattern: /remote.?job|work.?from.?home.*\$|earn.*\$.*daily/i, label: 'Too-good job offer', weight: 2 },
+  { pattern: /parcel|package.?held|delivery.?failed|customs.?fee/i, label: 'Fake delivery/parcel notice', weight: 2 },
+  { pattern: /password|pin.?number|card.?details|cvv/i, label: 'Asks for password or card details', weight: 3 },
+];
+
+function checkScam() {
+  const text = document.getElementById('message').value.trim();
+  const resultEl = document.getElementById('result');
+  const btn = document.getElementById('checkBtn');
+
+  if (!text) {
+    alert('Beta, paste the message first. Baba G cannot check empty air.');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Baba G is checking...';
+
+  setTimeout(() => {
+    let score = 0;
+    const flags = [];
+
+    for (const rule of SCAM_PATTERNS) {
+      if (rule.pattern.test(text)) {
+        score += rule.weight;
+        flags.push(rule.label);
+      }
+    }
+
+    let type, title, advice, quote;
+
+    if (score >= 5) {
+      type = 'scam';
+      title = '🚨 SCAM — Do NOT click or reply';
+      advice = [
+        'Do not click any links in this message',
+        'Do not share OTP, password, or card details',
+        'Do not send money or gift cards',
+        'Block the sender and delete the message',
+        'If you already clicked, contact your bank immediately',
+        'Report to your local cyber crime authority'
+      ];
+      quote = 'Beta, this is almost certainly a scam. Real banks and companies never ask for OTP on SMS or WhatsApp. Delete it and block the number.';
+    } else if (score >= 2) {
+      type = 'warn';
+      title = '⚠️ SUSPICIOUS — Be very careful';
+      advice = [
+        'Do not click links — go directly to the official website or app',
+        'Call the company using the number on their official website, not from this message',
+        'Never share OTP or passwords',
+        ...flags.map(f => 'Red flag: ' + f)
+      ];
+      quote = 'Something feels wrong here, beta. When in doubt, don\'t click. Call the real company directly.';
+    } else {
+      type = 'safe';
+      title = '✅ Looks OK — but stay alert';
+      advice = [
+        'No major scam patterns detected',
+        'Still verify sender identity if message asks for any action',
+        'Never share OTP even if message looks legitimate'
+      ];
+      quote = 'This looks okay, but remember — Baba G always says: never share OTP with anyone, ever.';
+    }
+
+    resultEl.className = 'result show ' + type;
+    resultEl.innerHTML = `
+      <h3>${title}</h3>
+      ${flags.length ? '<p><strong>Red flags found:</strong></p><ul>' + flags.map(f => '<li>' + f + '</li>').join('') + '</ul>' : ''}
+      <p><strong>What to do:</strong></p>
+      <ul>${advice.map(a => '<li>' + a + '</li>').join('')}</ul>
+      <div class="baba-quote">🙏 Baba G says: "${quote}"</div>
+    `;
+
+    btn.disabled = false;
+    btn.textContent = 'Ask Baba G — Is this a scam?';
+  }, 800);
+}
+</script>
+
+</body>
+</html>
