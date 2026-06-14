@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Letter Writer — Baba G Writes It Properly | AI Baba G</title>
+  <meta name="description" content="Need a resignation, complaint or apology letter? Baba G writes professional messages in seconds. Free.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header>
+  <a href="index.html" class="logo">🙏 AI <span>Baba G</span></a>
+  <nav>
+    <a href="scam-check.html">Scam Check</a>
+    <a href="write.html">Write Letter</a>
+    <a href="reply.html">WhatsApp Reply</a>
+    <a href="explains.html">Explains</a>
+  </nav>
+</header>
+<div class="tool-page">
+  <h1>✉️ Letter Writer</h1>
+  <p class="subtitle">Tell Baba G what you need. Get a polite, professional letter in seconds.</p>
+
+  <label style="font-weight:600;display:block;margin-bottom:0.5rem;">Letter type:</label>
+  <select id="letterType" style="width:100%;padding:0.75rem;border:2px solid var(--border);border-radius:8px;font-size:1rem;margin-bottom:1rem;">
+    <option value="resignation">Resignation letter</option>
+    <option value="apology">Apology email</option>
+    <option value="complaint">Complaint letter</option>
+    <option value="landlord">Message to landlord</option>
+    <option value="payment">Payment reminder</option>
+    <option value="followup">Job follow-up email</option>
+    <option value="sick">Sick leave message</option>
+    <option value="thankyou">Thank you email</option>
+  </select>
+
+  <label style="font-weight:600;display:block;margin-bottom:0.5rem;">Your details (name, situation, key points):</label>
+  <textarea id="details" rows="5" placeholder="Example: My name is Raj. I want to resign from ABC Company. Last day March 30. Reason: new opportunity."></textarea>
+
+  <button class="btn" onclick="writeLetter()">Baba G, write my letter</button>
+  <div id="result" class="result"></div>
+</div>
+<section class="popular">
+  <h2>Popular letters</h2>
+  <div class="popular-links">
+    <a href="write/resignation.html">Resignation</a>
+    <a href="write/complaint.html">Complaint</a>
+    <a href="write/apology.html">Apology</a>
+    <a href="write/landlord.html">To landlord</a>
+    <a href="write/payment-reminder.html">Payment reminder</a>
+    <a href="write/job-follow-up.html">Job follow-up</a>
+  </div>
+</section>
+<footer><p>© 2026 <a href="index.html">AI Baba G</a> — aibabg.com</p></footer>
+<script>
+const TEMPLATES = {
+  resignation: (d) => `Subject: Resignation — [Your Name]\n\nDear [Manager Name],\n\nI am writing to formally resign from my position at [Company Name], with my last working day being [Date].\n\nI am grateful for the opportunities and experience I have gained during my time here. I will do my best to ensure a smooth handover of my responsibilities.\n\nThank you for your support and guidance.\n\nSincerely,\n[Your Name]`,
+  apology: (d) => `Subject: Apology\n\nDear [Name],\n\nI sincerely apologise for [what happened]. I understand this caused inconvenience and I take full responsibility.\n\nIt will not happen again. Please let me know if there is anything I can do to make this right.\n\nThank you for your understanding.\n\nBest regards,\n[Your Name]`,
+  complaint: (d) => `Subject: Formal Complaint — [Issue]\n\nDear [Company/Manager],\n\nI am writing to raise a concern regarding [issue] on [date].\n\n[Describe what happened clearly and factually.]\n\nI would appreciate a resolution within [timeframe]. Please contact me at [email/phone].\n\nI look forward to your response.\n\nSincerely,\n[Your Name]`,
+  landlord: (d) => `Subject: Maintenance Request — [Address]\n\nDear [Landlord Name],\n\nI hope you are well. I am writing regarding [issue — e.g. leaking tap in bathroom] at [address].\n\nThe issue started on [date] and needs attention at your earliest convenience.\n\nPlease let me know when a repair can be arranged.\n\nThank you,\n[Your Name]`,
+  payment: (d) => `Subject: Friendly Payment Reminder — Invoice [#]\n\nDear [Client Name],\n\nI hope you are doing well. I wanted to follow up on invoice [#] for [amount], which was due on [date].\n\nIf payment has already been sent, please disregard this message. Otherwise, I would appreciate payment at your earliest convenience.\n\nPlease let me know if you have any questions.\n\nBest regards,\n[Your Name]`,
+  followup: (d) => `Subject: Following Up — [Job Title] Application\n\nDear [Hiring Manager],\n\nI hope this message finds you well. I am following up on my application for the [Job Title] position submitted on [date].\n\nI remain very interested in this opportunity and would welcome the chance to discuss how I can contribute to your team.\n\nThank you for your time and consideration.\n\nBest regards,\n[Your Name]`,
+  sick: (d) => `Hi [Manager Name],\n\nI am not feeling well today and will not be able to come to work. I will keep you updated and hope to return by [date].\n\nThank you for understanding.\n\n[Your Name]`,
+  thankyou: (d) => `Subject: Thank You\n\nDear [Name],\n\nThank you so much for [what they did]. I really appreciate your [help/time/kindness].\n\nIt meant a lot to me.\n\nWith gratitude,\n[Your Name]`
+};
+
+function writeLetter() {
+  const type = document.getElementById('letterType').value;
+  const details = document.getElementById('details').value.trim();
+  const resultEl = document.getElementById('result');
+  if (!details) { alert('Tell Baba G a few details first, beta.'); return; }
+  const letter = TEMPLATES[type](details);
+  resultEl.className = 'result show safe';
+  resultEl.innerHTML = `<h3>✅ Your letter is ready</h3><pre style="white-space:pre-wrap;font-family:inherit;background:#fff;padding:1rem;border-radius:8px;margin:1rem 0;">${letter}</pre><button class="btn" onclick="navigator.clipboard.writeText(document.querySelector('pre').textContent);alert('Copied!')">Copy to clipboard</button><div class="baba-quote">🙏 Baba G says: "Edit the [brackets] with your details before sending. Keep it polite — it always works better."</div>`;
+}
+</script>
+</body>
+</html>
