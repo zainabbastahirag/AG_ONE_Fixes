@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Candidate Evaluation Dashboard</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111c33;
+      --card: #16213f;
+      --border: #2a3a63;
+      --text: #e8eefc;
+      --muted: #9fb0d0;
+      --accent: #4f8cff;
+      --accent-2: #22c55e;
+      --warn: #f59e0b;
+      --phase1: #2563eb;
+      --phase2: #7c3aed;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, Segoe UI, Arial, sans-serif;
+      background: linear-gradient(180deg, #0b1224 0%, #111827 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 24px; }
+    header {
+      display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;
+      margin-bottom: 20px; flex-wrap: wrap;
+    }
+    h1 { margin: 0 0 6px; font-size: 1.8rem; }
+    .sub { color: var(--muted); font-size: 0.95rem; }
+    .toolbar { display: flex; gap: 10px; flex-wrap: wrap; }
+    button, .tab {
+      border: 1px solid var(--border); background: var(--card); color: var(--text);
+      padding: 10px 14px; border-radius: 10px; cursor: pointer; font-weight: 600;
+    }
+    button.primary { background: var(--accent); border-color: #3b74db; color: white; }
+    button.success { background: #15803d; border-color: #166534; color: white; }
+    .tabs { display: flex; gap: 8px; margin: 18px 0; flex-wrap: wrap; }
+    .tab.active { background: var(--accent); border-color: #3b74db; color: white; }
+    .panel {
+      display: none; background: rgba(17, 28, 51, 0.9); border: 1px solid var(--border);
+      border-radius: 16px; padding: 18px; box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+    .panel.active { display: block; }
+    .legend {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 12px 14px; margin-bottom: 16px; color: var(--muted); font-size: 0.92rem;
+    }
+    .candidate-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+      padding: 16px; margin-bottom: 14px;
+    }
+    .candidate-head {
+      display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      margin-bottom: 12px; flex-wrap: wrap;
+    }
+    .badge {
+      font-size: 0.78rem; font-weight: 700; padding: 5px 10px; border-radius: 999px;
+      color: white;
+    }
+    .badge.p1 { background: var(--phase1); }
+    .badge.p2 { background: var(--phase2); }
+    .avg-pill {
+      background: #0b1730; border: 1px solid var(--border); padding: 6px 10px;
+      border-radius: 999px; font-size: 0.85rem; color: var(--muted);
+    }
+    .grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;
+    }
+    .field label {
+      display: block; font-size: 0.88rem; font-weight: 700; margin-bottom: 4px;
+    }
+    .hint { color: var(--muted); font-size: 0.78rem; margin-bottom: 6px; min-height: 2.2em; }
+    select, textarea, input[type="text"] {
+      width: 100%; background: #0b1730; color: var(--text); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px; font: inherit;
+    }
+    textarea { min-height: 72px; resize: vertical; }
+    .summary-table-wrap { overflow-x: auto; }
+    table {
+      width: 100%; border-collapse: collapse; font-size: 0.92rem;
+    }
+    th, td {
+      border: 1px solid var(--border); padding: 10px; text-align: left; vertical-align: top;
+    }
+    th { background: #1a2a4d; }
+    tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+    .score-high { color: #4ade80; font-weight: 700; }
+    .score-mid { color: #fbbf24; font-weight: 700; }
+    .score-low { color: #f87171; font-weight: 700; }
+    .screenshot-mode .toolbar, .screenshot-mode .tabs, .screenshot-mode .save-note { display: none !important; }
+    .screenshot-mode .panel { display: block !important; border: none; box-shadow: none; }
+    .screenshot-mode .candidate-card textarea, .screenshot-mode .candidate-card select,
+    .screenshot-mode .candidate-card input { pointer-events: none; }
+    @media print {
+      body { background: white; color: black; }
+      .panel, .candidate-card, th { background: white !important; color: black !important; }
+      .toolbar, .tabs, .save-note { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Candidate Evaluation Dashboard</h1>
+        <div class="sub">Session 1 = Phase 1 (Presentation + Technical Observation) · Session 2 = Phase 2 (Clarity & discussion)</div>
+      </div>
+      <div class="toolbar">
+        <button id="saveBtn" class="primary">Save locally</button>
+        <button id="exportBtn" class="success">Export JSON</button>
+        <button id="shotBtn">Screenshot view</button>
+        <button id="resetBtn">Reset all</button>
+      </div>
+    </header>
+
+    <div class="legend">
+      <strong>Rating:</strong> 1 = Weak · 2 = Below average · 3 = Average · 4 = Good · 5 = Excellent
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="phase1">Session 1 — Phase 1</button>
+      <button class="tab" data-tab="phase2">Session 2 — Phase 2</button>
+      <button class="tab" data-tab="summary">Summary / Index</button>
+    </div>
+
+    <section id="phase1" class="panel active"></section>
+    <section id="phase2" class="panel"></section>
+    <section id="summary" class="panel"></section>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "candidate_eval_v1";
+
+    const PHASE1 = {
+      title: "Session 1 — Phase 1",
+      badge: "Phase 1",
+      candidates: [
+        "Mohammad Kashif Mohiuddin",
+        "Shahid",
+        "Hadeef"
+      ],
+      criteria: [
+        { key: "presentation", label: "Presentation", hint: "Structure, confidence, slides, delivery" },
+        { key: "technical_observation", label: "Technical Observation", hint: "Spots and explains technical points well" }
+      ],
+      extra: [
+        { key: "strengths", label: "Strengths", type: "textarea" },
+        { key: "improve", label: "Areas to improve", type: "textarea" },
+        { key: "recommend", label: "Recommend?", type: "select", options: ["", "Yes", "Maybe", "No"] },
+        { key: "final_notes", label: "Final notes", type: "textarea" }
+      ]
+    };
+
+    const PHASE2 = {
+      title: "Session 2 — Phase 2",
+      badge: "Phase 2",
+      candidates: [
+        "Baizid Yaldram",
+        "MUHAMMAD HADIF AMAR BIN RAZALI",
+        "CITA WAFA ATIAH",
+        "MUHAMMAD MAIRAJ",
+        "Mohammad Shahid Akhtar",
+        "Aurneela Ghosh Riddhi"
+      ],
+      criteria: [
+        { key: "clear_thinking", label: "Clear Thinking", hint: "Clarity of thought — easy to follow" },
+        { key: "deep_vs_wide", label: "Deep vs Wide", hint: "Depth vs breadth of answers" },
+        { key: "build_ideas", label: "Build on Ideas", hint: "Listing and building on points" },
+        { key: "business_link", label: "Business Link", hint: "Links ideas to business value" },
+        { key: "positive_manner", label: "Positive Manner", hint: "Conduct with benefit — respectful & calm" },
+        { key: "fresh_ideas", label: "Fresh Ideas", hint: "Original thinking" },
+        { key: "speaking_style", label: "Speaking Style", hint: "Communication style" }
+      ],
+      extra: [
+        { key: "strengths", label: "Strengths", type: "textarea" },
+        { key: "improve", label: "Areas to improve", type: "textarea" },
+        { key: "recommend", label: "Recommend?", type: "select", options: ["", "Yes", "Maybe", "No"] },
+        { key: "final_notes", label: "Final notes", type: "textarea" }
+      ]
+    };
+
+    let state = loadState();
+
+    function defaultCandidate(phaseKey, name) {
+      const phase = phaseKey === "phase1" ? PHASE1 : PHASE2;
+      const base = { name };
+      phase.criteria.forEach(c => base[c.key] = "");
+      phase.extra.forEach(e => base[e.key] = "");
+      return base;
+    }
+
+    function loadState() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try { return JSON.parse(saved); } catch (_) {}
+      }
+      return {
+        phase1: PHASE1.candidates.map(n => defaultCandidate("phase1", n)),
+        phase2: PHASE2.candidates.map(n => defaultCandidate("phase2", n))
+      };
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      flash("Saved on this device");
+    }
+
+    function flash(msg) {
+      const el = document.createElement("div");
+      el.textContent = msg;
+      el.style.cssText = "position:fixed;bottom:20px;right:20px;background:#15803d;color:#fff;padding:10px 14px;border-radius:10px;z-index:9999;";
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 1600);
+    }
+
+    function scoreClass(v) {
+      const n = Number(v);
+      if (!n) return "";
+      if (n >= 4) return "score-high";
+      if (n === 3) return "score-mid";
+      return "score-low";
+    }
+
+    function avgFor(candidate, phase) {
+      const nums = phase.criteria.map(c => Number(candidate[c.key])).filter(n => n >= 1 && n <= 5);
+      if (!nums.length) return "—";
+      return (nums.reduce((a,b) => a + b, 0) / nums.length).toFixed(1);
+    }
+
+    function ratingSelect(id, value) {
+      const opts = ["", "1", "2", "3", "4", "5"].map(v => `<option value="${v}" ${String(value)===v?"selected":""}>${v || "—"}</option>`).join("");
+      return `<select data-id="${id}">${opts}</select>`;
+    }
+
+    function renderPhase(phaseKey, phase, container) {
+      container.innerHTML = `<h2 style="margin-top:0">${phase.title}</h2>` +
+        state[phaseKey].map((cand, idx) => {
+          const avg = avgFor(cand, phase);
+          const criteriaHtml = phase.criteria.map(cr => {
+            const id = `${phaseKey}.${idx}.${cr.key}`;
+            return `<div class="field">
+              <label>${cr.label}</label>
+              <div class="hint">${cr.hint}</div>
+              ${ratingSelect(id, cand[cr.key])}
+            </div>`;
+          }).join("");
+
+          const extraHtml = `<div class="grid" style="margin-top:12px">` + phase.extra.map(ex => {
+            const id = `${phaseKey}.${idx}.${ex.key}`;
+            if (ex.type === "select") {
+              const opts = ex.options.map(v => `<option value="${v}" ${cand[ex.key]===v?"selected":""}>${v || "—"}</option>`).join("");
+              return `<div class="field"><label>${ex.label}</label><select data-id="${id}">${opts}</select></div>`;
+            }
+            return `<div class="field"><label>${ex.label}</label><textarea data-id="${id}">${cand[ex.key] || ""}</textarea></div>`;
+          }).join("") + `</div>`;
+
+          return `<article class="candidate-card" data-phase="${phaseKey}" data-idx="${idx}">
+            <div class="candidate-head">
+              <div><span class="badge ${phaseKey === "phase1" ? "p1" : "p2"}">${phase.badge}</span> <strong>${cand.name}</strong></div>
+              <div class="avg-pill">Average: <span class="${scoreClass(avg)}">${avg}</span></div>
+            </div>
+            <div class="grid">${criteriaHtml}</div>
+            ${extraHtml}
+          </article>`;
+        }).join("");
+
+      container.querySelectorAll("select, textarea").forEach(el => {
+        el.addEventListener("change", onInput);
+        el.addEventListener("input", onInput);
+      });
+    }
+
+    function onInput(e) {
+      const [phaseKey, idx, key] = e.target.dataset.id.split(".");
+      state[phaseKey][Number(idx)][key] = e.target.value;
+      const card = e.target.closest(".candidate-card");
+      const phase = phaseKey === "phase1" ? PHASE1 : PHASE2;
+      const avg = avgFor(state[phaseKey][Number(idx)], phase);
+      const pill = card.querySelector(".avg-pill span");
+      pill.textContent = avg;
+      pill.className = scoreClass(avg);
+      renderSummary();
+    }
+
+    function renderSummary() {
+      const container = document.getElementById("summary");
+      const rows = [];
+      [["phase1", PHASE1], ["phase2", PHASE2]].forEach(([key, phase]) => {
+        state[key].forEach(cand => {
+          const avg = avgFor(cand, phase);
+          rows.push({ phase: phase.badge, name: cand.name, avg, strengths: cand.strengths, improve: cand.improve, recommend: cand.recommend, notes: cand.final_notes });
+        });
+      });
+
+      const head = `<tr><th>Phase</th><th>Candidate</th><th>Avg</th><th>Strengths</th><th>Areas to improve</th><th>Recommend?</th><th>Final notes</th></tr>`;
+      const body = rows.map(r => `<tr>
+        <td>${r.phase}</td>
+        <td><strong>${r.name}</strong></td>
+        <td class="${scoreClass(r.avg)}">${r.avg}</td>
+        <td>${escapeHtml(r.strengths)}</td>
+        <td>${escapeHtml(r.improve)}</td>
+        <td>${escapeHtml(r.recommend)}</td>
+        <td>${escapeHtml(r.notes)}</td>
+      </tr>`).join("");
+
+      container.innerHTML = `<h2 style="margin-top:0">Summary / Index — All candidates</h2>
+        <div class="summary-table-wrap"><table>${head}${body}</table></div>`;
+    }
+
+    function escapeHtml(s) {
+      return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    }
+
+    function init() {
+      renderPhase("phase1", PHASE1, document.getElementById("phase1"));
+      renderPhase("phase2", PHASE2, document.getElementById("phase2"));
+      renderSummary();
+
+      document.querySelectorAll(".tab").forEach(tab => {
+        tab.addEventListener("click", () => {
+          document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+          document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+          tab.classList.add("active");
+          document.getElementById(tab.dataset.tab).classList.add("active");
+        });
+      });
+
+      document.getElementById("saveBtn").addEventListener("click", saveState);
+      document.getElementById("exportBtn").addEventListener("click", () => {
+        const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "candidate_evaluation.json";
+        a.click();
+      });
+      document.getElementById("shotBtn").addEventListener("click", () => {
+        document.body.classList.toggle("screenshot-mode");
+      });
+      document.getElementById("resetBtn").addEventListener("click", () => {
+        if (confirm("Clear all scores and notes?")) {
+          localStorage.removeItem(STORAGE_KEY);
+          state = loadState();
+          init();
+        }
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>
