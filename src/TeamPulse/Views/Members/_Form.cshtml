@@ -1,0 +1,35 @@
+@model Member
+<div class="row g-3">
+    <div class="col-md-6">
+        <label class="form-label">Full Name</label>
+        <input asp-for="FullName" class="form-control" />
+        <span asp-validation-for="FullName" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">Email</label>
+        <input asp-for="Email" class="form-control" />
+        <span asp-validation-for="Email" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">Role / Title</label>
+        <input asp-for="RoleTitle" class="form-control" placeholder="e.g. Engineer, QA, Designer" />
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">Team</label>
+        <select asp-for="TeamId" asp-items="ViewBag.Teams" class="form-select"><option value="">— Unassigned —</option></select>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">Allocation %</label>
+        <input asp-for="AllocationPercent" type="number" min="0" max="100" class="form-control" />
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">Linked Login Account (optional)</label>
+        <select asp-for="ApplicationUserId" asp-items="ViewBag.Users" class="form-select"><option value="">— None —</option></select>
+    </div>
+    <div class="col-12">
+        <div class="form-check">
+            <input asp-for="IsActive" class="form-check-input" />
+            <label asp-for="IsActive" class="form-check-label">Active</label>
+        </div>
+    </div>
+</div>

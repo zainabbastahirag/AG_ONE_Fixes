@@ -1,0 +1,13 @@
+@model Sprint
+@{
+    ViewData["Title"] = "Delete Sprint";
+}
+<div class="page-head"><div><h1 class="page-title">Delete sprint</h1><div class="page-sub">This action cannot be undone</div></div></div>
+<div class="card-tp" style="max-width:560px"><div class="card-body">
+    <p>Delete <strong>@Model.Name</strong>? Work items will move back to the backlog.</p>
+    <form asp-action="Delete">
+        <input type="hidden" asp-for="Id" />
+        <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Delete</button>
+        <a asp-action="Index" class="btn btn-soft">Cancel</a>
+    </form>
+</div></div>

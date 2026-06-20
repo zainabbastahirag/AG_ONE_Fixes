@@ -1,0 +1,56 @@
+@model Member
+@{
+    ViewData["Title"] = Model.FullName;
+    var avg = Model.Reviews.Any() ? Model.Reviews.Average(r => r.OverallRating) : 0;
+}
+<div class="page-head">
+    <div>
+        <h1 class="page-title"><span class="avatar-sm" style="background:@UiHelpers.ColorFor(Model.FullName);width:34px;height:34px;font-size:14px;margin:0">@UiHelpers.Initials(Model.FullName)</span> @Model.FullName</h1>
+        <div class="page-sub">@(Model.RoleTitle ?? "Team member") · @(Model.Team?.Name ?? "Unassigned")</div>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-controller="Reviews" asp-action="Create" asp-route-memberId="@Model.Id" class="btn btn-primary"><i class="bi bi-star"></i> New Review</a>
+        @if (User.IsInRole("Admin") || User.IsInRole("TechLead"))
+        {
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-soft"><i class="bi bi-pencil"></i></a>
+        }
+        <a asp-action="Index" class="btn btn-soft"><i class="bi bi-arrow-left"></i></a>
+    </div>
+</div>
+
+<div class="row g-4 mb-2">
+    <div class="col-md-3"><div class="card-tp"><div class="card-body"><div class="text-muted-tp small">Allocation</div><div class="fw-semibold fs-5">@Model.AllocationPercent%</div></div></div></div>
+    <div class="col-md-3"><div class="card-tp"><div class="card-body"><div class="text-muted-tp small">Open Items</div><div class="fw-semibold fs-5">@Model.AssignedWorkItems.Count(w => w.Status != WorkItemStatus.Done)</div></div></div></div>
+    <div class="col-md-3"><div class="card-tp"><div class="card-body"><div class="text-muted-tp small">Reviews</div><div class="fw-semibold fs-5">@Model.Reviews.Count</div></div></div></div>
+    <div class="col-md-3"><div class="card-tp"><div class="card-body"><div class="text-muted-tp small">Avg Rating</div><div class="fw-semibold fs-5">@(avg > 0 ? avg.ToString("0.0") : "—") <span class="stars">@(avg > 0 ? UiHelpers.Stars(avg) : "")</span></div></div></div></div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card-tp"><div class="card-body">
+            <h5 class="mb-3">Assigned Work</h5>
+            @foreach (var w in Model.AssignedWorkItems)
+            {
+                var wb = UiHelpers.Badge(w.Status);
+                <div class="d-flex justify-content-between py-2 border-bottom"><span style="font-size:14px">@w.Title <span class="text-muted-tp small">@(w.Sprint?.Name)</span></span><span class="badge-tp @wb.css">@wb.label</span></div>
+            }
+            @if (!Model.AssignedWorkItems.Any()) { <p class="text-muted-tp mb-0">No assigned work.</p> }
+        </div></div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card-tp"><div class="card-body">
+            <h5 class="mb-3">Performance Reviews</h5>
+            @foreach (var r in Model.Reviews.OrderByDescending(r => r.CreatedAt))
+            {
+                <div class="py-2 border-bottom">
+                    <div class="d-flex justify-content-between">
+                        <a asp-controller="Reviews" asp-action="Details" asp-route-id="@r.Id" class="text-decoration-none text-dark fw-semibold" style="font-size:14px">@(r.Sprint?.Name ?? $"Q{r.Quarter} {r.Year}")</a>
+                        <span class="stars">@UiHelpers.Stars(r.OverallRating) <span class="text-muted-tp small">@r.OverallRating.ToString("0.0")</span></span>
+                    </div>
+                    <div class="text-muted-tp small">by @(r.Reviewer?.FullName ?? "—") · @r.CreatedAt.ToString("dd MMM yyyy")</div>
+                </div>
+            }
+            @if (!Model.Reviews.Any()) { <p class="text-muted-tp mb-0">No reviews yet.</p> }
+        </div></div>
+    </div>
+</div>

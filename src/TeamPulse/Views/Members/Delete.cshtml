@@ -1,0 +1,13 @@
+@model Member
+@{
+    ViewData["Title"] = "Delete Resource";
+}
+<div class="page-head"><div><h1 class="page-title">Remove resource</h1><div class="page-sub">This action cannot be undone</div></div></div>
+<div class="card-tp" style="max-width:560px"><div class="card-body">
+    <p>Remove <strong>@Model.FullName</strong>@(Model.Team != null ? $" from {Model.Team.Name}" : "")?</p>
+    <form asp-action="Delete">
+        <input type="hidden" asp-for="Id" />
+        <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Remove</button>
+        <a asp-action="Index" class="btn btn-soft">Cancel</a>
+    </form>
+</div></div>

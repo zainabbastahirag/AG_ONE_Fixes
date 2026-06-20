@@ -1,0 +1,50 @@
+@model List<PerformanceReview>
+@{
+    ViewData["Title"] = "Performance";
+    var members = ViewBag.Members as List<Member> ?? new List<Member>();
+    var sprints = ViewBag.Sprints as List<Sprint> ?? new List<Sprint>();
+    int? selMember = ViewBag.SelectedMember;
+    int? selSprint = ViewBag.SelectedSprint;
+}
+<div class="page-head">
+    <div><h1 class="page-title">Performance Reviews</h1><div class="page-sub">@Model.Count reviews · sprint & quarterly</div></div>
+    <div class="d-flex gap-2">
+        <a asp-action="MyQueue" class="btn btn-soft"><i class="bi bi-inbox"></i> My Queue</a>
+        <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New Review</a>
+    </div>
+</div>
+
+<div class="card-tp mb-3"><div class="card-body py-3">
+    <form method="get" class="d-flex gap-2 align-items-center flex-wrap">
+        <select name="memberId" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+            <option value="">All members</option>
+            @foreach (var m in members) { <option value="@m.Id" selected="@(selMember == m.Id)">@m.FullName</option> }
+        </select>
+        <select name="sprintId" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+            <option value="">All sprints</option>
+            @foreach (var s in sprints) { <option value="@s.Id" selected="@(selSprint == s.Id)">@s.Name</option> }
+        </select>
+        <a asp-action="Index" class="btn btn-sm btn-soft">Reset</a>
+    </form>
+</div></div>
+
+<div class="card-tp"><div class="card-body">
+    <table class="table-tp">
+        <thead><tr><th>Member</th><th>Team</th><th>Period</th><th>Reviewer</th><th>Rating</th><th>Date</th><th></th></tr></thead>
+        <tbody>
+        @foreach (var r in Model)
+        {
+            <tr>
+                <td><a asp-action="Details" asp-route-id="@r.Id" class="fw-semibold text-decoration-none text-dark">@(r.Member?.FullName ?? "—")</a></td>
+                <td>@(r.Member?.Team?.Name ?? "—")</td>
+                <td>@(r.PeriodType == ReviewPeriodType.Sprint ? (r.Sprint?.Name ?? "Sprint") : $"Q{r.Quarter} {r.Year}")</td>
+                <td>@(r.Reviewer?.FullName ?? "—")</td>
+                <td><span class="stars">@UiHelpers.Stars(r.OverallRating)</span> <span class="text-muted-tp small">@r.OverallRating.ToString("0.0")</span></td>
+                <td>@r.CreatedAt.ToString("dd MMM yyyy")</td>
+                <td class="text-end"><a asp-action="Details" asp-route-id="@r.Id" class="btn btn-sm btn-soft"><i class="bi bi-eye"></i></a></td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    @if (!Model.Any()) { <p class="text-muted-tp mb-0 mt-2">No reviews found.</p> }
+</div></div>

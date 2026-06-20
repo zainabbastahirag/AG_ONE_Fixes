@@ -1,0 +1,43 @@
+@model AcceptInviteViewModel
+@{
+    ViewData["Title"] = "Accept Invitation";
+    Layout = "_Layout";
+}
+<div class="auth-wrap">
+    <div class="auth-card">
+        <div class="auth-brand">
+            <span class="brand-mark"><i class="bi bi-activity"></i></span>
+            <div><div class="brand-name" style="color:#0f172a">TeamPulse</div><div class="text-muted-tp" style="font-size:12px">You've been invited</div></div>
+        </div>
+        <p class="text-muted-tp">Set up your account to join as <strong>@Model.Role</strong>@(string.IsNullOrEmpty(Model.TeamName) ? "" : $" for {Model.TeamName}").</p>
+        <form asp-action="AcceptInvite" method="post">
+            <input type="hidden" asp-for="Token" />
+            <div asp-validation-summary="All" class="text-danger small mb-2"></div>
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input asp-for="Email" class="form-control" readonly />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Full Name</label>
+                <input asp-for="FullName" class="form-control" />
+                <span asp-validation-for="FullName" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Job Title</label>
+                <input asp-for="JobTitle" class="form-control" placeholder="e.g. Tech Lead" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <input asp-for="Password" class="form-control" />
+                <span asp-validation-for="Password" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Confirm Password</label>
+                <input asp-for="ConfirmPassword" class="form-control" />
+                <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+            </div>
+            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-check-lg"></i> Join TeamPulse</button>
+        </form>
+    </div>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

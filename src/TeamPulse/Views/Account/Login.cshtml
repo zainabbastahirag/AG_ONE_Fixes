@@ -1,0 +1,38 @@
+@model LoginViewModel
+@{
+    ViewData["Title"] = "Sign in";
+    Layout = "_Layout";
+}
+<div class="auth-wrap">
+    <div class="auth-card">
+        <div class="auth-brand">
+            <span class="brand-mark"><i class="bi bi-activity"></i></span>
+            <div><div class="brand-name" style="color:#0f172a">TeamPulse</div><div class="text-muted-tp" style="font-size:12px">Team & Resource Command Center</div></div>
+        </div>
+        <h4 class="mb-1">Welcome back</h4>
+        <p class="text-muted-tp" style="font-size:14px">Sign in to manage teams, resources, delivery & performance.</p>
+        <form asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger small mb-2"></div>
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input asp-for="Email" class="form-control" placeholder="admin@teampulse.app" />
+                <span asp-validation-for="Email" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <input asp-for="Password" class="form-control" placeholder="••••••••" />
+                <span asp-validation-for="Password" class="text-danger small"></span>
+            </div>
+            <div class="form-check mb-3">
+                <input asp-for="RememberMe" class="form-check-input" />
+                <label asp-for="RememberMe" class="form-check-label">Remember me</label>
+            </div>
+            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-box-arrow-in-right"></i> Sign in</button>
+        </form>
+        <div class="mt-4 p-3" style="background:#f8fafc;border-radius:12px;font-size:12.5px">
+            <div class="text-muted-tp mb-1"><i class="bi bi-info-circle"></i> Demo admin account</div>
+            <code>admin@teampulse.app</code> / <code>Admin#2026</code>
+        </div>
+    </div>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

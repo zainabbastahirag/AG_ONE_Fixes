@@ -1,0 +1,63 @@
+@model List<Member>
+@{
+    ViewData["Title"] = "Resources";
+    var teams = ViewBag.Teams as List<Team> ?? new List<Team>();
+    int? selected = ViewBag.SelectedTeam;
+}
+<div class="page-head">
+    <div>
+        <h1 class="page-title">Resource Manager</h1>
+        <div class="page-sub">@Model.Count people · capacity & allocation</div>
+    </div>
+    @if (User.IsInRole("Admin") || User.IsInRole("TechLead"))
+    {
+        <a asp-action="Create" class="btn btn-primary"><i class="bi bi-person-plus"></i> Add Resource</a>
+    }
+</div>
+
+<div class="card-tp mb-3"><div class="card-body py-3">
+    <form method="get" class="d-flex gap-2 align-items-center flex-wrap">
+        <span class="text-muted-tp small">Filter by team:</span>
+        <a asp-action="Index" class="badge-tp @(selected == null ? "b-blue" : "b-gray") text-decoration-none">All</a>
+        @foreach (var t in teams)
+        {
+            <a asp-action="Index" asp-route-teamId="@t.Id" class="badge-tp @(selected == t.Id ? "b-blue" : "b-gray") text-decoration-none">@t.Name</a>
+        }
+    </form>
+</div></div>
+
+<div class="card-tp"><div class="card-body">
+    <table class="table-tp">
+        <thead><tr><th>Name</th><th>Role</th><th>Team</th><th>Allocation</th><th>Open Items</th><th></th></tr></thead>
+        <tbody>
+        @foreach (var m in Model)
+        {
+            <tr>
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="avatar-sm" style="background:@UiHelpers.ColorFor(m.FullName)">@UiHelpers.Initials(m.FullName)</span>
+                        <a asp-action="Details" asp-route-id="@m.Id" class="fw-semibold text-decoration-none text-dark">@m.FullName</a>
+                    </div>
+                </td>
+                <td>@(m.RoleTitle ?? "—")</td>
+                <td>@(m.Team?.Name ?? "—")</td>
+                <td style="min-width:140px">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="prog flex-grow-1"><span style="width:@(m.AllocationPercent)%"></span></div>
+                        <span class="small">@m.AllocationPercent%</span>
+                    </div>
+                </td>
+                <td>@m.AssignedWorkItems.Count(w => w.Status != WorkItemStatus.Done)</td>
+                <td class="text-end">
+                    @if (User.IsInRole("Admin") || User.IsInRole("TechLead"))
+                    {
+                        <a asp-action="Edit" asp-route-id="@m.Id" class="btn btn-sm btn-soft"><i class="bi bi-pencil"></i></a>
+                    }
+                    <a asp-action="Details" asp-route-id="@m.Id" class="btn btn-sm btn-soft"><i class="bi bi-eye"></i></a>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    @if (!Model.Any()) { <p class="text-muted-tp mb-0 mt-2">No resources found.</p> }
+</div></div>
