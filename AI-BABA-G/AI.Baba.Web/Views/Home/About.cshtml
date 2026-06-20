@@ -1,0 +1,27 @@
+@{ ViewData["Title"] = "About"; Layout = "_PortalLayout"; }
+<section class="portal-page">
+    <h1>About AI BABA-G</h1>
+    <p>BABA-G is a memory-aware AI companion blending the calm wisdom of five mystical personas — The Sage, The Philosopher, The Healer, The Elder, and The Storyteller — with modern AI infrastructure: persistent SQLite memory, vector recall, real-time streaming, and an optional 3D lip-syncing avatar.</p>
+
+    <h2>What's new in this build</h2>
+    <ul>
+        <li><strong>Persistent SQLite memory.</strong> Everything is stored on disk via EF Core. Tables auto-create at startup. Your server RAM stays low.</li>
+        <li><strong>Vector recall.</strong> Each memory is embedded (Ollama's <code>nomic-embed-text</code>, with deterministic local fallback) and recalled by cosine similarity to your current message.</li>
+        <li><strong>Memory-aware Ollama prompt.</strong> Top-K relevant memories are quietly woven into the system prompt so BABA "feels" like it knows you.</li>
+        <li><strong>Sign-up gate.</strong> Guests still get a beautiful chat experience, but persistent memory, saved conversations, and custom personalities & avatars unlock once you register.</li>
+        <li><strong>Real-time streaming.</strong> Replies stream token-by-token via Server-Sent Events for a ChatGPT-like feel — perfect for voice playback that doesn't wait for the whole answer.</li>
+        <li><strong>3D viseme lip-sync avatar.</strong> Toggle on the 3D Robot in settings; mouth shapes are driven by phoneme groups derived from the streamed text.</li>
+        <li><strong>Voice in & out + interrupt.</strong> Web Speech API for STT, browser TTS, continuous-conversation mode, and ChatGPT-style interrupt with Esc or by speaking over BABA.</li>
+        <li><strong>Avatar marketplace.</strong> The five emoji presets, a 3D Robot, photo billboards from your own picture, and GLB model URLs.</li>
+        <li><strong>Custom personalities.</strong> Compose your own system prompt, voice, and preferred avatar/mindset; private or shared.</li>
+        <li><strong>Scalable.</strong> Async streaming, indexed queries, IP rate limiting, Docker-ready, drop-in PostgreSQL upgrade path.</li>
+    </ul>
+
+    <h2>How memory works</h2>
+    <p>When you say things like <em>"remember that…"</em> or <em>"my favorite…"</em>, BABA stores it. You can also add memories manually on the Memory page. Each one is converted to a 256-dim embedding (or higher when an Ollama embedding model is available) and indexed in SQLite. On every reply, BABA fetches the top-6 most relevant memories using:</p>
+    <p style="font-family:monospace; color: var(--gold-dim); font-size: 13px;">score = 0.8 · cosine(q, m) + 0.1 · importance + 0.1 · recencyWeight</p>
+    <p>Frequently relevant memories get their <code>LastUsedAt</code> and <code>UseCount</code> bumped, so they stay sticky.</p>
+
+    <h2>Privacy</h2>
+    <p>Your data lives in a single SQLite file alongside the server. You can delete any memory at any time on the Memory page. Guest users are anonymous and have no persistent memory.</p>
+</section>

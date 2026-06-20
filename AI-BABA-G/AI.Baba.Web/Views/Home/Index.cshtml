@@ -1,0 +1,194 @@
+﻿@{ Layout = null; }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI BABA-G — Ask Anything. Get Wisdom. Anytime.</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌍</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/site.css" asp-append-version="true" />
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+</head>
+<body>
+    <!-- TOP NAV -->
+    <nav class="top-nav">
+        <button class="menu-btn" id="menuLeftBtn" type="button" aria-label="Open avatar panel">☰</button>
+        <div class="nav-brand"><span class="nav-icon">🌍</span> AI GUIDE</div>
+        <div class="nav-center">
+            <h1 class="main-title">AI BABA-G</h1>
+            <p class="main-subtitle">— Ask Anything. Get Wisdom. Anytime. —</p>
+        </div>
+        <div class="nav-right">
+            <a class="nav-link" asp-controller="Home" asp-action="Memory" title="Memory">🧠</a>
+            <a class="nav-link" asp-controller="Home" asp-action="Personalities" title="Personalities">✦</a>
+            <a class="nav-link" asp-controller="Home" asp-action="Avatars" title="Avatars">👤</a>
+            <a class="nav-link" asp-controller="Home" asp-action="About" title="About">i</a>
+            <span id="authPill" class="auth-pill"></span>
+            <span class="lang-badge">🌐 EN</span>
+            <button class="icon-btn" title="Settings" onclick="toggle3D()">⚙️</button>
+            <button class="menu-btn" id="menuRightBtn" type="button" aria-label="Open mindset panel">⚙</button>
+        </div>
+    </nav>
+    <div class="panel-backdrop" id="panelBackdrop"></div>
+
+    <!-- MAIN LAYOUT -->
+    <main class="app-grid">
+        <!-- LEFT: AVATAR SELECTION -->
+        <aside class="panel panel-left">
+            <div class="panel-title"><span>✦</span> CHOOSE AVATAR <span>✦</span></div>
+            <div class="avatar-list">
+                <div class="avatar-card active" data-avatar="sage" onclick="selectAvatar(this)">
+                    <div class="avatar-img sage-img"><div class="avatar-check">✓</div></div>
+                    <div class="avatar-info"><strong>The Sage</strong><small>Wisdom & Guidance</small></div>
+                </div>
+                <div class="avatar-card" data-avatar="philosopher" onclick="selectAvatar(this)">
+                    <div class="avatar-img philosopher-img"></div>
+                    <div class="avatar-info"><strong>The Philosopher</strong><small>Deep Thinker & Analytical</small></div>
+                </div>
+                <div class="avatar-card" data-avatar="healer" onclick="selectAvatar(this)">
+                    <div class="avatar-img healer-img"></div>
+                    <div class="avatar-info"><strong>The Healer</strong><small>Compassion & Inner Peace</small></div>
+                </div>
+                <div class="avatar-card" data-avatar="elder" onclick="selectAvatar(this)">
+                    <div class="avatar-img elder-img"></div>
+                    <div class="avatar-info"><strong>The Elder</strong><small>Tradition & Experience</small></div>
+                </div>
+                <div class="avatar-card" data-avatar="storyteller" onclick="selectAvatar(this)">
+                    <div class="avatar-img storyteller-img"></div>
+                    <div class="avatar-info"><strong>The Storyteller</strong><small>Stories & Inspiration</small></div>
+                </div>
+            </div>
+
+            <div class="panel-title" style="margin-top:18px"><span>✦</span> CONVERSATIONS <span>✦</span></div>
+            <ul id="conversationList" class="conv-list">
+                <li class="conv-empty">Sign in to save chats</li>
+            </ul>
+            <button id="newChatBtn" class="ghost-btn" type="button">+ New chat</button>
+        </aside>
+
+        <!-- CENTER: AVATAR + CHAT -->
+        <section class="center-area">
+            <div class="avatar-display">
+                <div class="avatar-glow"></div>
+                <div class="avatar-main" id="mainAvatar">
+                    <div class="avatar-figure" id="avatarFigure">🧙‍♂️</div>
+                    <canvas id="avatar3d" class="avatar-3d" hidden></canvas>
+                </div>
+                <div class="speech-bubble" id="speechBubble">
+                    <span class="quote-mark">❝</span>
+                    <p id="babaText">Welcome, seeker.<br>Ask me anything, and together<br>we shall explore the answers.</p>
+                    <span class="quote-mark">❞</span>
+                </div>
+                <div class="voice-wave" id="voiceWave">
+                    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                </div>
+                <p class="listening-text" id="listeningText">AI is listening...</p>
+            </div>
+
+            <!-- CHAT INPUT -->
+            <div class="chat-input-area">
+                <div class="chat-bar">
+                    <input type="text" id="chatInput" placeholder="Type your question here..." onkeydown="onInputKey(event)" />
+                    <button class="mic-btn" id="micBtn" onclick="toggleVoice()" title="Voice Input">🎤</button>
+                    <button class="ask-btn" id="askBtn" onclick="askBaba()"><span>ASK</span> ➤</button>
+                    <button class="ask-btn danger" id="stopBtn" onclick="stopAll()" hidden>STOP</button>
+                </div>
+                <div class="topic-tags">
+                    <span class="tag">📝 Life</span>
+                    <span class="tag">🧠 Mindset</span>
+                    <span class="tag">❤️ Relationships</span>
+                    <span class="tag">💼 Career</span>
+                    <span class="tag">🌿 Health</span>
+                    <span class="tag">🕊️ Spirituality</span>
+                    <span class="tag">+ More</span>
+                </div>
+                <div class="hint" id="guestHint">
+                    Chatting as a guest — <a asp-controller="Home" asp-action="Auth">sign up</a> so BABA can remember you across sessions.
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT: MINDSET + SETTINGS -->
+        <aside class="panel panel-right">
+            <div class="panel-title"><span>✦</span> CHOOSE MINDSET <span>✦</span></div>
+            <div class="mindset-list">
+                <div class="mindset-card active" data-mindset="balanced" onclick="selectMindset(this)">
+                    <div class="mindset-icon">⚖️</div>
+                    <div class="mindset-info"><strong>Balanced</strong><small>Well-rounded perspective for all situations</small></div>
+                    <div class="mindset-check">✓</div>
+                </div>
+                <div class="mindset-card" data-mindset="logical" onclick="selectMindset(this)">
+                    <div class="mindset-icon">🧩</div>
+                    <div class="mindset-info"><strong>Logical</strong><small>Clear, rational and practical advice</small></div>
+                </div>
+                <div class="mindset-card" data-mindset="spiritual" onclick="selectMindset(this)">
+                    <div class="mindset-icon">🪷</div>
+                    <div class="mindset-info"><strong>Spiritual</strong><small>Soulful, mindful and inner growth</small></div>
+                </div>
+                <div class="mindset-card" data-mindset="motivational" onclick="selectMindset(this)">
+                    <div class="mindset-icon">🔥</div>
+                    <div class="mindset-info"><strong>Motivational</strong><small>Encouraging and uplifting guidance</small></div>
+                </div>
+                <div class="mindset-card" data-mindset="creative" onclick="selectMindset(this)">
+                    <div class="mindset-icon">🎨</div>
+                    <div class="mindset-info"><strong>Creative</strong><small>Innovative and out-of-the-box ideas</small></div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <div class="settings-title">🎚️ VOICE & SETTINGS</div>
+                <div class="setting-row">
+                    <label>Voice</label>
+                    <select id="voiceSelect" class="setting-select">
+                        <option>Calm & Warm</option>
+                        <option>Deep & Wise</option>
+                        <option>Gentle</option>
+                    </select>
+                </div>
+                <div class="setting-row">
+                    <label>Speed</label>
+                    <input type="range" id="speedRange" min="0.5" max="2" step="0.1" value="1" class="setting-range" />
+                    <span id="speedVal">1.0x</span>
+                </div>
+                <div class="setting-row">
+                    <label>3D</label>
+                    <label class="toggle-mini"><input type="checkbox" id="toggle3DBox" onchange="toggle3D()" /><span>robot avatar</span></label>
+                </div>
+                <div class="setting-row">
+                    <label>Live</label>
+                    <label class="toggle-mini"><input type="checkbox" id="continuousMode" /><span>continuous voice</span></label>
+                </div>
+                <div class="setting-row">
+                    <label>Stream</label>
+                    <label class="toggle-mini"><input type="checkbox" id="streamMode" checked /><span>realtime tokens</span></label>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="app-footer">
+        <span class="footer-quote">❝ <em>Wisdom is not from one place. It is everywhere.</em> ❞</span>
+        <span class="footer-links">
+            <a asp-controller="Home" asp-action="About">About</a>
+            <a asp-controller="Home" asp-action="Terms">Terms</a>
+            <a asp-controller="Home" asp-action="Memory">Memory</a>
+            <a asp-controller="Home" asp-action="Personalities">Personalities</a>
+            <a asp-controller="Home" asp-action="Avatars">Avatars</a>
+        </span>
+    </footer>
+
+    <script type="module" src="/js/app.js" asp-append-version="true"></script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+@{ Layout = null; var title = ViewData["Title"] as string ?? "AI Baba-G"; }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@title — AI BABA-G</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌍</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/site.css" asp-append-version="true" />
+</head>
+<body style="overflow:auto">
+    <nav class="portal-topbar">
+        <a asp-controller="Home" asp-action="Index">🌍 AI BABA-G</a>
+        <a asp-controller="Home" asp-action="Index">Chat</a>
+        <a asp-controller="Home" asp-action="Memory">Memory</a>
+        <a asp-controller="Home" asp-action="Personalities">Personalities</a>
+        <a asp-controller="Home" asp-action="Avatars">Avatars</a>
+        <a asp-controller="Home" asp-action="About">About</a>
+        <a asp-controller="Home" asp-action="Terms">Terms</a>
+        <span style="margin-left:auto"><a asp-controller="Home" asp-action="Auth" id="portalAuthLink">Sign in / up</a></span>
+    </nav>
+    @RenderBody()
+    <script>
+        try {
+            const u = JSON.parse(localStorage.getItem('baba_user') || 'null');
+            const link = document.getElementById('portalAuthLink');
+            if (u && link) { link.textContent = u.displayName || u.username; link.href = '#'; link.title = 'Signed in'; }
+        } catch (_) { }
+    </script>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>
