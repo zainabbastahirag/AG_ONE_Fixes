@@ -1,0 +1,21 @@
+@model Release
+@{
+    ViewData["Title"] = "Edit Release";
+}
+<div class="page-head">
+    <div><h1 class="page-title">Edit @Model.Name</h1><div class="page-sub">Update release details</div></div>
+    <a asp-action="Index" class="btn btn-soft"><i class="bi bi-arrow-left"></i> Back</a>
+</div>
+<div class="card-tp" style="max-width:780px"><div class="card-body">
+    <form asp-action="Edit">
+        <input type="hidden" asp-for="Id" />
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <partial name="_Form" model="Model" />
+        <div class="mt-4 d-flex gap-2">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Save</button>
+            <a asp-action="Index" class="btn btn-soft">Cancel</a>
+            <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-soft text-danger ms-auto"><i class="bi bi-trash"></i> Delete</a>
+        </div>
+    </form>
+</div></div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

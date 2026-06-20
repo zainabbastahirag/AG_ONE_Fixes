@@ -1,0 +1,128 @@
+@model DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+<div class="page-head">
+    <div>
+        <h1 class="page-title">Command Center</h1>
+        <div class="page-sub">Live overview of teams, resources, delivery and performance</div>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-controller="WorkItems" asp-action="Board" class="btn btn-soft"><i class="bi bi-kanban"></i> Work Board</a>
+        <a asp-controller="Reviews" asp-action="MyQueue" class="btn btn-primary"><i class="bi bi-star"></i> My Review Queue</a>
+    </div>
+</div>
+
+<div class="kpi-grid">
+    <div class="kpi">
+        <div class="kpi-icon" style="background:linear-gradient(135deg,#4f46e5,#8b5cf6)"><i class="bi bi-diagram-3"></i></div>
+        <div class="kpi-value">@Model.TotalTeams</div>
+        <div class="kpi-label">Teams / Products</div>
+    </div>
+    <div class="kpi">
+        <div class="kpi-icon" style="background:linear-gradient(135deg,#0891b2,#06b6d4)"><i class="bi bi-people"></i></div>
+        <div class="kpi-value">@Model.TotalMembers</div>
+        <div class="kpi-label">Active Resources</div>
+    </div>
+    <div class="kpi">
+        <div class="kpi-icon" style="background:linear-gradient(135deg,#16a34a,#22c55e)"><i class="bi bi-check2-circle"></i></div>
+        <div class="kpi-value">@Model.TeamsOnTrack</div>
+        <div class="kpi-label">Teams On Track</div>
+    </div>
+    <div class="kpi">
+        <div class="kpi-icon" style="background:linear-gradient(135deg,#ea580c,#f59e0b)"><i class="bi bi-exclamation-triangle"></i></div>
+        <div class="kpi-value">@(Model.TeamsAtRisk + Model.TeamsOnHold)</div>
+        <div class="kpi-label">At Risk / On Hold</div>
+    </div>
+    <div class="kpi">
+        <div class="kpi-icon" style="background:linear-gradient(135deg,#7c3aed,#a855f7)"><i class="bi bi-kanban"></i></div>
+        <div class="kpi-value">@Model.OpenWorkItems</div>
+        <div class="kpi-label">Open Work Items</div>
+    </div>
+    <div class="kpi">
+        <div class="kpi-icon" style="background:linear-gradient(135deg,#e11d48,#f43f5e)"><i class="bi bi-rocket-takeoff"></i></div>
+        <div class="kpi-value">@Model.UpcomingReleases</div>
+        <div class="kpi-label">Upcoming Releases</div>
+    </div>
+    <div class="kpi">
+        <div class="kpi-icon" style="background:linear-gradient(135deg,#f59e0b,#fbbf24)"><i class="bi bi-star"></i></div>
+        <div class="kpi-value">@(Model.AverageRating > 0 ? Model.AverageRating.ToString("0.0") : "—")</div>
+        <div class="kpi-label">Avg Performance</div>
+    </div>
+    <div class="kpi">
+        <div class="kpi-icon" style="background:linear-gradient(135deg,#475569,#64748b)"><i class="bi bi-clipboard-check"></i></div>
+        <div class="kpi-value">@Model.ReviewsThisQuarter</div>
+        <div class="kpi-label">Reviews Logged</div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card-tp">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Team Overview</h5>
+                    <a asp-controller="Teams" asp-action="Index" class="btn btn-sm btn-soft">View all</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table-tp">
+                        <thead>
+                            <tr><th>Team / Product</th><th>Tech Lead</th><th>Size</th><th>Current Focus</th><th>Status</th></tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var t in Model.Teams)
+                        {
+                            var b = UiHelpers.Badge(t.Status);
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="dot" style="background:@t.ColorHex"></span>
+                                        <a asp-controller="Teams" asp-action="Details" asp-route-id="@t.Id" class="fw-semibold text-decoration-none text-dark">@t.Name</a>
+                                    </div>
+                                </td>
+                                <td>@(t.TechLead?.FullName ?? "—")</td>
+                                <td>@t.Members.Count</td>
+                                <td><span class="text-muted-tp" style="font-size:13px">@(t.CurrentFocus ?? "—")</span></td>
+                                <td><span class="badge-tp @b.css">@b.label</span></td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card-tp mb-4">
+            <div class="card-body">
+                <h5 class="mb-3">Delivery Pipeline</h5>
+                <div class="d-flex justify-content-between mb-2"><span class="text-muted-tp">Completed work items</span><strong>@Model.CompletedWorkItems</strong></div>
+                <div class="d-flex justify-content-between mb-2"><span class="text-muted-tp">Open work items</span><strong>@Model.OpenWorkItems</strong></div>
+                <div class="d-flex justify-content-between"><span class="text-muted-tp">Blocked</span><strong class="text-danger">@Model.BlockedWorkItems</strong></div>
+            </div>
+        </div>
+        <div class="card-tp">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Releases</h5>
+                    <a asp-controller="Releases" asp-action="Index" class="btn btn-sm btn-soft">All</a>
+                </div>
+                @if (!Model.RecentReleases.Any())
+                {
+                    <p class="text-muted-tp mb-0">No releases yet.</p>
+                }
+                @foreach (var r in Model.RecentReleases)
+                {
+                    var rb = UiHelpers.Badge(r.Status);
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                        <div>
+                            <div class="fw-semibold" style="font-size:14px">@r.Name <span class="text-muted-tp">@r.Version</span></div>
+                            <div class="text-muted-tp" style="font-size:12px">@(r.Team?.Name ?? "—")</div>
+                        </div>
+                        <span class="badge-tp @rb.css">@rb.label</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

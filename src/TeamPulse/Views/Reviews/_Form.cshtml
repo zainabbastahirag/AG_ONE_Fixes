@@ -1,0 +1,66 @@
+@model PerformanceReview
+@{
+    string[] ratingLabels = { "1 · Needs focus", "2 · Developing", "3 · Meets", "4 · Strong", "5 · Outstanding" };
+}
+<div class="row g-3">
+    <div class="col-md-6">
+        <label class="form-label">Member</label>
+        <select asp-for="MemberId" asp-items="ViewBag.Members" class="form-select"><option value="">— Select member —</option></select>
+        <span asp-validation-for="MemberId" class="text-danger small"></span>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Period Type</label>
+        <select asp-for="PeriodType" asp-items="Html.GetEnumSelectList<ReviewPeriodType>()" class="form-select"></select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Sprint</label>
+        <select asp-for="SprintId" asp-items="ViewBag.Sprints" class="form-select"><option value="">— None —</option></select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Quarter</label>
+        <input asp-for="Quarter" type="number" min="1" max="4" class="form-control" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Year</label>
+        <input asp-for="Year" type="number" class="form-control" />
+    </div>
+</div>
+
+<h6 class="mt-4 mb-2 text-muted-tp" style="text-transform:uppercase;letter-spacing:.5px;font-size:12px">Ratings (1–5)</h6>
+<div class="row g-3">
+    <div class="col-md-4">
+        <label asp-for="RatingDelivery" class="form-label"></label>
+        <select asp-for="RatingDelivery" class="form-select">@for (int i = 1; i <= 5; i++) { <option value="@i">@ratingLabels[i-1]</option> }</select>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="RatingQuality" class="form-label"></label>
+        <select asp-for="RatingQuality" class="form-select">@for (int i = 1; i <= 5; i++) { <option value="@i">@ratingLabels[i-1]</option> }</select>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="RatingCollaboration" class="form-label"></label>
+        <select asp-for="RatingCollaboration" class="form-select">@for (int i = 1; i <= 5; i++) { <option value="@i">@ratingLabels[i-1]</option> }</select>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="RatingOwnership" class="form-label"></label>
+        <select asp-for="RatingOwnership" class="form-select">@for (int i = 1; i <= 5; i++) { <option value="@i">@ratingLabels[i-1]</option> }</select>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="RatingInnovation" class="form-label"></label>
+        <select asp-for="RatingInnovation" class="form-select">@for (int i = 1; i <= 5; i++) { <option value="@i">@ratingLabels[i-1]</option> }</select>
+    </div>
+</div>
+
+<div class="row g-3 mt-1">
+    <div class="col-12">
+        <label asp-for="Strengths" class="form-label"></label>
+        <textarea asp-for="Strengths" class="form-control" rows="2" placeholder="What went well"></textarea>
+    </div>
+    <div class="col-12">
+        <label asp-for="Improvements" class="form-label"></label>
+        <textarea asp-for="Improvements" class="form-control" rows="2" placeholder="Areas to improve"></textarea>
+    </div>
+    <div class="col-12">
+        <label asp-for="Comments" class="form-label"></label>
+        <textarea asp-for="Comments" class="form-control" rows="2"></textarea>
+    </div>
+</div>

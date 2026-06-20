@@ -1,0 +1,44 @@
+@model WorkItem
+<div class="row g-3">
+    <div class="col-12">
+        <label class="form-label">Title</label>
+        <input asp-for="Title" class="form-control" />
+        <span asp-validation-for="Title" class="text-danger small"></span>
+    </div>
+    <div class="col-12">
+        <label class="form-label">Description</label>
+        <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Team</label>
+        <select asp-for="TeamId" asp-items="ViewBag.Teams" class="form-select"><option value="">— None —</option></select>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Assignee</label>
+        <select asp-for="AssignedMemberId" asp-items="ViewBag.Members" class="form-select"><option value="">— Unassigned —</option></select>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Sprint</label>
+        <select asp-for="SprintId" asp-items="ViewBag.Sprints" class="form-select"><option value="">— Backlog —</option></select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Status</label>
+        <select asp-for="Status" asp-items="Html.GetEnumSelectList<WorkItemStatus>()" class="form-select"></select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Priority</label>
+        <select asp-for="Priority" asp-items="Html.GetEnumSelectList<WorkItemPriority>()" class="form-select"></select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Type</label>
+        <select asp-for="Type" asp-items="Html.GetEnumSelectList<WorkItemType>()" class="form-select"></select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Points</label>
+        <input asp-for="StoryPoints" type="number" min="0" class="form-control" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Due Date</label>
+        <input asp-for="DueDate" type="date" class="form-control" />
+    </div>
+</div>

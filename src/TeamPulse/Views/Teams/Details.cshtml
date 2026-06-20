@@ -1,0 +1,75 @@
+@model Team
+@{
+    ViewData["Title"] = Model.Name;
+    var b = UiHelpers.Badge(Model.Status);
+}
+<div class="page-head">
+    <div>
+        <h1 class="page-title"><span class="dot" style="width:18px;height:18px;background:@Model.ColorHex"></span> @Model.Name</h1>
+        <div class="page-sub">@(Model.Description ?? Model.CurrentFocus)</div>
+    </div>
+    <div class="d-flex gap-2">
+        @if (User.IsInRole("Admin") || User.IsInRole("TechLead"))
+        {
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-soft"><i class="bi bi-pencil"></i> Edit</a>
+        }
+        @if (User.IsInRole("Admin"))
+        {
+            <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-soft text-danger"><i class="bi bi-trash"></i></a>
+        }
+        <a asp-action="Index" class="btn btn-soft"><i class="bi bi-arrow-left"></i> Back</a>
+    </div>
+</div>
+
+<div class="row g-4 mb-2">
+    <div class="col-md-3"><div class="card-tp"><div class="card-body"><div class="text-muted-tp small">Status</div><span class="badge-tp @b.css mt-1">@b.label</span></div></div></div>
+    <div class="col-md-3"><div class="card-tp"><div class="card-body"><div class="text-muted-tp small">Tech Lead</div><div class="fw-semibold">@(Model.TechLead?.FullName ?? "Unassigned")</div></div></div></div>
+    <div class="col-md-3"><div class="card-tp"><div class="card-body"><div class="text-muted-tp small">Members</div><div class="fw-semibold">@Model.Members.Count</div></div></div></div>
+    <div class="col-md-3"><div class="card-tp"><div class="card-body"><div class="text-muted-tp small">Open Work Items</div><div class="fw-semibold">@Model.WorkItems.Count(w => w.Status != WorkItemStatus.Done)</div></div></div></div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.KeyBlocker))
+{
+    <div class="alert alert-warning"><i class="bi bi-cone-striped"></i> <strong>Key blocker:</strong> @Model.KeyBlocker</div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card-tp"><div class="card-body">
+            <h5 class="mb-3">Members</h5>
+            <table class="table-tp">
+                <thead><tr><th>Name</th><th>Role</th><th>Alloc.</th></tr></thead>
+                <tbody>
+                @foreach (var m in Model.Members)
+                {
+                    <tr>
+                        <td><div class="d-flex align-items-center gap-2"><span class="avatar-sm" style="background:@UiHelpers.ColorFor(m.FullName)">@UiHelpers.Initials(m.FullName)</span><a asp-controller="Members" asp-action="Details" asp-route-id="@m.Id" class="text-decoration-none text-dark">@m.FullName</a></div></td>
+                        <td>@(m.RoleTitle ?? "—")</td>
+                        <td>@m.AllocationPercent%</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div></div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card-tp mb-4"><div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3"><h5 class="mb-0">Work Items</h5><a asp-controller="WorkItems" asp-action="Board" asp-route-teamId="@Model.Id" class="btn btn-sm btn-soft">Board</a></div>
+            @foreach (var w in Model.WorkItems.Take(6))
+            {
+                var wb = UiHelpers.Badge(w.Status);
+                <div class="d-flex justify-content-between py-2 border-bottom"><span style="font-size:14px">@w.Title</span><span class="badge-tp @wb.css">@wb.label</span></div>
+            }
+            @if (!Model.WorkItems.Any()) { <p class="text-muted-tp mb-0">No work items.</p> }
+        </div></div>
+        <div class="card-tp"><div class="card-body">
+            <h5 class="mb-3">Releases</h5>
+            @foreach (var r in Model.Releases)
+            {
+                var rb = UiHelpers.Badge(r.Status);
+                <div class="d-flex justify-content-between py-2 border-bottom"><span style="font-size:14px">@r.Name @r.Version</span><span class="badge-tp @rb.css">@rb.label</span></div>
+            }
+            @if (!Model.Releases.Any()) { <p class="text-muted-tp mb-0">No releases.</p> }
+        </div></div>
+    </div>
+</div>

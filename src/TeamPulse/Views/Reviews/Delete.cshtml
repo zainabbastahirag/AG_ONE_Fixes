@@ -1,0 +1,13 @@
+@model PerformanceReview
+@{
+    ViewData["Title"] = "Delete Review";
+}
+<div class="page-head"><div><h1 class="page-title">Delete review</h1><div class="page-sub">This action cannot be undone</div></div></div>
+<div class="card-tp" style="max-width:560px"><div class="card-body">
+    <p>Delete the review for <strong>@(Model.Member?.FullName)</strong> by @(Model.Reviewer?.FullName ?? "—")?</p>
+    <form asp-action="Delete">
+        <input type="hidden" asp-for="Id" />
+        <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Delete</button>
+        <a asp-action="Index" class="btn btn-soft">Cancel</a>
+    </form>
+</div></div>

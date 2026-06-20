@@ -1,0 +1,27 @@
+@model Sprint
+@{
+    ViewData["Title"] = Model.Name;
+}
+<div class="page-head">
+    <div><h1 class="page-title">@Model.Name @if (Model.IsActive) { <span class="badge-tp b-green">Active</span> }</h1><div class="page-sub">@Model.StartDate.ToString("dd MMM") – @Model.EndDate.ToString("dd MMM yyyy") · @Model.Goal</div></div>
+    <a asp-action="Index" class="btn btn-soft"><i class="bi bi-arrow-left"></i> Back</a>
+</div>
+<div class="card-tp"><div class="card-body">
+    <h5 class="mb-3">Work Items (@Model.WorkItems.Count)</h5>
+    <table class="table-tp">
+        <thead><tr><th>Title</th><th>Team</th><th>Assignee</th><th>Status</th></tr></thead>
+        <tbody>
+        @foreach (var w in Model.WorkItems)
+        {
+            var sb = UiHelpers.Badge(w.Status);
+            <tr>
+                <td><a asp-controller="WorkItems" asp-action="Details" asp-route-id="@w.Id" class="text-decoration-none text-dark fw-semibold">@w.Title</a></td>
+                <td>@(w.Team?.Name ?? "—")</td>
+                <td>@(w.AssignedMember?.FullName ?? "—")</td>
+                <td><span class="badge-tp @sb.css">@sb.label</span></td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    @if (!Model.WorkItems.Any()) { <p class="text-muted-tp mb-0">No work items in this sprint.</p> }
+</div></div>

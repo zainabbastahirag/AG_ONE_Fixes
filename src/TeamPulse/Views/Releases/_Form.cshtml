@@ -1,0 +1,36 @@
+@model Release
+<div class="row g-3">
+    <div class="col-md-8">
+        <label class="form-label">Release Name</label>
+        <input asp-for="Name" class="form-control" />
+        <span asp-validation-for="Name" class="text-danger small"></span>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Version</label>
+        <input asp-for="Version" class="form-control" placeholder="1.0.0" />
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Team</label>
+        <select asp-for="TeamId" asp-items="ViewBag.Teams" class="form-select"><option value="">— None —</option></select>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Status</label>
+        <select asp-for="Status" asp-items="Html.GetEnumSelectList<ReleaseStatus>()" class="form-select"></select>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Progress %</label>
+        <input asp-for="ProgressPercent" type="number" min="0" max="100" class="form-control" />
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">Target Date</label>
+        <input asp-for="TargetDate" type="date" class="form-control" />
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">Released Date</label>
+        <input asp-for="ReleasedDate" type="date" class="form-control" />
+    </div>
+    <div class="col-12">
+        <label class="form-label">Notes</label>
+        <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+    </div>
+</div>

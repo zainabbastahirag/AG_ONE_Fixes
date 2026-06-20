@@ -1,0 +1,30 @@
+@model List<Release>
+@{
+    ViewData["Title"] = "Releases";
+    var canManage = User.IsInRole("Admin") || User.IsInRole("TechLead");
+}
+<div class="page-head">
+    <div><h1 class="page-title">Release Manager</h1><div class="page-sub">@Model.Count releases tracked</div></div>
+    @if (canManage) { <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New Release</a> }
+</div>
+<div class="card-tp"><div class="card-body">
+    <table class="table-tp">
+        <thead><tr><th>Release</th><th>Team</th><th>Status</th><th>Progress</th><th>Target</th><th>Released</th><th></th></tr></thead>
+        <tbody>
+        @foreach (var r in Model)
+        {
+            var b = UiHelpers.Badge(r.Status);
+            <tr>
+                <td><a asp-action="Details" asp-route-id="@r.Id" class="fw-semibold text-decoration-none text-dark">@r.Name</a> <span class="text-muted-tp">@r.Version</span></td>
+                <td>@(r.Team?.Name ?? "—")</td>
+                <td><span class="badge-tp @b.css">@b.label</span></td>
+                <td style="min-width:140px"><div class="d-flex align-items-center gap-2"><div class="prog flex-grow-1"><span style="width:@(r.ProgressPercent)%"></span></div><span class="small">@r.ProgressPercent%</span></div></td>
+                <td>@(r.TargetDate?.ToString("dd MMM yyyy") ?? "—")</td>
+                <td>@(r.ReleasedDate?.ToString("dd MMM yyyy") ?? "—")</td>
+                <td class="text-end">@if (canManage) { <a asp-action="Edit" asp-route-id="@r.Id" class="btn btn-sm btn-soft"><i class="bi bi-pencil"></i></a> }</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    @if (!Model.Any()) { <p class="text-muted-tp mb-0 mt-2">No releases.</p> }
+</div></div>

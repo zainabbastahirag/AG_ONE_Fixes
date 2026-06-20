@@ -1,0 +1,12 @@
+@{
+    ViewData["Title"] = "Invitation Invalid";
+    Layout = "_Layout";
+}
+<div class="auth-wrap">
+    <div class="auth-card text-center">
+        <span class="brand-mark mx-auto mb-3" style="background:linear-gradient(135deg,#e11d48,#f43f5e)"><i class="bi bi-x-octagon"></i></span>
+        <h4>Invitation not valid</h4>
+        <p class="text-muted-tp">This invitation link is invalid, has expired, or has already been used.</p>
+        <a asp-controller="Account" asp-action="Login" class="btn btn-primary">Go to sign in</a>
+    </div>
+</div>

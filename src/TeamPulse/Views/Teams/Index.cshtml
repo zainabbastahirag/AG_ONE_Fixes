@@ -1,0 +1,70 @@
+@model List<Team>
+@{
+    ViewData["Title"] = "Teams";
+}
+<div class="page-head">
+    <div>
+        <h1 class="page-title">Teams & Products</h1>
+        <div class="page-sub">@Model.Count teams across the portfolio</div>
+    </div>
+    @if (User.IsInRole("Admin") || User.IsInRole("TechLead"))
+    {
+        <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New Team</a>
+    }
+</div>
+
+<div class="row g-4">
+@foreach (var t in Model)
+{
+    var b = UiHelpers.Badge(t.Status);
+    <div class="col-md-6 col-xl-4">
+        <div class="card-tp h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="dot" style="width:16px;height:16px;background:@t.ColorHex"></span>
+                        <h5 class="mb-0">@t.Name</h5>
+                    </div>
+                    <span class="badge-tp @b.css">@b.label</span>
+                </div>
+                <div class="text-muted-tp mb-3" style="font-size:13px;min-height:38px">@(t.CurrentFocus ?? "No focus set")</div>
+
+                @if (!string.IsNullOrEmpty(t.KeyBlocker))
+                {
+                    <div class="badge-tp b-red mb-3" style="white-space:normal;text-align:left"><i class="bi bi-cone-striped"></i> @t.KeyBlocker</div>
+                }
+
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div>
+                        <div class="text-muted-tp" style="font-size:11px;text-transform:uppercase">Tech Lead</div>
+                        <div class="fw-semibold" style="font-size:14px">@(t.TechLead?.FullName ?? "Unassigned")</div>
+                    </div>
+                    <div class="text-end">
+                        <div class="text-muted-tp" style="font-size:11px;text-transform:uppercase">Members</div>
+                        <div class="fw-semibold" style="font-size:14px">@t.Members.Count</div>
+                    </div>
+                </div>
+
+                <div class="d-flex">
+                    @foreach (var m in t.Members.Take(6))
+                    {
+                        <span class="avatar-sm" style="background:@UiHelpers.ColorFor(m.FullName)" title="@m.FullName">@UiHelpers.Initials(m.FullName)</span>
+                    }
+                    @if (t.Members.Count > 6)
+                    {
+                        <span class="avatar-sm" style="background:#94a3b8">+@(t.Members.Count - 6)</span>
+                    }
+                </div>
+
+                <div class="d-flex gap-2 mt-3">
+                    <a asp-action="Details" asp-route-id="@t.Id" class="btn btn-sm btn-soft flex-grow-1">Details</a>
+                    @if (User.IsInRole("Admin") || User.IsInRole("TechLead"))
+                    {
+                        <a asp-action="Edit" asp-route-id="@t.Id" class="btn btn-sm btn-soft"><i class="bi bi-pencil"></i></a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+</div>

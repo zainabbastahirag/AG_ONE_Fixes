@@ -1,0 +1,53 @@
+@model List<ReviewerAssignment>
+@{
+    ViewData["Title"] = "Reviewer Setup";
+}
+<div class="page-head">
+    <div><h1 class="page-title">Reviewer Setup</h1><div class="page-sub">Assign reviewers to members for sprint & quarterly reviews</div></div>
+</div>
+
+<div class="card-tp mb-4" style="max-width:900px"><div class="card-body">
+    <h5 class="mb-3">Assign a reviewer</h5>
+    <form asp-action="AssignReviewer" method="post" class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label">Reviewer</label>
+            <select name="reviewerUserId" asp-items="ViewBag.Reviewers" class="form-select"><option value="">— Select —</option></select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Member to review</label>
+            <select name="memberId" asp-items="ViewBag.MemberOptions" class="form-select"><option value="">— Select —</option></select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Note</label>
+            <input name="note" class="form-control" placeholder="Optional" />
+        </div>
+        <div class="col-md-1">
+            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-plus-lg"></i></button>
+        </div>
+    </form>
+</div></div>
+
+<div class="card-tp"><div class="card-body">
+    <h5 class="mb-3">Current assignments (@Model.Count)</h5>
+    <table class="table-tp">
+        <thead><tr><th>Reviewer</th><th>Reviews</th><th>Team</th><th>Note</th><th></th></tr></thead>
+        <tbody>
+        @foreach (var a in Model)
+        {
+            <tr>
+                <td class="fw-semibold">@(a.Reviewer?.FullName)</td>
+                <td>@(a.Member?.FullName)</td>
+                <td>@(a.Member?.Team?.Name ?? "—")</td>
+                <td class="text-muted-tp">@(a.Note ?? "—")</td>
+                <td class="text-end">
+                    <form asp-action="RemoveAssignment" method="post" onsubmit="return confirm('Remove this assignment?')">
+                        <input type="hidden" name="id" value="@a.Id" />
+                        <button type="submit" class="btn btn-sm btn-soft text-danger"><i class="bi bi-x-lg"></i></button>
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    @if (!Model.Any()) { <p class="text-muted-tp mb-0">No assignments yet.</p> }
+</div></div>

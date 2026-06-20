@@ -1,0 +1,29 @@
+@model WorkItem
+@{
+    ViewData["Title"] = Model.Title;
+    var sb = UiHelpers.Badge(Model.Status);
+    var pb = UiHelpers.Badge(Model.Priority);
+    var canManage = User.IsInRole("Admin") || User.IsInRole("TechLead");
+}
+<div class="page-head">
+    <div><h1 class="page-title">@Model.Title</h1><div class="page-sub">@(Model.Team?.Name ?? "No team") · @Model.Type</div></div>
+    <div class="d-flex gap-2">
+        @if (canManage) { <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-soft"><i class="bi bi-pencil"></i> Edit</a> }
+        <a asp-action="Board" class="btn btn-soft"><i class="bi bi-arrow-left"></i></a>
+    </div>
+</div>
+<div class="card-tp" style="max-width:820px"><div class="card-body">
+    <div class="d-flex gap-2 mb-3">
+        <span class="badge-tp @sb.css">@sb.label</span>
+        <span class="badge-tp @pb.css">@pb.label</span>
+        @if (Model.StoryPoints > 0) { <span class="badge-tp b-blue">@Model.StoryPoints points</span> }
+    </div>
+    <p>@(string.IsNullOrEmpty(Model.Description) ? "No description." : Model.Description)</p>
+    <hr />
+    <div class="row">
+        <div class="col-md-3"><div class="text-muted-tp small">Assignee</div><div class="fw-semibold">@(Model.AssignedMember?.FullName ?? "—")</div></div>
+        <div class="col-md-3"><div class="text-muted-tp small">Sprint</div><div class="fw-semibold">@(Model.Sprint?.Name ?? "Backlog")</div></div>
+        <div class="col-md-3"><div class="text-muted-tp small">Due</div><div class="fw-semibold">@(Model.DueDate?.ToString("dd MMM yyyy") ?? "—")</div></div>
+        <div class="col-md-3"><div class="text-muted-tp small">Created</div><div class="fw-semibold">@Model.CreatedAt.ToString("dd MMM yyyy")</div></div>
+    </div>
+</div></div>

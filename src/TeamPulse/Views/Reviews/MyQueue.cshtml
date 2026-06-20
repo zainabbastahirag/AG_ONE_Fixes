@@ -1,0 +1,47 @@
+@model List<ReviewerAssignment>
+@{
+    ViewData["Title"] = "My Review Queue";
+    var authored = ViewBag.Authored as List<PerformanceReview> ?? new List<PerformanceReview>();
+}
+<div class="page-head">
+    <div><h1 class="page-title">My Review Queue</h1><div class="page-sub">Members assigned to you and reviews you've submitted</div></div>
+    <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New Review</a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card-tp"><div class="card-body">
+            <h5 class="mb-3">Assigned to me (@Model.Count)</h5>
+            @foreach (var a in Model)
+            {
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="avatar-sm" style="background:@UiHelpers.ColorFor(a.Member?.FullName);margin:0">@UiHelpers.Initials(a.Member?.FullName)</span>
+                        <div>
+                            <div class="fw-semibold" style="font-size:14px">@(a.Member?.FullName)</div>
+                            <div class="text-muted-tp small">@(a.Member?.Team?.Name ?? "—")</div>
+                        </div>
+                    </div>
+                    <a asp-action="Create" asp-route-memberId="@a.MemberId" class="btn btn-sm btn-primary">Review</a>
+                </div>
+            }
+            @if (!Model.Any()) { <p class="text-muted-tp mb-0">No members assigned to you yet. An admin can assign reviewees in Reviewer Setup.</p> }
+        </div></div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card-tp"><div class="card-body">
+            <h5 class="mb-3">Reviews I've submitted (@authored.Count)</h5>
+            @foreach (var r in authored)
+            {
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <div>
+                        <a asp-action="Details" asp-route-id="@r.Id" class="fw-semibold text-decoration-none text-dark" style="font-size:14px">@(r.Member?.FullName)</a>
+                        <div class="text-muted-tp small">@(r.Sprint?.Name ?? $"Q{r.Quarter} {r.Year}") · @r.CreatedAt.ToString("dd MMM yyyy")</div>
+                    </div>
+                    <span class="stars">@UiHelpers.Stars(r.OverallRating)</span>
+                </div>
+            }
+            @if (!authored.Any()) { <p class="text-muted-tp mb-0">You haven't submitted any reviews yet.</p> }
+        </div></div>
+    </div>
+</div>

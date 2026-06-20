@@ -1,0 +1,40 @@
+@model Team
+<div class="row g-3">
+    <div class="col-md-8">
+        <label class="form-label">Team / Product Name</label>
+        <input asp-for="Name" class="form-control" />
+        <span asp-validation-for="Name" class="text-danger small"></span>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Status</label>
+        <select asp-for="Status" asp-items="Html.GetEnumSelectList<TeamStatus>()" class="form-select"></select>
+    </div>
+    <div class="col-12">
+        <label class="form-label">Description</label>
+        <input asp-for="Description" class="form-control" />
+    </div>
+    <div class="col-12">
+        <label class="form-label">Current Focus</label>
+        <textarea asp-for="CurrentFocus" class="form-control" rows="2"></textarea>
+    </div>
+    <div class="col-12">
+        <label class="form-label">Key Blocker</label>
+        <textarea asp-for="KeyBlocker" class="form-control" rows="2"></textarea>
+    </div>
+    <div class="col-md-5">
+        <label class="form-label">Tech Lead</label>
+        <select asp-for="TechLeadUserId" asp-items="ViewBag.Leads" class="form-select">
+            <option value="">— Unassigned —</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Color</label>
+        <input asp-for="ColorHex" type="color" class="form-control form-control-color" style="width:100%" />
+    </div>
+    <div class="col-md-4 d-flex align-items-end">
+        <div class="form-check">
+            <input asp-for="IsExternal" class="form-check-input" />
+            <label asp-for="IsExternal" class="form-check-label">External project</label>
+        </div>
+    </div>
+</div>

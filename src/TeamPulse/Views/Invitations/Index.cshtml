@@ -1,0 +1,75 @@
+@model List<Invitation>
+@{
+    ViewData["Title"] = "Invitations";
+}
+<div class="page-head">
+    <div><h1 class="page-title">Invitations</h1><div class="page-sub">Invite tech leads and reviewers to TeamPulse</div></div>
+</div>
+
+<div class="card-tp mb-4" style="max-width:900px"><div class="card-body">
+    <h5 class="mb-3">Send an invitation</h5>
+    <form asp-action="Create" method="post" class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label">Email</label>
+            <input name="Email" type="email" class="form-control" placeholder="name@company.com" required />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Role</label>
+            <select name="Role" asp-items="ViewBag.Roles" class="form-select"></select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Assign as lead of</label>
+            <select name="TeamId" asp-items="ViewBag.Teams" class="form-select"><option value="">— None —</option></select>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-send"></i> Invite</button>
+        </div>
+        <div class="col-12">
+            <input name="Message" class="form-control" placeholder="Optional welcome message" />
+        </div>
+    </form>
+</div></div>
+
+<div class="card-tp"><div class="card-body">
+    <h5 class="mb-3">Invitations (@Model.Count)</h5>
+    <table class="table-tp">
+        <thead><tr><th>Email</th><th>Role</th><th>Team</th><th>Status</th><th>Invite Link</th><th></th></tr></thead>
+        <tbody>
+        @foreach (var i in Model)
+        {
+            var link = Url.Action("AcceptInvite", "Account", new { token = i.Token }, Context.Request.Scheme);
+            var sb = i.Status switch {
+                InvitationStatus.Pending => ("b-amber", "Pending"),
+                InvitationStatus.Accepted => ("b-green", "Accepted"),
+                _ => ("b-gray", "Revoked")
+            };
+            <tr>
+                <td class="fw-semibold">@i.Email</td>
+                <td><span class="badge-tp b-blue">@i.Role</span></td>
+                <td>@(i.Team?.Name ?? "—")</td>
+                <td><span class="badge-tp @sb.Item1">@sb.Item2</span></td>
+                <td>
+                    @if (i.Status == InvitationStatus.Pending)
+                    {
+                        <div class="input-group input-group-sm" style="max-width:360px">
+                            <input class="form-control" value="@link" readonly id="lnk-@i.Id" style="font-size:11px" />
+                            <button class="btn btn-soft" type="button" onclick="navigator.clipboard.writeText(document.getElementById('lnk-@i.Id').value)"><i class="bi bi-clipboard"></i></button>
+                        </div>
+                    }
+                    else { <span class="text-muted-tp">—</span> }
+                </td>
+                <td class="text-end">
+                    @if (i.Status == InvitationStatus.Pending)
+                    {
+                        <form asp-action="Revoke" method="post" onsubmit="return confirm('Revoke this invitation?')">
+                            <input type="hidden" name="id" value="@i.Id" />
+                            <button type="submit" class="btn btn-sm btn-soft text-danger">Revoke</button>
+                        </form>
+                    }
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    @if (!Model.Any()) { <p class="text-muted-tp mb-0">No invitations yet.</p> }
+</div></div>

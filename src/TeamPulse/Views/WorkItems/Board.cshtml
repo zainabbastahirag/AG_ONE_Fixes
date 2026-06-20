@@ -1,0 +1,86 @@
+@model List<WorkItem>
+@{
+    ViewData["Title"] = "Work Tracker";
+    var teams = ViewBag.Teams as List<Team> ?? new List<Team>();
+    var sprints = ViewBag.Sprints as List<Sprint> ?? new List<Sprint>();
+    int? selTeam = ViewBag.SelectedTeam;
+    int? selSprint = ViewBag.SelectedSprint;
+    var statuses = Enum.GetValues<WorkItemStatus>();
+    var canManage = User.IsInRole("Admin") || User.IsInRole("TechLead");
+}
+<div class="page-head">
+    <div>
+        <h1 class="page-title">Work Tracker</h1>
+        <div class="page-sub">@Model.Count items on the board</div>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Index" class="btn btn-soft"><i class="bi bi-list-ul"></i> List</a>
+        @if (canManage)
+        {
+            <a asp-action="Create" asp-route-teamId="@selTeam" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New Item</a>
+        }
+    </div>
+</div>
+
+<div class="card-tp mb-3"><div class="card-body py-3">
+    <form method="get" class="d-flex gap-2 align-items-center flex-wrap">
+        <select name="teamId" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+            <option value="">All teams</option>
+            @foreach (var t in teams)
+            {
+                <option value="@t.Id" selected="@(selTeam == t.Id)">@t.Name</option>
+            }
+        </select>
+        <select name="sprintId" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+            <option value="">All sprints</option>
+            @foreach (var s in sprints)
+            {
+                <option value="@s.Id" selected="@(selSprint == s.Id)">@s.Name</option>
+            }
+        </select>
+        <a asp-action="Board" class="btn btn-sm btn-soft">Reset</a>
+    </form>
+</div></div>
+
+<div class="kanban">
+@foreach (var st in statuses)
+{
+    var col = Model.Where(w => w.Status == st).ToList();
+    var b = UiHelpers.Badge(st);
+    <div class="kanban-col">
+        <h6><span>@b.label</span><span class="badge-tp @b.css">@col.Count</span></h6>
+        @foreach (var w in col)
+        {
+            var pb = UiHelpers.Badge(w.Priority);
+            <div class="kanban-card">
+                <div class="title"><a asp-action="Details" asp-route-id="@w.Id" class="text-decoration-none text-dark">@w.Title</a></div>
+                <div class="d-flex gap-1 mb-2 flex-wrap">
+                    <span class="badge-tp @pb.css" style="font-size:10px">@pb.label</span>
+                    <span class="badge-tp b-gray" style="font-size:10px">@w.Type</span>
+                    @if (w.StoryPoints > 0) { <span class="badge-tp b-blue" style="font-size:10px">@w.StoryPoints pt</span> }
+                </div>
+                <div class="meta">
+                    <span class="text-muted-tp" style="font-size:11px">@(w.Team?.Name ?? "—")</span>
+                    @if (w.AssignedMember != null)
+                    {
+                        <span class="avatar-sm" style="background:@UiHelpers.ColorFor(w.AssignedMember.FullName);margin:0" title="@w.AssignedMember.FullName">@UiHelpers.Initials(w.AssignedMember.FullName)</span>
+                    }
+                </div>
+                @if (canManage)
+                {
+                    <form asp-action="UpdateStatus" method="post" class="mt-2">
+                        <input type="hidden" name="id" value="@w.Id" />
+                        <select name="status" class="form-select form-select-sm" style="font-size:11px" onchange="this.form.submit()">
+                            @foreach (var s2 in statuses)
+                            {
+                                <option value="@s2" selected="@(s2 == w.Status)">@UiHelpers.Badge(s2).label</option>
+                            }
+                        </select>
+                    </form>
+                }
+            </div>
+        }
+        @if (!col.Any()) { <div class="text-muted-tp small px-1">—</div> }
+    </div>
+}
+</div>

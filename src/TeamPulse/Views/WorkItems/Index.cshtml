@@ -1,0 +1,34 @@
+@model List<WorkItem>
+@{
+    ViewData["Title"] = "Work Items";
+    var canManage = User.IsInRole("Admin") || User.IsInRole("TechLead");
+}
+<div class="page-head">
+    <div><h1 class="page-title">Work Items</h1><div class="page-sub">@Model.Count items</div></div>
+    <div class="d-flex gap-2">
+        <a asp-action="Board" class="btn btn-soft"><i class="bi bi-kanban"></i> Board</a>
+        @if (canManage) { <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New Item</a> }
+    </div>
+</div>
+<div class="card-tp"><div class="card-body">
+    <table class="table-tp">
+        <thead><tr><th>Title</th><th>Team</th><th>Assignee</th><th>Sprint</th><th>Priority</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        @foreach (var w in Model)
+        {
+            var sb = UiHelpers.Badge(w.Status);
+            var pb = UiHelpers.Badge(w.Priority);
+            <tr>
+                <td><a asp-action="Details" asp-route-id="@w.Id" class="fw-semibold text-decoration-none text-dark">@w.Title</a></td>
+                <td>@(w.Team?.Name ?? "—")</td>
+                <td>@(w.AssignedMember?.FullName ?? "—")</td>
+                <td>@(w.Sprint?.Name ?? "—")</td>
+                <td><span class="badge-tp @pb.css">@pb.label</span></td>
+                <td><span class="badge-tp @sb.css">@sb.label</span></td>
+                <td class="text-end">@if (canManage) { <a asp-action="Edit" asp-route-id="@w.Id" class="btn btn-sm btn-soft"><i class="bi bi-pencil"></i></a> }</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    @if (!Model.Any()) { <p class="text-muted-tp mb-0 mt-2">No work items.</p> }
+</div></div>

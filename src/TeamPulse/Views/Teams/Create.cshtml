@@ -1,0 +1,19 @@
+@model Team
+@{
+    ViewData["Title"] = "New Team";
+}
+<div class="page-head">
+    <div><h1 class="page-title">New Team</h1><div class="page-sub">Add a team or product to the portfolio</div></div>
+    <a asp-action="Index" class="btn btn-soft"><i class="bi bi-arrow-left"></i> Back</a>
+</div>
+<div class="card-tp" style="max-width:760px"><div class="card-body">
+    <form asp-action="Create">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <partial name="_Form" model="Model" />
+        <div class="mt-4 d-flex gap-2">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Create Team</button>
+            <a asp-action="Index" class="btn btn-soft">Cancel</a>
+        </div>
+    </form>
+</div></div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }
