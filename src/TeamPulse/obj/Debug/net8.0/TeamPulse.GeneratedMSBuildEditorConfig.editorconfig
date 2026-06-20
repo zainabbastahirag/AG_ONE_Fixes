@@ -1,0 +1,227 @@
+is_global = true
+build_property.TargetFramework = net8.0
+build_property.TargetPlatformMinVersion = 
+build_property.UsingMicrosoftNETSdkWeb = true
+build_property.ProjectTypeGuids = 
+build_property.InvariantGlobalization = 
+build_property.PlatformNeutralAssembly = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property._SupportedPlatformList = Linux,macOS,Windows
+build_property.RootNamespace = TeamPulse
+build_property.RootNamespace = TeamPulse
+build_property.ProjectDir = /workspace/src/TeamPulse/
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = 
+build_property.RazorLangVersion = 8.0
+build_property.SupportLocalizedComponentNames = 
+build_property.GenerateRazorMetadataSourceChecksumAttributes = 
+build_property.MSBuildProjectDirectory = /workspace/src/TeamPulse
+build_property._RazorSourceGeneratorDebug = 
+
+[/workspace/src/TeamPulse/Areas/Identity/Pages/_ViewStart.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXMvSWRlbnRpdHkvUGFnZXMvX1ZpZXdTdGFydC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Account/AcceptInvite.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvQWNjb3VudC9BY2NlcHRJbnZpdGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Account/InviteInvalid.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvQWNjb3VudC9JbnZpdGVJbnZhbGlkLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Account/Login.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvQWNjb3VudC9Mb2dpbi5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Dashboard/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvRGFzaGJvYXJkL0luZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Home/AccessDenied.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvSG9tZS9BY2Nlc3NEZW5pZWQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Invitations/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvSW52aXRhdGlvbnMvSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Members/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvTWVtYmVycy9DcmVhdGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Members/Delete.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvTWVtYmVycy9EZWxldGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Members/Details.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvTWVtYmVycy9EZXRhaWxzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Members/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvTWVtYmVycy9FZGl0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Members/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvTWVtYmVycy9JbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Members/_Form.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvTWVtYmVycy9fRm9ybS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Releases/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvUmVsZWFzZXMvQ3JlYXRlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Releases/Delete.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvUmVsZWFzZXMvRGVsZXRlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Releases/Details.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvUmVsZWFzZXMvRGV0YWlscy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Releases/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvUmVsZWFzZXMvRWRpdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Releases/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvUmVsZWFzZXMvSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Releases/_Form.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvUmVsZWFzZXMvX0Zvcm0uY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Reviews/Assignments.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvUmV2aWV3cy9Bc3NpZ25tZW50cy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Reviews/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvUmV2aWV3cy9DcmVhdGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Reviews/Delete.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvUmV2aWV3cy9EZWxldGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Reviews/Details.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvUmV2aWV3cy9EZXRhaWxzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Reviews/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvUmV2aWV3cy9FZGl0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Reviews/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvUmV2aWV3cy9JbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Reviews/MyQueue.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvUmV2aWV3cy9NeVF1ZXVlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Reviews/_Form.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvUmV2aWV3cy9fRm9ybS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Shared/Error.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvU2hhcmVkL0Vycm9yLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Shared/_LoginPartial.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvU2hhcmVkL19Mb2dpblBhcnRpYWwuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Shared/_ValidationScriptsPartial.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvU2hhcmVkL19WYWxpZGF0aW9uU2NyaXB0c1BhcnRpYWwuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Sprints/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvU3ByaW50cy9DcmVhdGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Sprints/Delete.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvU3ByaW50cy9EZWxldGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Sprints/Details.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvU3ByaW50cy9EZXRhaWxzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Sprints/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvU3ByaW50cy9FZGl0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Sprints/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvU3ByaW50cy9JbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Sprints/_Form.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvU3ByaW50cy9fRm9ybS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Teams/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvVGVhbXMvQ3JlYXRlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Teams/Delete.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvVGVhbXMvRGVsZXRlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Teams/Details.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvVGVhbXMvRGV0YWlscy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Teams/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvVGVhbXMvRWRpdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Teams/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvVGVhbXMvSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Teams/_Form.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvVGVhbXMvX0Zvcm0uY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/WorkItems/Board.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvV29ya0l0ZW1zL0JvYXJkLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/WorkItems/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvV29ya0l0ZW1zL0NyZWF0ZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/WorkItems/Delete.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvV29ya0l0ZW1zL0RlbGV0ZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/WorkItems/Details.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvV29ya0l0ZW1zL0RldGFpbHMuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/WorkItems/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvV29ya0l0ZW1zL0VkaXQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/WorkItems/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvV29ya0l0ZW1zL0luZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/WorkItems/_Form.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvV29ya0l0ZW1zL19Gb3JtLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/_ViewImports.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvX1ZpZXdJbXBvcnRzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/_ViewStart.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvX1ZpZXdTdGFydC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/workspace/src/TeamPulse/Views/Shared/_Layout.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvU2hhcmVkL19MYXlvdXQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = b-hia469ryd6
