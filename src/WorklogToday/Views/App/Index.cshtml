@@ -20,6 +20,8 @@
             <i class="bi bi-search" style="color:var(--muted)"></i>
             <input id="noteSearch" placeholder="Search notes…" />
         </div>
+        <button class="btn btn-ghost btn-sm" id="newStickyBtn" type="button" title="Open a desktop sticky note"><i class="bi bi-window-plus"></i> New sticky</button>
+        <button class="btn btn-amber btn-sm" id="installBtn" type="button" style="display:none" title="Install worklog.today on your desktop"><i class="bi bi-download"></i> Install app</button>
         <div class="app-user">
             <span class="avatar" style="background:@Model.User.AvatarColor" title="@Model.User.FullName">@Initials(Model.User.FullName)</span>
             <div style="line-height:1.1">

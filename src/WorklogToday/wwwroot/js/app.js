@@ -35,8 +35,24 @@
         if (name === 'reports') loadReports();
     }
     $$('.app-tab').forEach(b => b.addEventListener('click', () => activateTab(b.dataset.tab)));
-    const savedTab = localStorage.getItem('wt_tab');
+    const urlTab = new URLSearchParams(location.search).get('tab');
+    const savedTab = urlTab || localStorage.getItem('wt_tab');
     if (savedTab && $('#pane-' + savedTab)) activateTab(savedTab);
+
+    // ---------- PWA install ----------
+    let deferredPrompt = null;
+    const installBtn = document.getElementById('installBtn');
+    window.addEventListener('beforeinstallprompt', e => {
+        e.preventDefault(); deferredPrompt = e;
+        if (installBtn) installBtn.style.display = '';
+    });
+    if (installBtn) installBtn.addEventListener('click', async () => {
+        if (!deferredPrompt) { toast('Use your browser menu → Install app'); return; }
+        deferredPrompt.prompt();
+        await deferredPrompt.userChoice;
+        deferredPrompt = null; installBtn.style.display = 'none';
+    });
+    window.addEventListener('appinstalled', () => { if (installBtn) installBtn.style.display = 'none'; toast('Installed! Find worklog on your desktop.'); });
 
     // ---------- Composer ----------
     const composer = $('#composer'), cTitle = $('#cTitle'), cBody = $('#cBody'), cLabels = $('#cLabels');
@@ -87,6 +103,7 @@
           <div class="ntext">${esc(n.content)}</div>
           ${labels.length ? `<div class="nlabels">${labels.map(l => `<span class="nlabel">${esc(l)}</span>`).join('')}</div>` : ''}
           <div class="nactions">
+            <button class="mini-btn" type="button" data-act="popout" title="Pop out as desktop sticky"><i class="bi bi-window-stack"></i></button>
             <button class="mini-btn" type="button" data-act="edit" title="Edit"><i class="bi bi-pencil"></i></button>
             <button class="mini-btn" type="button" data-act="archive" title="Archive"><i class="bi bi-archive"></i></button>
             <button class="mini-btn" type="button" data-act="delete" title="Delete"><i class="bi bi-trash"></i></button>
@@ -130,6 +147,8 @@
                 if (!confirm('Delete this note?')) return;
                 await api('DELETE', `/api/notes/${id}`);
                 card.remove(); refreshSections(); toast('Deleted');
+            } else if (act === 'popout') {
+                openSticky(id);
             } else if (act === 'edit') {
                 openNoteModal(card);
             }
@@ -155,6 +174,18 @@
             noteModal.classList.remove('open'); toast('Saved');
         } catch (e) { toast(e.message); }
     });
+
+    // ---------- Sticky pop-out windows ----------
+    let stickyX = 40, stickyY = 40;
+    function openSticky(id) {
+        const w = 300, h = 330;
+        const feat = `popup=yes,width=${w},height=${h},left=${window.screenX + stickyX},top=${window.screenY + stickyY},menubar=no,toolbar=no,location=no,status=no`;
+        window.open('/sticky/' + id, 'sticky-' + id, feat);
+        stickyX = (stickyX + 36) % 320; stickyY = (stickyY + 30) % 260;
+    }
+    const newStickyBtn = document.getElementById('newStickyBtn');
+    if (newStickyBtn) newStickyBtn.addEventListener('click', () =>
+        window.open('/sticky/new', 'sticky-new-' + Date.now(), 'popup=yes,width=300,height=330'));
 
     // ---------- Search ----------
     $('#noteSearch').addEventListener('input', e => {

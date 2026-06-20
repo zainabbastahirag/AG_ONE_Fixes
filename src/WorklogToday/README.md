@@ -16,6 +16,11 @@ EF Core code-first migrations, and ASP.NET Core Identity.
 - **AI where feasible (no slowdown)** — `AiService` prefers a local **Ollama** model when reachable
   (short timeout) and otherwise falls back to an **instant local engine**, so the UI never blocks.
   Configure via `appsettings.json` → `Ai` (`Provider`: `Auto` | `Ollama` | `Local`).
+- **Installable desktop app (PWA)** — `manifest.webmanifest` + service worker (offline app-shell) + in-app
+  **Install** button. Once installed, worklog runs in its own desktop window with an icon.
+- **Desktop sticky notes** — every note has a **Pop out** button that opens it as a small floating
+  sticky window (`/sticky/{id}`) with live auto-save and color switching. Use **New sticky** to spawn a
+  blank one. Scatter several across your desktop; installed as a PWA they behave like native stickies.
 - **Auto-seeded demo data** on first run.
 
 ## Run
