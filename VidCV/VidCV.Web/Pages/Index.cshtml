@@ -1,0 +1,291 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "VidCV.live — Professional Intro Videos from Your CV";
+}
+
+<!-- HERO SECTION -->
+<section class="hero-section">
+    <div class="hero-content">
+        <div class="hero-badge">🤖 AI-Powered • 100% Free • No Sign-up • No Limits</div>
+        <h1>Turn Your CV Into a <span class="gradient-text">Professional Intro Video</span></h1>
+        <p class="hero-subtitle">Upload your CV or paste your LinkedIn — AI writes your script, FFmpeg renders stunning animated slides. Completely free, forever.</p>
+        <div class="hero-stats">
+            <div class="stat">
+                <span class="stat-num">@Model.TotalVideosGenerated</span>
+                <span class="stat-label">Videos Created</span>
+            </div>
+            <div class="stat">
+                <span class="stat-num">30s</span>
+                <span class="stat-label">Video Length</span>
+            </div>
+            <div class="stat">
+                <span class="stat-num">HD</span>
+                <span class="stat-label">1280×720</span>
+            </div>
+        </div>
+        <a href="#generate" class="btn-hero">Create Your Video — It's Free</a>
+    </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-section">
+    <h2>How It Works</h2>
+    <div class="steps-grid">
+        <div class="step-card">
+            <div class="step-icon">📄</div>
+            <div class="step-num">1</div>
+            <h3>Upload or Enter</h3>
+            <p>Upload your CV (PDF) or manually enter your details</p>
+        </div>
+        <div class="step-card">
+            <div class="step-icon">🤖</div>
+            <div class="step-num">2</div>
+            <h3>AI Writes Your Script</h3>
+            <p>Ollama AI crafts a compelling professional narrative from your CV data</p>
+        </div>
+        <div class="step-card">
+            <div class="step-icon">🎬</div>
+            <div class="step-num">3</div>
+            <h3>Stunning Video Created</h3>
+            <p>Animated slides, smooth transitions, gradient backgrounds — HD quality ready to share</p>
+        </div>
+    </div>
+</section>
+
+<!-- GENERATE SECTION -->
+<section id="generate" class="generate-section">
+    <h2>Generate Your Video</h2>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-error">
+            <span>⚠️</span> @Model.ErrorMessage
+        </div>
+    }
+
+    @if (Model.GeneratedProfile != null && !string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="result-section">
+            <div class="alert alert-success">
+                <span>✅</span> @Model.SuccessMessage
+            </div>
+            <div class="video-result">
+                <div class="video-wrapper">
+                    <video controls autoplay class="result-video">
+                        <source src="@Model.GeneratedProfile.VideoUrl" type="video/mp4">
+                        Your browser does not support video playback.
+                    </video>
+                </div>
+                <div class="video-details">
+                    <h3>@Model.GeneratedProfile.FullName</h3>
+                    <p class="video-jobtitle">@Model.GeneratedProfile.JobTitle</p>
+                    <div class="video-script">
+                        <h4>Generated Script</h4>
+                        <pre>@Model.GeneratedProfile.VideoScript</pre>
+                    </div>
+                    <a href="@Model.GeneratedProfile.VideoUrl" download class="btn-download">
+                        ⬇ Download Video (MP4)
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+
+    <form method="post" enctype="multipart/form-data" class="generate-form">
+        <!-- Input Mode Tabs -->
+        <div class="input-tabs">
+            <button type="button" class="tab-btn active" data-mode="upload" onclick="switchMode('upload')">
+                📄 Upload CV
+            </button>
+            <button type="button" class="tab-btn" data-mode="manual" onclick="switchMode('manual')">
+                ✏️ Enter Manually
+            </button>
+            <button type="button" class="tab-btn" data-mode="linkedin" onclick="switchMode('linkedin')">
+                🔗 LinkedIn URL
+            </button>
+        </div>
+
+        <input type="hidden" name="InputMode" id="inputMode" value="upload" />
+
+        <!-- Upload CV Tab -->
+        <div id="tab-upload" class="tab-content active">
+            <div class="upload-zone" id="dropZone">
+                <div class="upload-icon">📄</div>
+                <p>Drag & drop your CV here or <strong>click to browse</strong></p>
+                <p class="upload-hint">PDF format • Max 10MB</p>
+                <input type="file" name="CvFile" id="cvFileInput" accept=".pdf" class="file-input" />
+                <div id="fileName" class="file-name"></div>
+            </div>
+        </div>
+
+        <!-- Manual Entry Tab -->
+        <div id="tab-manual" class="tab-content">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Full Name *</label>
+                    <input type="text" name="FullName" placeholder="John Smith" class="form-input" />
+                </div>
+                <div class="form-group">
+                    <label>Email *</label>
+                    <input type="email" name="Email" placeholder="john@example.com" class="form-input" />
+                </div>
+                <div class="form-group">
+                    <label>Job Title</label>
+                    <input type="text" name="JobTitle" placeholder="Senior Software Engineer" class="form-input" />
+                </div>
+                <div class="form-group">
+                    <label>LinkedIn URL</label>
+                    <input type="url" name="LinkedInUrl" placeholder="https://linkedin.com/in/yourprofile" class="form-input" />
+                </div>
+                <div class="form-group full-width">
+                    <label>Professional Summary</label>
+                    <textarea name="Summary" rows="3" placeholder="Brief summary of your professional background..." class="form-input"></textarea>
+                </div>
+                <div class="form-group full-width">
+                    <label>Key Skills</label>
+                    <textarea name="Skills" rows="2" placeholder="C#, .NET, Azure, SQL Server, React, Leadership..." class="form-input"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- LinkedIn Tab -->
+        <div id="tab-linkedin" class="tab-content">
+            <div class="linkedin-input-wrapper">
+                <div class="linkedin-icon">🔗</div>
+                <div class="form-group full-width">
+                    <label>LinkedIn Profile URL</label>
+                    <input type="url" name="LinkedInUrl" placeholder="https://linkedin.com/in/yourprofile" class="form-input" />
+                </div>
+                <p class="linkedin-note">Paste your LinkedIn URL and fill in the basic details below for best results</p>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Full Name *</label>
+                        <input type="text" name="FullName" placeholder="Your Name" class="form-input" />
+                    </div>
+                    <div class="form-group">
+                        <label>Email *</label>
+                        <input type="email" name="Email" placeholder="your@email.com" class="form-input" />
+                    </div>
+                    <div class="form-group">
+                        <label>Job Title</label>
+                        <input type="text" name="JobTitle" placeholder="Your Current Role" class="form-input" />
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Key Skills</label>
+                        <textarea name="Skills" rows="2" placeholder="Comma-separated skills..." class="form-input"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Template Selection -->
+        <div class="template-section">
+            <h3>Choose a Video Style</h3>
+            <div class="template-grid">
+                @foreach (var tmpl in Model.Templates)
+                {
+                    <label class="template-card">
+                        <input type="radio" name="TemplateId" value="@tmpl.Id"
+                               @(tmpl.Id == Model.Templates.FirstOrDefault()?.Id ? "checked" : "") />
+                        <div class="template-preview" style="background: @tmpl.BackgroundColor; border: 2px solid @tmpl.AccentColor;">
+                            <div class="template-accent" style="background: @tmpl.AccentColor;"></div>
+                            <span style="color: @tmpl.TextColor; font-size: 14px; font-weight: 600;">Aa</span>
+                        </div>
+                        <span class="template-name">@tmpl.Name</span>
+                    </label>
+                }
+            </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="submit-section">
+            <button type="submit" class="btn-generate" id="generateBtn">
+                <span class="btn-text">🎬 Generate My Intro Video</span>
+                <span class="btn-loading" style="display:none;">⏳ Generating... Please wait</span>
+            </button>
+            <p class="submit-note">AI script + animated video • Takes 15–45 seconds • No account needed • 100% free</p>
+        </div>
+    </form>
+</section>
+
+<!-- RECENT VIDEOS -->
+@if (Model.RecentVideos.Any())
+{
+    <section class="recent-section">
+        <h2>Recently Created</h2>
+        <div class="recent-grid">
+            @foreach (var video in Model.RecentVideos)
+            {
+                <div class="recent-card">
+                    <video class="recent-video" preload="metadata">
+                        <source src="@video.VideoUrl" type="video/mp4">
+                    </video>
+                    <div class="recent-info">
+                        <strong>@video.FullName</strong>
+                        <span>@video.JobTitle</span>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+}
+
+<!-- FOOTER -->
+<footer class="site-footer">
+    <div class="footer-content">
+        <div class="footer-brand">
+            <span class="footer-logo">🎬 VidCV.live</span>
+            <p>Free professional intro videos for everyone</p>
+        </div>
+        <div class="footer-links">
+            <p>Built with .NET 8 • AI by Ollama • Video by FFmpeg • 100% Free & Open</p>
+        </div>
+    </div>
+</footer>
+
+@section Scripts {
+<script>
+    function switchMode(mode) {
+        document.getElementById('inputMode').value = mode;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(`tab-${mode}`).classList.add('active');
+    }
+
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('cvFileInput');
+    const fileNameDiv = document.getElementById('fileName');
+
+    if (dropZone) {
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                fileNameDiv.textContent = '✅ ' + e.dataTransfer.files[0].name;
+            }
+        });
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length) {
+                fileNameDiv.textContent = '✅ ' + fileInput.files[0].name;
+            }
+        });
+    }
+
+    const form = document.querySelector('.generate-form');
+    if (form) {
+        form.addEventListener('submit', () => {
+            const btn = document.getElementById('generateBtn');
+            btn.querySelector('.btn-text').style.display = 'none';
+            btn.querySelector('.btn-loading').style.display = 'inline';
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
+        });
+    }
+</script>
+}

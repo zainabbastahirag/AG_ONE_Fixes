@@ -1,0 +1,11 @@
+bin/
+obj/
+publish/
+*.user
+*.suo
+.vs/
+wwwroot/uploads/*
+wwwroot/videos/*
+!wwwroot/uploads/.gitkeep
+!wwwroot/videos/.gitkeep
+logs/
