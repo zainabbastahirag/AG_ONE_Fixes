@@ -1,0 +1,12 @@
+@{ ViewData["Title"] = "Admin"; }
+<div class="dashboard-layout">
+    <div class="container">
+        <h1 class="mb-4">Admin</h1>
+        <div class="row g-4">
+            <div class="col-md-3"><a asp-action="Users" class="glass-card d-block text-decoration-none text-white h-100"><h5>Users</h5><p class="text-muted-lnk mb-0 small">Manage accounts</p></a></div>
+            <div class="col-md-3"><a asp-action="Posts" class="glass-card d-block text-decoration-none text-white h-100"><h5>Posts</h5><p class="text-muted-lnk mb-0 small">All generated posts</p></a></div>
+            <div class="col-md-3"><a asp-action="EmailLogs" class="glass-card d-block text-decoration-none text-white h-100"><h5>Email Logs</h5><p class="text-muted-lnk mb-0 small">Delivery history</p></a></div>
+            <div class="col-md-3"><a asp-action="Settings" class="glass-card d-block text-decoration-none text-white h-100"><h5>Settings</h5><p class="text-muted-lnk mb-0 small">System config</p></a></div>
+        </div>
+    </div>
+</div>

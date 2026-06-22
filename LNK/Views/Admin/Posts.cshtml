@@ -1,0 +1,12 @@
+@model IEnumerable<Post>
+@{ ViewData["Title"] = "Posts"; }
+<div class="dashboard-layout"><div class="container">
+<h1 class="mb-4"><a asp-action="Index" class="text-muted-lnk">Admin</a> / Posts</h1>
+<div class="glass-card table-responsive">
+<table class="table table-dark admin-table mb-0">
+<thead><tr><th>Title</th><th>User</th><th>Status</th><th>Generated</th></tr></thead>
+<tbody>
+@foreach (var p in Model) {
+<tr><td>@p.Title</td><td>@p.User?.Email</td><td>@p.Status</td><td>@p.GeneratedAt</td></tr>
+}
+</tbody></table></div></div></div>

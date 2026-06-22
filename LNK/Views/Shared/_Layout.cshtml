@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - LNK</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/lnk.css" asp-append-version="true" />
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+</head>
+<body class="lnk-body" data-toast="@TempData["Toast"]">
+    <nav class="lnk-nav navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand lnk-brand" asp-controller="Home" asp-action="Index">LNK</a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#lnkNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="lnkNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    @if (!User.Identity?.IsAuthenticated ?? true)
+                    {
+                        <li class="nav-item"><a class="nav-link lnk-nav-link" href="/#features">Features</a></li>
+                        <li class="nav-item"><a class="nav-link lnk-nav-link" href="/#email-preview">Emails</a></li>
+                        <li class="nav-item"><a class="nav-link lnk-nav-link" href="/#pricing">Pricing</a></li>
+                        <li class="nav-item"><a class="nav-link lnk-nav-link" href="/#faq">FAQ</a></li>
+                    }
+                    else
+                    {
+                        <li class="nav-item d-lg-none"><a class="nav-link lnk-nav-link" asp-controller="Dashboard" asp-action="Index">Dashboard</a></li>
+                        <li class="nav-item d-lg-none"><a class="nav-link lnk-nav-link" asp-controller="Schedule" asp-action="Index">Schedule</a></li>
+                    }
+                </ul>
+                <ul class="navbar-nav align-items-lg-center gap-2">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <li class="nav-item d-none d-lg-block"><span class="nav-pill">● Live</span></li>
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <li class="nav-item"><a class="nav-link lnk-nav-link" asp-controller="Admin" asp-action="Index">Admin</a></li>
+                        }
+                        <li class="nav-item">
+                            <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-lnk-ghost btn-lnk-sm">Sign out</button>
+                            </form>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="nav-item"><a class="nav-link lnk-nav-link" asp-controller="Account" asp-action="Login">Sign in</a></li>
+                        <li class="nav-item"><a class="btn btn-lnk-primary btn-lnk-sm" asp-controller="Account" asp-action="Register">Start Free</a></li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        @RenderBody()
+    </main>
+
+    @if (ViewData["HideFooter"] as bool? != true)
+    {
+        <footer class="lnk-footer">
+            <div class="container text-center">
+                <p class="mb-1"><span class="lnk-brand">LNK</span> — Never run out of LinkedIn content</p>
+                <p class="small mb-0 text-muted">© @DateTime.UtcNow.Year LNK. Crafted for professionals who show up daily.</p>
+            </div>
+        </footer>
+    }
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/app.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

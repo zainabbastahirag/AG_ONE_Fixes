@@ -1,0 +1,178 @@
+@model DashboardViewModel
+@{ ViewData["Title"] = "Dashboard"; }
+<div class="app-shell">
+    <partial name="_AppSidebar" />
+    <div class="app-main">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+            <div>
+                <h1 class="dash-greeting">Good @(DateTime.UtcNow.Hour < 12 ? "morning" : DateTime.UtcNow.Hour < 17 ? "afternoon" : "evening"), @(string.IsNullOrWhiteSpace(Model.DisplayName) ? "there" : Model.DisplayName.Split(' ')[0])</h1>
+                <p class="dash-sub mb-0">Your LinkedIn content command center</p>
+            </div>
+            <form asp-action="QuickGenerate" method="post" class="d-none d-md-block">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-lnk-primary">⚡ Quick Generate</button>
+            </form>
+        </div>
+
+        <div class="stat-grid">
+            <div class="glass-card stat-card">
+                <div class="stat-icon">📝</div>
+                <div class="stat-value">@(Model.TodaysPost != null ? "Ready" : "—")</div>
+                <div class="stat-label">Today's Post</div>
+                @if (Model.TodaysPost != null)
+                {
+                    <a asp-controller="Posts" asp-action="Review" asp-route-id="@Model.TodaysPost.Id" class="small">Review post →</a>
+                }
+            </div>
+            <div class="glass-card stat-card">
+                <div class="stat-icon">◷</div>
+                <div class="stat-value" style="font-size:1.35rem">@(Model.NextScheduled?.ToString("h:mm tt") ?? "—")</div>
+                <div class="stat-label">Next Scheduled</div>
+                <div class="stat-trend">@(Model.Schedule?.IsActive == true ? "Active" : "Paused")</div>
+            </div>
+            <div class="glass-card stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-value">@Model.PostsThisMonth</div>
+                <div class="stat-label">Posts This Month</div>
+            </div>
+            <div class="glass-card stat-card">
+                <div class="stat-icon">📬</div>
+                <div class="stat-value">@Model.EmailsSent</div>
+                <div class="stat-label">Emails Sent</div>
+                @if (Model.EmailsFailed > 0)
+                {
+                    <div class="small text-danger">@Model.EmailsFailed failed</div>
+                }
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-lg-8">
+                <div class="glass-card glass-card-static">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0 fw-bold">Activity — last 7 days</h5>
+                    </div>
+                    <div class="chart-box">
+                        <canvas id="activityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="glass-card glass-card-static h-100 card-glow">
+                    <h5 class="fw-bold mb-3">Upcoming schedule</h5>
+                    <div class="schedule-timeline">
+                        @foreach (var slot in Model.UpcomingSlots.Take(4))
+                        {
+                            <div class="schedule-slot">
+                                <div class="slot-time">
+                                    <div class="day">@slot.DayLabel</div>
+                                    <div class="time">@slot.TimeLabel</div>
+                                </div>
+                                <div class="slot-body">
+                                    <span class="slot-status @(slot.HasPost ? (slot.Status == "Emailed" ? "emailed" : "ready") : "scheduled")">
+                                        @(slot.HasPost ? slot.Status : "Scheduled")
+                                    </span>
+                                    @if (slot.PostId.HasValue)
+                                    {
+                                        <a asp-controller="Posts" asp-action="Review" asp-route-id="@slot.PostId" class="small d-block mt-1">View post →</a>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    <a asp-controller="Schedule" asp-action="Index" class="btn btn-lnk-ghost btn-lnk-sm w-100 mt-3">Manage schedule</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4" id="recent">
+            <div class="col-lg-7">
+                <div class="glass-card glass-card-static">
+                    <h5 class="fw-bold mb-3">Recent posts</h5>
+                    @if (!Model.RecentPosts.Any())
+                    {
+                        <p class="text-muted">No posts yet. Hit Quick Generate to create your first one.</p>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-dark table-borderless mb-0" style="--bs-table-bg:transparent">
+                                <thead><tr class="text-muted small"><th>Title</th><th>Status</th><th>Date</th><th></th></tr></thead>
+                                <tbody>
+                                @foreach (var p in Model.RecentPosts)
+                                {
+                                    <tr>
+                                        <td class="fw-medium">@p.Title</td>
+                                        <td><span class="hashtag-pill">@p.Status</span></td>
+                                        <td class="text-muted small">@p.GeneratedAt.ToString("MMM d")</td>
+                                        <td><a asp-controller="Posts" asp-action="Review" asp-route-id="@p.Id">Review</a></td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <div class="glass-card glass-card-static h-100">
+                    <h5 class="fw-bold mb-3">Recent emails</h5>
+                    @if (!Model.RecentEmails.Any())
+                    {
+                        <p class="text-muted small">Emails appear here after your first scheduled delivery.</p>
+                    }
+                    else
+                    {
+                        @foreach (var e in Model.RecentEmails)
+                        {
+                            <div class="email-row">
+                                <div class="email-icon @(e.Success ? "sent" : "failed")">@(e.Success ? "✓" : "✗")</div>
+                                <div class="flex-grow-1 overflow-hidden">
+                                    <div class="small fw-medium text-truncate">@e.Subject</div>
+                                    <div class="text-muted" style="font-size:0.75rem">@e.SentAt.ToString("MMM d, h:mm tt")</div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    <a asp-controller="Schedule" asp-action="Index" class="btn btn-lnk-ghost btn-lnk-sm w-100 mt-2">Email settings</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        const ctx = document.getElementById('activityChart');
+        if (ctx) {
+            const labels = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(); d.setDate(d.getDate() - i);
+                labels.push(d.toLocaleDateString('en', { weekday: 'short' }));
+            }
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Posts',
+                        data: [@string.Join(",", Model.WeeklyPosts)],
+                        backgroundColor: 'rgba(99, 102, 241, 0.5)',
+                        borderColor: '#6366f1',
+                        borderWidth: 1,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: 'rgba(148,163,184,0.08)' }, ticks: { color: '#94a3b8' } },
+                        y: { grid: { color: 'rgba(148,163,184,0.08)' }, ticks: { color: '#94a3b8', stepSize: 1 }, beginAtZero: true }
+                    }
+                }
+            });
+        }
+    </script>
+}

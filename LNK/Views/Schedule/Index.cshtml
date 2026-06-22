@@ -1,0 +1,112 @@
+@model ScheduleViewModel
+@{ ViewData["Title"] = "Schedule & Email"; }
+<div class="app-shell">
+    <partial name="_AppSidebar" />
+    <div class="app-main">
+        <h1 class="dash-greeting">Schedule &amp; Email</h1>
+        <p class="dash-sub">Control when posts generate, see upcoming deliveries, and track email history.</p>
+
+        <div class="row g-4 mb-4">
+            <div class="col-lg-5">
+                <div class="glass-card card-glow">
+                    <h5 class="fw-bold mb-1">Daily delivery</h5>
+                    <p class="text-muted small mb-4">LNK generates your post and sends a branded email at this time every day.</p>
+                    <form asp-action="Update" method="post">
+                        @Html.AntiForgeryToken()
+                        <div class="mb-3">
+                            <label class="form-label">Post time (UTC)</label>
+                            <input type="time" name="PostTime" class="form-control"
+                                   value="@Model.Settings.DailyPostTime.ToString(@"hh:mm")" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Timezone</label>
+                            <input name="Timezone" class="form-control" value="@Model.Settings.Timezone" placeholder="UTC, Europe/London..." />
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label d-block">Schedule status</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="IsActive" value="true" @(Model.Schedule.IsActive ? "checked" : "") />
+                                <label class="form-check-label text-muted">Active — generate &amp; email daily</label>
+                            </div>
+                        </div>
+                        @if (Model.Schedule.NextRunAt.HasValue)
+                        {
+                            <p class="small text-muted mb-3">Next run: <strong>@Model.Schedule.NextRunAt.Value.ToString("ddd, MMM d · h:mm tt")</strong></p>
+                        }
+                        <button type="submit" class="btn btn-lnk-primary w-100">Save schedule</button>
+                    </form>
+                </div>
+
+                <div class="glass-card glass-card-static mt-4">
+                    <h6 class="fw-bold mb-3">Your voice</h6>
+                    <p class="small text-muted mb-1"><strong>Industry:</strong> @Model.Settings.Industry</p>
+                    <p class="small text-muted mb-1"><strong>Tone:</strong> @Model.Settings.Tone · @Model.Settings.PostLength</p>
+                    <p class="small text-muted mb-0"><strong>Topics:</strong> @Model.Settings.Topics</p>
+                </div>
+            </div>
+
+            <div class="col-lg-7">
+                <div class="glass-card glass-card-static mb-4">
+                    <h5 class="fw-bold mb-3">14-day calendar</h5>
+                    <div class="week-calendar mb-4">
+                        @for (var i = 0; i < 7; i++)
+                        {
+                            var d = DateTime.UtcNow.Date.AddDays(i);
+                            var slot = Model.UpcomingSlots.FirstOrDefault(s => s.DateTime.Date == d);
+                            <div class="cal-day @(i == 0 ? "today" : "") @(slot?.HasPost == true ? "has-post" : "")">
+                                <div class="dow">@d.ToString("ddd")</div>
+                                <div class="num">@d.Day</div>
+                                @if (slot?.HasPost == true) { <div class="dot"></div> }
+                            </div>
+                        }
+                    </div>
+                    <h6 class="fw-bold mb-3">Upcoming deliveries</h6>
+                    <div class="schedule-timeline">
+                        @foreach (var slot in Model.UpcomingSlots)
+                        {
+                            <div class="schedule-slot">
+                                <div class="slot-time">
+                                    <div class="day">@slot.DayLabel</div>
+                                    <div class="time">@slot.TimeLabel</div>
+                                </div>
+                                <div class="slot-body">
+                                    <div class="fw-medium">LinkedIn post generation + email</div>
+                                    <span class="slot-status @(slot.HasPost ? "ready" : "scheduled")">@slot.Status</span>
+                                    @if (slot.PostId.HasValue)
+                                    {
+                                        <a asp-controller="Posts" asp-action="Review" asp-route-id="@slot.PostId" class="small ms-2">View →</a>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="glass-card glass-card-static">
+                    <h5 class="fw-bold mb-3">Email delivery log</h5>
+                    @if (!Model.RecentEmails.Any())
+                    {
+                        <p class="text-muted small">No emails sent yet. Complete onboarding and wait for your first scheduled delivery, or generate a post and click "Email me" on the review page.</p>
+                    }
+                    else
+                    {
+                        @foreach (var e in Model.RecentEmails)
+                        {
+                            <div class="email-row">
+                                <div class="email-icon @(e.Success ? "sent" : "failed")">@(e.Success ? "✓" : "✗")</div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-medium small">@e.Subject</div>
+                                    <div class="text-muted" style="font-size:0.75rem">To @e.ToEmail · @e.SentAt.ToString("MMM d, h:mm tt")</div>
+                                    @if (!e.Success && !string.IsNullOrEmpty(e.ErrorMessage))
+                                    {
+                                        <div class="small text-danger">@e.ErrorMessage</div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
