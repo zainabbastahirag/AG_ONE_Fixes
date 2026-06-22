@@ -1,0 +1,170 @@
+@page "/projects/{Id:guid}"
+@using AGONECompliance.Client.Services
+@using AGONECompliance.Shared.DTOs
+@inject ApiService Api
+@inject NavigationManager Nav
+
+@if (project == null)
+{
+    <div class="empty-state"><div class="icon">⏳</div><p>Loading project...</p></div>
+}
+else
+{
+    <!-- Status Bar -->
+    <div class="stat-grid">
+        <div class="stat-card"><div class="stat-value" style="color: var(--success);">@project.CompliantCount</div><div class="stat-label">Compliant</div></div>
+        <div class="stat-card"><div class="stat-value" style="color: var(--danger);">@project.NonCompliantCount</div><div class="stat-label">Non-Compliant</div></div>
+        <div class="stat-card"><div class="stat-value" style="color: var(--text-muted);">@project.PendingCount</div><div class="stat-label">Pending</div></div>
+        <div class="stat-card">
+            <div class="stat-value">@project.ComplianceRate%</div><div class="stat-label">Compliance Rate</div>
+            <div class="progress-bar"><div class="progress-fill" style="width: @project.ComplianceRate%"></div></div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="card" style="margin-bottom: 20px;">
+        <div class="card-header">
+            <h3>@project.Name</h3>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-primary" @onclick="RunChecks" disabled="@running">
+                    @(running ? "⏳ Running..." : "▶ Run Compliance Check")
+                </button>
+                <button class="btn btn-secondary" @onclick='() => Nav.NavigateTo($"projects/{Id}/report")'>📊 View Report</button>
+            </div>
+        </div>
+        <p style="font-size: 13px; color: var(--text-secondary);">@project.Description</p>
+        <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Status: <span class="badge @GetBadge(project.Status)">@project.Status</span></p>
+    </div>
+
+    <!-- Documents -->
+    <div class="card" style="margin-bottom: 20px;">
+        <div class="card-header"><h3>Documents (@project.Documents.Count)</h3></div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+            @foreach (var dt in new[] { "Guide", "Appendix", "Prospectus" })
+            {
+                <div class="upload-zone" @onclick="() => TriggerUpload(dt)">
+                    <div class="icon">@(dt == "Guide" ? "📘" : dt == "Appendix" ? "📎" : "📄")</div>
+                    <p><strong>Upload @dt</strong></p>
+                    <p style="font-size: 11px;">PDF format</p>
+                </div>
+            }
+        </div>
+
+        <InputFile OnChange="HandleFileUpload" style="display: none;" @ref="fileInput" />
+
+        @if (uploadMsg != null)
+        {
+            <div class="badge @(uploadOk ? "badge-compliant" : "badge-noncompliant")" style="margin-bottom: 12px; padding: 8px 16px;">@uploadMsg</div>
+        }
+
+        @if (project.Documents.Any())
+        {
+            <table class="data-table">
+                <thead><tr><th>File</th><th>Type</th><th>Pages</th><th>Extraction</th><th>Uploaded</th></tr></thead>
+                <tbody>
+                    @foreach (var d in project.Documents)
+                    {
+                        <tr>
+                            <td><strong>@d.FileName</strong></td>
+                            <td><span class="badge badge-running">@d.DocType</span></td>
+                            <td>@(d.PageCount ?? 0)</td>
+                            <td><span class="badge @GetBadge(d.ExtractionStatus)">@d.ExtractionStatus</span></td>
+                            <td style="font-size: 12px; color: var(--text-muted);">@d.CreatedAt.ToString("dd MMM HH:mm")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+
+    <!-- Activity Log -->
+    <div class="card">
+        <div class="card-header"><h3>Activity Log</h3><button class="btn btn-secondary btn-sm" @onclick="LoadActivities">Refresh</button></div>
+        @if (activities.Any())
+        {
+            @foreach (var a in activities)
+            {
+                <div class="activity-item">
+                    <div class="activity-dot @a.Status.ToLower()"></div>
+                    <div class="activity-body">
+                        <div class="activity-step">@a.Step</div>
+                        <div class="activity-msg">@a.Message</div>
+                        <div class="activity-time">
+                            @a.StartedAt.ToString("HH:mm:ss")
+                            @if (a.DurationMs.HasValue) { <span> • @(a.DurationMs)ms</span> }
+                        </div>
+                        @if (!string.IsNullOrEmpty(a.ErrorDetail))
+                        {
+                            <div class="activity-error">@a.ErrorDetail</div>
+                        }
+                    </div>
+                    <span class="badge @GetBadge(a.Status)">@a.Status</span>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="empty-state"><div class="icon">⚡</div><p>No activity yet. Upload documents and run a check.</p></div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    ProjectDetailDto? project;
+    List<JobActivityDto> activities = new();
+    bool running;
+    string? uploadMsg;
+    bool uploadOk;
+    string pendingDocType = "Prospectus";
+    InputFile? fileInput;
+
+    protected override async Task OnInitializedAsync()
+    {
+        project = await Api.GetProjectAsync(Id);
+        await LoadActivities();
+    }
+
+    async Task LoadActivities() => activities = await Api.GetActivitiesAsync(Id);
+
+    async Task RunChecks()
+    {
+        running = true;
+        await Api.RunComplianceCheckAsync(Id);
+        await Task.Delay(2000);
+        project = await Api.GetProjectAsync(Id);
+        await LoadActivities();
+        running = false;
+    }
+
+    void TriggerUpload(string docType)
+    {
+        pendingDocType = docType;
+        // JS interop would trigger click - for demo just remind user
+        uploadMsg = $"Select a PDF file for {docType} upload using the file picker.";
+        uploadOk = true;
+    }
+
+    async Task HandleFileUpload(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file == null) return;
+        uploadMsg = $"Uploading {file.Name}...";
+        uploadOk = true;
+        StateHasChanged();
+
+        using var stream = file.OpenReadStream(50 * 1024 * 1024);
+        var ok = await Api.UploadDocumentAsync(Id, stream, file.Name, pendingDocType);
+        uploadMsg = ok ? $"✅ {file.Name} uploaded as {pendingDocType}" : $"❌ Upload failed for {file.Name}";
+        uploadOk = ok;
+        project = await Api.GetProjectAsync(Id);
+    }
+
+    string GetBadge(string s) => s switch
+    {
+        "Completed" => "badge-completed", "Running" => "badge-running", "Processing" => "badge-running",
+        "Failed" => "badge-failed", "Compliant" => "badge-compliant", _ => "badge-pending"
+    };
+}

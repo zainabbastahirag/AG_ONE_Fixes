@@ -1,0 +1,130 @@
+@page "/projects/{Id:guid}/report"
+@using AGONECompliance.Client.Services
+@using AGONECompliance.Shared.DTOs
+@inject ApiService Api
+@inject NavigationManager Nav
+
+@if (report == null)
+{
+    <div class="empty-state"><div class="icon">⏳</div><p>Loading compliance report...</p></div>
+}
+else
+{
+    <!-- Summary Stats -->
+    <div class="stat-grid">
+        <div class="stat-card"><div class="stat-value" style="font-size: 36px;">@report.ComplianceRate%</div><div class="stat-label">Overall Compliance</div><div class="progress-bar"><div class="progress-fill" style="width: @report.ComplianceRate%"></div></div></div>
+        <div class="stat-card"><div class="stat-value" style="color: var(--success);">@report.Compliant</div><div class="stat-label">✅ Compliant</div></div>
+        <div class="stat-card"><div class="stat-value" style="color: var(--danger);">@report.NonCompliant</div><div class="stat-label">❌ Non-Compliant</div></div>
+        <div class="stat-card"><div class="stat-value" style="color: var(--warning);">@report.PartiallyCompliant</div><div class="stat-label">⚠️ Partially Compliant</div></div>
+        <div class="stat-card"><div class="stat-value" style="color: var(--text-muted);">@report.Pending</div><div class="stat-label">⏳ Pending</div></div>
+        <div class="stat-card"><div class="stat-value">@report.TotalChecks</div><div class="stat-label">Total Checks</div></div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div style="display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;">
+        <button class="btn @(filter == "all" ? "btn-primary" : "btn-secondary") btn-sm" @onclick='() => filter = "all"'>All (@report.TotalChecks)</button>
+        <button class="btn @(filter == "compliant" ? "btn-success" : "btn-secondary") btn-sm" @onclick='() => filter = "compliant"'>✅ Compliant (@report.Compliant)</button>
+        <button class="btn @(filter == "noncompliant" ? "btn-danger" : "btn-secondary") btn-sm" @onclick='() => filter = "noncompliant"'>❌ Non-Compliant (@report.NonCompliant)</button>
+        <button class="btn @(filter == "partial" ? "btn-secondary" : "btn-secondary") btn-sm" style="@(filter == "partial" ? "background:var(--warning);color:#fff;" : "")" @onclick='() => filter = "partial"'>⚠️ Partial (@report.PartiallyCompliant)</button>
+        <button class="btn @(filter == "pending" ? "btn-secondary" : "btn-secondary") btn-sm" @onclick='() => filter = "pending"'>⏳ Pending (@report.Pending)</button>
+    </div>
+
+    <!-- Check Results -->
+    @foreach (var check in FilteredChecks)
+    {
+        var cssClass = check.Result switch
+        {
+            "Compliant" => "compliant",
+            "NonCompliant" => "noncompliant",
+            "PartiallyCompliant" => "partial",
+            _ => "pending-check"
+        };
+
+        <div class="check-row @cssClass">
+            <div class="check-header">
+                <div>
+                    <div class="check-rule">Rule #@check.RuleNumber — @check.RuleCode</div>
+                    <div class="check-para">@check.Paragraph • @check.Complexity complexity</div>
+                </div>
+                <span class="badge @GetBadge(check.Result)">@FormatResult(check.Result)</span>
+            </div>
+
+            <div class="check-requirement">@check.Requirement</div>
+
+            @if (!string.IsNullOrEmpty(check.Finding))
+            {
+                <div class="check-finding">
+                    <div class="check-finding-label">AI Finding</div>
+                    <div class="check-finding-text">@check.Finding</div>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(check.Evidence))
+            {
+                <div class="check-finding" style="background: rgba(16,185,129,0.06);">
+                    <div class="check-finding-label" style="color: var(--success);">Evidence</div>
+                    <div class="check-finding-text">@check.Evidence</div>
+                </div>
+            }
+
+            <div class="check-meta">
+                @if (!string.IsNullOrEmpty(check.PageReference))
+                {
+                    <div class="check-meta-item">📄 <strong>@check.PageReference</strong></div>
+                }
+                @if (!string.IsNullOrEmpty(check.SectionReference))
+                {
+                    <div class="check-meta-item">📑 <strong>@check.SectionReference</strong></div>
+                }
+                <div class="check-meta-item">🎯 Confidence: <strong>@((check.ConfidenceScore * 100).ToString("F0"))%</strong></div>
+                @if (check.CheckedAt.HasValue)
+                {
+                    <div class="check-meta-item">🕐 @check.CheckedAt.Value.ToString("dd MMM HH:mm")</div>
+                }
+            </div>
+        </div>
+    }
+
+    @if (!FilteredChecks.Any())
+    {
+        <div class="empty-state"><div class="icon">🔍</div><p>No checks match the selected filter.</p></div>
+    }
+
+    <!-- Back -->
+    <div style="margin-top: 20px;">
+        <button class="btn btn-secondary" @onclick='() => Nav.NavigateTo($"projects/{Id}")'>← Back to Project</button>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+    ComplianceReportDto? report;
+    string filter = "all";
+
+    protected override async Task OnInitializedAsync() => report = await Api.GetReportAsync(Id);
+
+    IEnumerable<ComplianceCheckDto> FilteredChecks => filter switch
+    {
+        "compliant" => report?.Checks.Where(c => c.Result == "Compliant") ?? Enumerable.Empty<ComplianceCheckDto>(),
+        "noncompliant" => report?.Checks.Where(c => c.Result == "NonCompliant") ?? Enumerable.Empty<ComplianceCheckDto>(),
+        "partial" => report?.Checks.Where(c => c.Result == "PartiallyCompliant") ?? Enumerable.Empty<ComplianceCheckDto>(),
+        "pending" => report?.Checks.Where(c => c.Result == "Pending") ?? Enumerable.Empty<ComplianceCheckDto>(),
+        _ => report?.Checks ?? Enumerable.Empty<ComplianceCheckDto>()
+    };
+
+    string FormatResult(string r) => r switch
+    {
+        "Compliant" => "✅ Compliant",
+        "NonCompliant" => "❌ Non-Compliant",
+        "PartiallyCompliant" => "⚠️ Partial",
+        _ => "⏳ Pending"
+    };
+
+    string GetBadge(string r) => r switch
+    {
+        "Compliant" => "badge-compliant",
+        "NonCompliant" => "badge-noncompliant",
+        "PartiallyCompliant" => "badge-partial",
+        _ => "badge-pending"
+    };
+}

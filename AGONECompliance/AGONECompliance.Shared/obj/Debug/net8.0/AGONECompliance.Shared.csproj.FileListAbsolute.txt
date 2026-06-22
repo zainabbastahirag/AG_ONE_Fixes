@@ -1,0 +1,12 @@
+/workspace/AGONECompliance/AGONECompliance.Shared/bin/Debug/net8.0/AGONECompliance.Shared.deps.json
+/workspace/AGONECompliance/AGONECompliance.Shared/bin/Debug/net8.0/AGONECompliance.Shared.dll
+/workspace/AGONECompliance/AGONECompliance.Shared/bin/Debug/net8.0/AGONECompliance.Shared.pdb
+/workspace/AGONECompliance/AGONECompliance.Shared/obj/Debug/net8.0/AGONECompliance.Shared.GeneratedMSBuildEditorConfig.editorconfig
+/workspace/AGONECompliance/AGONECompliance.Shared/obj/Debug/net8.0/AGONECompliance.Shared.AssemblyInfoInputs.cache
+/workspace/AGONECompliance/AGONECompliance.Shared/obj/Debug/net8.0/AGONECompliance.Shared.AssemblyInfo.cs
+/workspace/AGONECompliance/AGONECompliance.Shared/obj/Debug/net8.0/AGONECompliance.Shared.csproj.CoreCompileInputs.cache
+/workspace/AGONECompliance/AGONECompliance.Shared/obj/Debug/net8.0/AGONECompliance.Shared.sourcelink.json
+/workspace/AGONECompliance/AGONECompliance.Shared/obj/Debug/net8.0/AGONECompliance.Shared.dll
+/workspace/AGONECompliance/AGONECompliance.Shared/obj/Debug/net8.0/refint/AGONECompliance.Shared.dll
+/workspace/AGONECompliance/AGONECompliance.Shared/obj/Debug/net8.0/AGONECompliance.Shared.pdb
+/workspace/AGONECompliance/AGONECompliance.Shared/obj/Debug/net8.0/ref/AGONECompliance.Shared.dll
