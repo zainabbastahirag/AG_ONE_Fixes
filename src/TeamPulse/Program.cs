@@ -42,6 +42,12 @@ else
     app.UseHsts();
 }
 
+// Render a friendly in-app page for non-success status codes (e.g. 404 for
+// unknown routes like external probes hitting "/api/...") instead of letting
+// the host (IIS/Kestrel) return a bare/detailed error page that can leak the
+// physical path and internal host name.
+app.UseStatusCodePagesWithReExecute("/Home/Error/{0}");
+
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
