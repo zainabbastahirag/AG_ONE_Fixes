@@ -18,8 +18,17 @@ public class HomeController : Controller
     public IActionResult AccessDenied() => View();
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-    public IActionResult Error()
+    public IActionResult Error(int? id)
     {
-        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        if (id.HasValue)
+        {
+            Response.StatusCode = id.Value;
+        }
+
+        return View(new ErrorViewModel
+        {
+            RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier,
+            StatusCode = id
+        });
     }
 }
