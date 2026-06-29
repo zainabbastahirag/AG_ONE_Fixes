@@ -125,6 +125,25 @@ NEXA_Graph__ClientSecret='•••' dotnet run -- send --now
 
 ---
 
+## Images (`Assets/` folder — no CDN)
+
+You do **not** need a CDN or public image URLs. Put your PNG files here:
+
+```
+src/NexaEmailBlast/Assets/
+  ag_one_logo.png    ← header logo
+  nexa_sphere.png    ← Nexa ball
+  nexa_wordmark.png  ← NeXa wordmark
+  footer.png         ← footer band
+  card_bg.png        ← card gradient background
+```
+
+When you send, each image is **attached inside the email** automatically. Replace
+any file (same name), run again — done. Leave `Branding.CardBackgroundUrl` empty
+in `appsettings.json`.
+
+---
+
 ## Recipients
 
 There is no CSV — recipients live in `appsettings.json`:
@@ -215,13 +234,10 @@ NexaEmailBlast/
   **To use the official artwork, just replace those four PNG files in `Assets/`
   with your own** (keep the same filenames) — the code embeds whatever is there.
   Only the images a template actually references are attached to that email.
-- **Card gradient:** the Nexa card uses the brand *AI Color/Light 01* gradient
-  (`#EBF3FF` → `#EBFDFE` → `#F8FED8`). Email clients are inconsistent with CSS
-  backgrounds, so the card uses a **bulletproof pattern**: a visible gradient
-  `<img>` (works in Gmail/mobile), VML fill (Outlook desktop), and `background`
-  on the cell as a fallback. The image is `card_bg.png`, embedded inline via cid.
-  If Gmail still shows a flat colour, host `card_bg.png` on a public `https` URL
-  and set `Branding.CardBackgroundUrl` — hosted images work everywhere.
+- **Card gradient:** uses `Assets/card_bg.png`, embedded inline in every email (no CDN).
+  The card shows the gradient via a visible `<img>` (Gmail/mobile), VML (Outlook),
+  and cell `background` fallback. Recipients must have **images enabled** in their
+  mail client to see graphics (same as any HTML newsletter).
 - **Templates** use table-based, inline-styled HTML for broad email-client
   compatibility. Images are embedded inline (Content-ID) when sending, and as
   base64 data-URIs in `preview`/dry-run files so they open standalone.

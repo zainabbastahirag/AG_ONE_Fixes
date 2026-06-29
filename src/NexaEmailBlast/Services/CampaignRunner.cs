@@ -57,6 +57,7 @@ public sealed class CampaignRunner
         Console.WriteLine($"To (live)   : {_config.Recipients.ToName} <{_config.Recipients.ToEmail}>");
         Console.WriteLine($"Test address: {_config.Recipients.TestName} <{_config.Recipients.TestEmail}>");
         Console.WriteLine($"Greeting    : Hi {_config.Recipients.Greeting},");
+        Console.WriteLine($"Images      : embedded from Assets/ (no CDN required)");
         Console.WriteLine($"Feedback URL: {_config.Feedback.Url}");
         Console.WriteLine("Schedule    :");
         foreach (var e in _config.Campaign)

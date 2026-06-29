@@ -85,9 +85,8 @@ public sealed class FeedbackConfig
 public sealed class BrandingConfig
 {
     /// <summary>
-    /// Optional hosted (https) URL for the card gradient background image. When set, it is used
-    /// instead of the inline (cid) image — useful for clients like Gmail that don't render
-    /// cid backgrounds. Leave empty to embed the bundled gradient image inline.
+    /// Optional. Leave empty when using images from the Assets/ folder (default).
+    /// Only set this if you host card_bg.png on a public https URL instead.
     /// </summary>
     public string CardBackgroundUrl { get; set; } = "";
 }
