@@ -78,8 +78,41 @@ public sealed class RecipientsConfig
 
 public sealed class FeedbackConfig
 {
-    /// <summary>Shareable link rendered behind the word "feedback" in the launch email.</summary>
-    public string Url { get; set; } = "https://forms.office.com/r/agone-marketplace-feedback";
+    /// <summary>Optional https link. When set, overrides the mailto fields below.</summary>
+    public string Url { get; set; } = "";
+
+    /// <summary>Feedback recipients (comma or semicolon separated) for the launch-email mailto link.</summary>
+    public string To { get; set; } =
+        "adura.ahmad@aventragroup.com, avvinash.ravi@aventragroup.com, jacky.tan@aventragroup.com";
+
+    public string Subject { get; set; } = "AG ONE – Aventrian Feedbacks";
+
+    public string Body { get; set; } =
+        "Share your feedback with us now. Together, let's enhance the experience and shape exciting new features in the upcoming phases!";
+
+    /// <summary>Resolved href for the word "feedback" in email4.</summary>
+    public string BuildLink()
+    {
+        if (!string.IsNullOrWhiteSpace(Url))
+            return Url.Trim();
+
+        var recipients = string.Join(",",
+            To.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(a => a.Contains('@', StringComparison.Ordinal)));
+
+        if (string.IsNullOrEmpty(recipients))
+            return "#";
+
+        var link = $"mailto:{recipients}";
+        var query = new List<string>();
+        if (!string.IsNullOrWhiteSpace(Subject))
+            query.Add("subject=" + Uri.EscapeDataString(Subject.Trim()));
+        if (!string.IsNullOrWhiteSpace(Body))
+            query.Add("body=" + Uri.EscapeDataString(Body.Trim()));
+        if (query.Count > 0)
+            link += "?" + string.Join("&", query);
+        return link;
+    }
 }
 
 public sealed class BrandingConfig

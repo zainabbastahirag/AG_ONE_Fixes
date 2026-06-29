@@ -185,7 +185,8 @@ There is no CSV — recipients live in `appsettings.json`:
 | `Recipients` | `TestName`, `TestEmail` | Test target (zain.abbas@...) |
 | `Recipients` | `Greeting` | Greeting word shown as `Hi {Greeting},` |
 | `Recipients` | `Cc`, `Bcc` | Optional global copy lists |
-| `Feedback` | `Url` | Shareable link behind the word **feedback** in the launch email |
+| `Feedback` | `To`, `Subject`, `Body` | Pre-filled **mailto** behind the word **feedback** in email4 (opens compose to the feedback team) |
+| `Feedback` | `Url` | Optional — set to override mailto with an https link (e.g. a Microsoft Form) |
 | `Sending` | `DryRun` | `true` = render to `./preview` only, no send |
 | `Sending` | `ThrottleMillisecondsBetweenEmails` | Pause between messages |
 | `Campaign[]` | `Subject`, `Preheader`, `Template`, `SendAtLocal` | Per-email content & timing |

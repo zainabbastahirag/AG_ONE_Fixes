@@ -69,7 +69,7 @@ public sealed class EmailTemplateRenderer
             .Replace("{{PREHEADER}}", System.Net.WebUtility.HtmlEncode(email.Preheader))
             .Replace("{{CONTENT}}", content)
             .Replace("{{NAME}}", System.Net.WebUtility.HtmlEncode(greeting))
-            .Replace("{{FEEDBACK_URL}}", feedbackUrl)
+            .Replace("{{FEEDBACK_URL}}", System.Net.WebUtility.HtmlEncode(feedbackUrl))
             .Replace("{{CARD_BG}}", cardBg)
             .Replace("{{CARD_BG_SHORT}}", cardBgShort);
 

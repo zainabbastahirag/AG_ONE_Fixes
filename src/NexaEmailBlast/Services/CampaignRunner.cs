@@ -58,7 +58,7 @@ public sealed class CampaignRunner
         Console.WriteLine($"Test address: {_config.Recipients.TestName} <{_config.Recipients.TestEmail}>");
         Console.WriteLine($"Greeting    : Hi {_config.Recipients.Greeting},");
         Console.WriteLine($"Images      : embedded from Assets/ (no CDN required)");
-        Console.WriteLine($"Feedback URL: {_config.Feedback.Url}");
+        Console.WriteLine($"Feedback link: {_config.Feedback.BuildLink()}");
         Console.WriteLine("Schedule    :");
         foreach (var e in _config.Campaign)
             Console.WriteLine($"   - {e.Key,-8} {e.ParseSendAt():ddd dd MMM yyyy HH:mm}  \"{e.Subject}\"  [{e.Template}]");
@@ -86,7 +86,7 @@ public sealed class CampaignRunner
 
         foreach (var email in _config.Campaign)
         {
-            var html = _renderer.Render(email, _config.Recipients.Greeting, _config.Feedback.Url, embedImageInline: true, _config.Branding.CardBackgroundUrl);
+            var html = _renderer.Render(email, _config.Recipients.Greeting, _config.Feedback.BuildLink(), embedImageInline: true, _config.Branding.CardBackgroundUrl);
             var path = Path.Combine(outDir, $"{email.Key}.html");
             File.WriteAllText(path, html);
             Console.WriteLine($"[preview] {email.Key} -> {path}");
@@ -166,7 +166,7 @@ public sealed class CampaignRunner
         using (sender)
         {
             Console.WriteLine($"\n[test] Sending \"{email.Subject}\" ({email.Key}) to {toEmail} via {EmailSenderFactory.DescribeEndpoint(_config)}");
-            var html = _renderer.Render(email, GreetingFor(recipient), _config.Feedback.Url, embedImageInline: false, _config.Branding.CardBackgroundUrl);
+            var html = _renderer.Render(email, GreetingFor(recipient), _config.Feedback.BuildLink(), embedImageInline: false, _config.Branding.CardBackgroundUrl);
             LogRequest(email, recipient, html);
             try
             {
@@ -185,7 +185,7 @@ public sealed class CampaignRunner
     public async Task InspectAsync(CampaignEmail email, Recipient? recipient = null)
     {
         var r = recipient ?? _recipients[0];
-        var html = _renderer.Render(email, GreetingFor(r), _config.Feedback.Url, embedImageInline: false, _config.Branding.CardBackgroundUrl);
+        var html = _renderer.Render(email, GreetingFor(r), _config.Feedback.BuildLink(), embedImageInline: false, _config.Branding.CardBackgroundUrl);
         var cc = SplitAddresses(_config.Recipients.Cc);
         var bcc = SplitAddresses(_config.Recipients.Bcc);
 
@@ -256,7 +256,7 @@ public sealed class CampaignRunner
         {
             try
             {
-                var html = _renderer.Render(email, GreetingFor(r), _config.Feedback.Url, embedImageInline: false, _config.Branding.CardBackgroundUrl);
+                var html = _renderer.Render(email, GreetingFor(r), _config.Feedback.BuildLink(), embedImageInline: false, _config.Branding.CardBackgroundUrl);
                 LogRequest(email, r, html);
                 await sender.SendAsync(r, email.Subject, html, _renderer.InlineImagesFor(html), cc, bcc);
                 ok++;
@@ -289,7 +289,7 @@ public sealed class CampaignRunner
     {
         var outDir = ResolvePath(_config.Sending.PreviewOutputFolder);
         Directory.CreateDirectory(outDir);
-        var html = _renderer.Render(email, _config.Recipients.Greeting, _config.Feedback.Url, embedImageInline: true, _config.Branding.CardBackgroundUrl);
+        var html = _renderer.Render(email, _config.Recipients.Greeting, _config.Feedback.BuildLink(), embedImageInline: true, _config.Branding.CardBackgroundUrl);
         var path = Path.Combine(outDir, $"{email.Key}.html");
         File.WriteAllText(path, html);
         Console.WriteLine($"   [DRY RUN] Would send to {recipients.Count} recipient(s). Preview written: {path}");
