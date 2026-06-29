@@ -1,0 +1,122 @@
+﻿using Microsoft.Extensions.Configuration;
+using NexaEmailBlast.Models;
+using NexaEmailBlast.Services;
+
+var baseDir = AppContext.BaseDirectory;
+
+var configuration = new ConfigurationBuilder()
+    .SetBasePath(baseDir)
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
+    .AddEnvironmentVariables(prefix: "NEXA_")
+    .Build();
+
+var appConfig = configuration.Get<AppConfig>() ?? new AppConfig();
+
+var command = (args.FirstOrDefault() ?? "menu").ToLowerInvariant();
+var ignoreSchedule = args.Contains("--now", StringComparer.OrdinalIgnoreCase);
+var onlyKey = GetOption(args, "--email");
+
+PrintBanner();
+
+var runner = new CampaignRunner(appConfig, baseDir);
+if (args.Contains("--debug", StringComparer.OrdinalIgnoreCase))
+    runner.Verbose = true;
+
+switch (command)
+{
+    case "menu":
+    case "interactive":
+    case "i":
+        await new InteractiveMenu(runner).RunAsync();
+        break;
+
+    case "preview":
+        runner.PrintPlan();
+        runner.RenderPreviews();
+        Console.WriteLine("\nOpen the .html files in the preview folder to review the designs.");
+        break;
+
+    case "plan":
+    case "list":
+        runner.PrintPlan();
+        break;
+
+    case "inspect":
+    {
+        var key = onlyKey ?? args.ElementAtOrDefault(1);
+        var email = key is null ? runner.Emails.FirstOrDefault() : runner.GetEmail(key);
+        if (email is null)
+            Console.WriteLine($"No email matched '{key}'. Try email1..email4.");
+        else
+            await runner.InspectAsync(email);
+        break;
+    }
+
+    case "send":
+        runner.PrintPlan();
+        if (!appConfig.Sending.DryRun)
+            Console.WriteLine($"LIVE MODE: emails will be delivered via {EmailSenderFactory.Describe(appConfig)}.\n");
+        else
+            Console.WriteLine("DRY RUN: no emails will be delivered (set Sending.DryRun=false to go live).\n");
+        await runner.RunAsync(ignoreSchedule, onlyKey);
+        break;
+
+    default:
+        PrintHelp();
+        break;
+}
+
+return 0;
+
+static string? GetOption(string[] args, string name)
+{
+    for (var i = 0; i < args.Length - 1; i++)
+        if (string.Equals(args[i], name, StringComparison.OrdinalIgnoreCase))
+            return args[i + 1];
+    return null;
+}
+
+static void PrintBanner()
+{
+    Console.WriteLine("======================================================");
+    Console.WriteLine("  Nexa Email Blast — AG ONE Marketplace Campaign");
+    Console.WriteLine("======================================================");
+}
+
+static void PrintHelp()
+{
+    Console.WriteLine(@"
+Usage: dotnet run -- <command> [options]
+
+Commands:
+  menu | i           Interactive console: send now / at a time / test, inspect
+                     requests like an API, toggle debug & dry-run. (default)
+  preview            Render all campaign emails to self-contained HTML files
+                     in the preview folder (no sending).
+  plan | list        Print the campaign schedule, recipient count and config.
+  inspect [key]      Print the exact outgoing request (Graph JSON / SMTP MIME)
+                     for one email without sending.
+  send               Run the campaign. Waits for each email's scheduled time,
+                     then sends to every recipient from the CSV.
+
+Options:
+  --now              Ignore the schedule and send immediately.
+  --email <key>      Only process a single campaign email (e.g. email1).
+  --debug            Verbose, API-style request logging.
+
+Examples:
+  dotnet run                          # opens the interactive menu
+  dotnet run -- preview
+  dotnet run -- inspect email4        # dump the launch email request body
+  dotnet run -- send                  # follows the configured schedule
+  dotnet run -- send --now --debug    # send everything now, verbose
+  dotnet run -- send --now --email email4
+
+Configuration lives in appsettings.json. Set Sending.DryRun=false to deliver
+real emails. Choose the channel with Sending.Provider = ""Graph"" (default) or ""Smtp"".
+
+  Graph (app-only): set Graph.TenantId / Graph.ClientId / Graph.ClientSecret
+    (or NEXA_Graph__TenantId / NEXA_Graph__ClientId / NEXA_Graph__ClientSecret).
+  SMTP            : set Smtp.Username / Smtp.Password (or NEXA_Smtp__Password).
+");
+}
