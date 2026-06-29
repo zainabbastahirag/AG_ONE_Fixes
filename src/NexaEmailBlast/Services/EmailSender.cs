@@ -9,14 +9,14 @@ namespace NexaEmailBlast.Services;
 /// <summary>
 /// Sends a rendered HTML email over SMTP using MailKit, embedding the Nexa image inline via a Content-ID.
 /// </summary>
-public sealed class EmailSender : IDisposable
+public sealed class SmtpEmailSender : IEmailSender
 {
     private readonly SmtpConfig _smtp;
     private readonly SenderConfig _sender;
     private readonly SmtpClient _client = new();
     private bool _connected;
 
-    public EmailSender(SmtpConfig smtp, SenderConfig sender)
+    public SmtpEmailSender(SmtpConfig smtp, SenderConfig sender)
     {
         _smtp = smtp;
         _sender = sender;
@@ -27,9 +27,10 @@ public sealed class EmailSender : IDisposable
     {
         if (_connected) return;
 
-        await _client.ConnectAsync(_smtp.Host, _smtp.Port, ResolveSecurity());
+        if (!_client.IsConnected)
+            await _client.ConnectAsync(_smtp.Host, _smtp.Port, ResolveSecurity());
 
-        if (!string.IsNullOrWhiteSpace(_smtp.Username))
+        if (!string.IsNullOrWhiteSpace(_smtp.Username) && !_client.IsAuthenticated)
             await _client.AuthenticateAsync(_smtp.Username, _smtp.Password);
 
         _connected = true;

@@ -45,10 +45,42 @@ dotnet run -- send --now --email email4   # just the launch email
 ### Go live
 1. Open `appsettings.json`.
 2. Set `Sending.DryRun` to `false`.
-3. Fill in `Smtp.Password` (or set env var `NEXA_Smtp__Password`).
+3. Choose the channel with `Sending.Provider`:
+   - **`Graph`** (default) — Microsoft Graph API, app-only auth. Fill in
+     `Graph.TenantId`, `Graph.ClientId`, `Graph.ClientSecret`.
+   - **`Smtp`** — fill in `Smtp.Username` / `Smtp.Password`.
 4. Point `Recipients.CsvPath` at your real list.
 5. Run `dotnet run -- send` and leave it running until 1 Jul 12 PM, or use
    `--now` to fire immediately.
+
+### Microsoft Graph setup (app-only)
+The default provider sends via `https://graph.microsoft.com`. Create an Entra ID
+app registration and grant it the **application** permission `Mail.Send`
+(admin-consented), then create a client secret.
+
+```jsonc
+"Sending": { "Provider": "Graph" },
+"Graph": {
+  "Host": "graph.microsoft.com",
+  "TenantId": "<your-tenant-id>",
+  "ClientId": "<application-client-id>",
+  "ClientSecret": "<client-secret>",
+  "Scope": "https://graph.microsoft.com/.default",
+  "SaveToSentItems": true
+}
+```
+
+Mail is sent as the configured `Sender.Email` (`nexa@aventragroup.com`) using
+`POST /users/{sender}/sendMail`. Because this is app-only, the app registration
+must be allowed to send as that mailbox (tenant-wide `Mail.Send`, or scoped with
+an Exchange Application Access Policy). The Nexa mascot is delivered as an inline
+`fileAttachment` (Content-ID `nexa_sphere`) so it renders in the body.
+
+Secrets can be kept out of the file via environment variables:
+
+```bash
+NEXA_Graph__ClientSecret='•••' dotnet run -- send --now
+```
 
 ---
 
@@ -79,6 +111,10 @@ You can also set a global `Cc` / `Bcc` (comma-separated) in `appsettings.json`.
 
 | Section | Key | Meaning |
 |---------|-----|---------|
+| `Sending` | `Provider` | `Graph` (Microsoft Graph API, default) or `Smtp` |
+| `Graph` | `Host` | Graph host (`graph.microsoft.com`) |
+| `Graph` | `TenantId`, `ClientId`, `ClientSecret` | App-only credentials (`Mail.Send`) |
+| `Graph` | `Scope`, `SaveToSentItems` | OAuth scope / keep a copy in Sent Items |
 | `Smtp` | `Host`, `Port` | Mail server (default Office 365 `smtp.office365.com:587`) |
 | `Smtp` | `Security` | `starttls` (default), `ssl`, `none`, or `auto` |
 | `Smtp` | `Username`, `Password` | SMTP credentials for `nexa@aventragroup.com` |
@@ -119,6 +155,9 @@ NexaEmailBlast/
 └─ Services/
    ├─ CsvRecipientReader.cs   # CsvHelper-based loader
    ├─ EmailTemplateRenderer.cs# layout + fragment composition / token replace
+   ├─ IEmailSender.cs         # delivery-channel abstraction
+   ├─ EmailSenderFactory.cs   # picks Graph or SMTP from config
+   ├─ GraphEmailSender.cs     # Microsoft Graph API (app-only), inline attachment
    ├─ EmailSender.cs          # MailKit SMTP, inline CID image
    └─ CampaignRunner.cs       # scheduling + orchestration
 ```
@@ -126,4 +165,5 @@ NexaEmailBlast/
 - **Templates** use table-based, inline-styled HTML for broad email-client
   compatibility. The Nexa sphere is embedded inline (Content-ID) when sending,
   and as a base64 data-URI in `preview`/dry-run files so they open standalone.
-- **Packages:** `MailKit` (SMTP), `CsvHelper` (CSV), `Microsoft.Extensions.Configuration.*`.
+- **Packages:** `Microsoft.Graph` + `Azure.Identity` (Graph API), `MailKit` (SMTP),
+  `CsvHelper` (CSV), `Microsoft.Extensions.Configuration.*`.

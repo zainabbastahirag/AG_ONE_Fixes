@@ -3,6 +3,7 @@ namespace NexaEmailBlast.Models;
 public sealed class AppConfig
 {
     public SmtpConfig Smtp { get; set; } = new();
+    public GraphConfig Graph { get; set; } = new();
     public SenderConfig Sender { get; set; } = new();
     public RecipientsConfig Recipients { get; set; } = new();
     public FeedbackConfig Feedback { get; set; } = new();
@@ -25,6 +26,29 @@ public sealed class SmtpConfig
     public string Username { get; set; } = "";
     public string Password { get; set; } = "";
     public int TimeoutSeconds { get; set; } = 100;
+}
+
+public sealed class GraphConfig
+{
+    /// <summary>Microsoft Graph host, e.g. graph.microsoft.com.</summary>
+    public string Host { get; set; } = "graph.microsoft.com";
+
+    /// <summary>Azure AD / Entra tenant (GUID or domain) the app registration belongs to.</summary>
+    public string TenantId { get; set; } = "";
+
+    /// <summary>Application (client) ID of the app registration.</summary>
+    public string ClientId { get; set; } = "";
+
+    /// <summary>Client secret for the app registration (app-only auth).</summary>
+    public string ClientSecret { get; set; } = "";
+
+    /// <summary>OAuth scope for client-credentials flow. Leave default for app-only.</summary>
+    public string Scope { get; set; } = "https://graph.microsoft.com/.default";
+
+    /// <summary>Save a copy of each sent message in the sender's Sent Items.</summary>
+    public bool SaveToSentItems { get; set; } = true;
+
+    public string BaseUrl => $"https://{(string.IsNullOrWhiteSpace(Host) ? "graph.microsoft.com" : Host.Trim())}/v1.0";
 }
 
 public sealed class SenderConfig
@@ -58,7 +82,10 @@ public sealed class FeedbackConfig
 
 public sealed class SendingConfig
 {
-    /// <summary>When true, nothing is sent over SMTP; messages are written to the preview folder instead.</summary>
+    /// <summary>Delivery provider: "Graph" (Microsoft Graph API) or "Smtp".</summary>
+    public string Provider { get; set; } = "Graph";
+
+    /// <summary>When true, nothing is sent; messages are written to the preview folder instead.</summary>
     public bool DryRun { get; set; } = true;
 
     /// <summary>Pause between individual recipients to stay friendly with the mail server.</summary>

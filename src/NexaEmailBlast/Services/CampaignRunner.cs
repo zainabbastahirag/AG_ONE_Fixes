@@ -55,7 +55,7 @@ public sealed class CampaignRunner
         Console.WriteLine();
         Console.WriteLine("==== Nexa Email Blast — Campaign Plan ====");
         Console.WriteLine($"Sender      : {_config.Sender.Name} <{_config.Sender.Email}>");
-        Console.WriteLine($"SMTP        : {_config.Smtp.Host}:{_config.Smtp.Port} (StartTls={_config.Smtp.UseStartTls})");
+        Console.WriteLine($"Provider    : {EmailSenderFactory.Describe(_config)}");
         Console.WriteLine($"DryRun      : {_config.Sending.DryRun}");
         Console.WriteLine($"Recipients  : {_recipients.Count}");
         Console.WriteLine($"Feedback URL: {_config.Feedback.Url}");
@@ -98,6 +98,20 @@ public sealed class CampaignRunner
         var cc = SplitAddresses(_config.Recipients.Cc);
         var bcc = SplitAddresses(_config.Recipients.Bcc);
 
+        // Validate the delivery channel up front (unless we are only previewing).
+        if (!_config.Sending.DryRun)
+        {
+            try
+            {
+                using var probe = EmailSenderFactory.Create(_config);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[run] Cannot start sending: {ex.Message}");
+                return;
+            }
+        }
+
         foreach (var email in emails)
         {
             if (!ignoreSchedule)
@@ -111,7 +125,7 @@ public sealed class CampaignRunner
                 continue;
             }
 
-            using var sender = new EmailSender(_config.Smtp, _config.Sender);
+            using var sender = EmailSenderFactory.Create(_config);
             int ok = 0, fail = 0;
             foreach (var r in _recipients)
             {

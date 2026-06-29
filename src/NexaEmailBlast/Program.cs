@@ -36,7 +36,7 @@ switch (command)
     case "send":
         runner.PrintPlan();
         if (!appConfig.Sending.DryRun)
-            Console.WriteLine("LIVE MODE: emails will be delivered over SMTP.\n");
+            Console.WriteLine($"LIVE MODE: emails will be delivered via {EmailSenderFactory.Describe(appConfig)}.\n");
         else
             Console.WriteLine("DRY RUN: no emails will be delivered (set Sending.DryRun=false to go live).\n");
         await runner.RunAsync(ignoreSchedule, onlyKey);
@@ -87,8 +87,11 @@ Examples:
   dotnet run -- send --now           # send everything right now
   dotnet run -- send --now --email email4
 
-Configuration lives in appsettings.json. Set Sending.DryRun=false and provide
-SMTP credentials to deliver real emails. The SMTP password may also be supplied
-via the NEXA_Smtp__Password environment variable.
+Configuration lives in appsettings.json. Set Sending.DryRun=false to deliver
+real emails. Choose the channel with Sending.Provider = ""Graph"" (default) or ""Smtp"".
+
+  Graph (app-only): set Graph.TenantId / Graph.ClientId / Graph.ClientSecret
+    (or NEXA_Graph__TenantId / NEXA_Graph__ClientId / NEXA_Graph__ClientSecret).
+  SMTP            : set Smtp.Username / Smtp.Password (or NEXA_Smtp__Password).
 ");
 }
