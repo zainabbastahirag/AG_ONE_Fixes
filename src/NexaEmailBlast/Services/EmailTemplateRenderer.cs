@@ -18,6 +18,7 @@ public sealed class EmailTemplateRenderer
         ["nexaword"] = "nexa_wordmark.png",
         ["footer"] = "footer.png",
         ["cardbg"] = "card_bg.png",
+        ["cardbg_short"] = "card_bg_short.png",
     };
 
     private static readonly Regex ImgToken = new(@"\{\{IMG:(\w+)\}\}", RegexOptions.Compiled);
@@ -25,16 +26,20 @@ public sealed class EmailTemplateRenderer
     private readonly string _templatesDir;
     private readonly string _assetsDir;
     private readonly string _layout;
-    private readonly string _cardStart;
-    private readonly string _cardEnd;
+    private readonly string _cardOverlayStart;
+    private readonly string _cardOverlayEnd;
+    private readonly string _cardShortStart;
+    private readonly string _cardShortEnd;
 
     public EmailTemplateRenderer(string baseDir)
     {
         _templatesDir = Path.Combine(baseDir, "Templates");
         _assetsDir = Path.Combine(baseDir, "Assets");
         _layout = File.ReadAllText(Path.Combine(_templatesDir, "_layout.html"));
-        _cardStart = File.ReadAllText(Path.Combine(_templatesDir, "_card_start.html"));
-        _cardEnd = File.ReadAllText(Path.Combine(_templatesDir, "_card_end.html"));
+        _cardOverlayStart = File.ReadAllText(Path.Combine(_templatesDir, "_card_overlay_start.html"));
+        _cardOverlayEnd = File.ReadAllText(Path.Combine(_templatesDir, "_card_overlay_end.html"));
+        _cardShortStart = File.ReadAllText(Path.Combine(_templatesDir, "_card_short_start.html"));
+        _cardShortEnd = File.ReadAllText(Path.Combine(_templatesDir, "_card_short_end.html"));
     }
 
     public string AssetPath(string key) => Path.Combine(_assetsDir, AssetFiles[key]);
@@ -52,31 +57,36 @@ public sealed class EmailTemplateRenderer
     public string Render(CampaignEmail email, string greeting, string feedbackUrl, bool embedImageInline, string? cardBackgroundUrl = null)
     {
         var content = File.ReadAllText(Path.Combine(_templatesDir, email.Template))
-            .Replace("{{CARD_START}}", _cardStart)
-            .Replace("{{CARD_END}}", _cardEnd);
+            .Replace("{{CARD_OVERLAY_START}}", _cardOverlayStart)
+            .Replace("{{CARD_OVERLAY_END}}", _cardOverlayEnd)
+            .Replace("{{CARD_SHORT_START}}", _cardShortStart)
+            .Replace("{{CARD_SHORT_END}}", _cardShortEnd);
 
-        // The card gradient is delivered as a visible <img> (Gmail/mobile) plus VML/background
-        // fallbacks (Outlook). A hosted https URL (if provided) is used everywhere.
-        var cardBg = !string.IsNullOrWhiteSpace(cardBackgroundUrl)
-            ? cardBackgroundUrl!
-            : embedImageInline ? BuildDataUri(AssetPath("cardbg")) : "cid:cardbg";
+        var cardBg = ResolveCardBg("cardbg", embedImageInline, cardBackgroundUrl);
+        var cardBgShort = ResolveCardBg("cardbg_short", embedImageInline, cardBackgroundUrl);
 
         var html = _layout
             .Replace("{{PREHEADER}}", System.Net.WebUtility.HtmlEncode(email.Preheader))
             .Replace("{{CONTENT}}", content)
             .Replace("{{NAME}}", System.Net.WebUtility.HtmlEncode(greeting))
             .Replace("{{FEEDBACK_URL}}", feedbackUrl)
-            .Replace("{{CARD_BG}}", cardBg);
+            .Replace("{{CARD_BG}}", cardBg)
+            .Replace("{{CARD_BG_SHORT}}", cardBgShort);
 
         return ImgToken.Replace(html, m =>
         {
             var key = m.Groups[1].Value;
             if (!AssetFiles.ContainsKey(key)) return m.Value;
-            if (key == "cardbg" && !string.IsNullOrWhiteSpace(cardBackgroundUrl))
+            if (key is "cardbg" or "cardbg_short" && !string.IsNullOrWhiteSpace(cardBackgroundUrl))
                 return cardBackgroundUrl;
             return embedImageInline ? BuildDataUri(AssetPath(key)) : $"cid:{key}";
         });
     }
+
+    private string ResolveCardBg(string key, bool embedImageInline, string? cardBackgroundUrl) =>
+        !string.IsNullOrWhiteSpace(cardBackgroundUrl)
+            ? cardBackgroundUrl
+            : embedImageInline ? BuildDataUri(AssetPath(key)) : $"cid:{key}";
 
     /// <summary>The inline images actually referenced (cid:) in the given HTML.</summary>
     public IReadOnlyList<InlineImage> InlineImagesFor(string html)

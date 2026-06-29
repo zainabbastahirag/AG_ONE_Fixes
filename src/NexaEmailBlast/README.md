@@ -210,7 +210,8 @@ NexaEmailBlast/
 │  ├─ nexa_sphere.png         #   Nexa ball / mascot     ({{IMG:ball}})
 │  ├─ nexa_wordmark.png       #   "NeXa" wordmark        ({{IMG:nexaword}})
 │  ├─ footer.png              #   whole Aventra footer   ({{IMG:footer}})
-│  └─ card_bg.png             #   card gradient bg image ({{CARD_BG}})
+│  ├─ card_bg.png             #   tall card gradient (email1, email4)
+│  └─ card_bg_short.png       #   short card gradient (email2, email3)
 ├─ Templates/
 │  ├─ _layout.html            # shared header (AG ONE) + dark footer
 │  ├─ email1_partner.html
