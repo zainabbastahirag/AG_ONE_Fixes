@@ -14,32 +14,28 @@ public sealed class CampaignRunner
         _config = config;
         _baseDir = baseDir;
         _renderer = new EmailTemplateRenderer(baseDir);
-        _recipients = ResolveRecipients();
+        _recipients = new List<Recipient>
+        {
+            new() { Email = _config.Recipients.ToEmail, Name = _config.Recipients.ToName },
+        };
     }
 
+    /// <summary>Config object — mutable at runtime so the interactive menu can toggle DryRun/provider etc.</summary>
+    public AppConfig Config => _config;
+
+    /// <summary>The production recipient(s) — i.e. AG All Employee.</summary>
     public IReadOnlyList<Recipient> Recipients => _recipients;
 
-    private List<Recipient> ResolveRecipients()
-    {
-        var csvPath = ResolvePath(_config.Recipients.CsvPath);
-        var list = CsvRecipientReader.Read(csvPath);
+    /// <summary>The test recipient (e.g. zain.abbas@aventragroup.com).</summary>
+    public Recipient TestRecipient => new() { Email = _config.Recipients.TestEmail, Name = _config.Recipients.TestName };
 
-        if (list.Count == 0)
-        {
-            Console.WriteLine($"[recipients] No CSV rows found at '{csvPath}'. Falling back to default recipient.");
-            list.Add(new Recipient
-            {
-                Email = _config.Recipients.DefaultToEmail,
-                Name = _config.Recipients.DefaultToName,
-            });
-        }
-        else
-        {
-            Console.WriteLine($"[recipients] Loaded {list.Count} recipient(s) from '{csvPath}'.");
-        }
+    public IReadOnlyList<CampaignEmail> Emails => _config.Campaign;
 
-        return list;
-    }
+    /// <summary>When true, prints API-style request details and full stack traces on failure.</summary>
+    public bool Verbose { get; set; }
+
+    public CampaignEmail? GetEmail(string key) =>
+        _config.Campaign.FirstOrDefault(e => string.Equals(e.Key, key, StringComparison.OrdinalIgnoreCase));
 
     private string ResolvePath(string path)
     {
@@ -47,8 +43,7 @@ public sealed class CampaignRunner
         return Path.IsPathRooted(path) ? path : Path.Combine(_baseDir, path);
     }
 
-    private string GreetingFor(Recipient r) =>
-        string.IsNullOrWhiteSpace(r.Name) ? _config.Recipients.GreetingFallback : r.Name!;
+    private string GreetingFor(Recipient r) => _config.Recipients.Greeting;
 
     public void PrintPlan()
     {
@@ -56,8 +51,12 @@ public sealed class CampaignRunner
         Console.WriteLine("==== Nexa Email Blast — Campaign Plan ====");
         Console.WriteLine($"Sender      : {_config.Sender.Name} <{_config.Sender.Email}>");
         Console.WriteLine($"Provider    : {EmailSenderFactory.Describe(_config)}");
+        Console.WriteLine($"Endpoint    : {EmailSenderFactory.DescribeEndpoint(_config)}");
         Console.WriteLine($"DryRun      : {_config.Sending.DryRun}");
-        Console.WriteLine($"Recipients  : {_recipients.Count}");
+        Console.WriteLine($"Debug       : {Verbose}");
+        Console.WriteLine($"To (live)   : {_config.Recipients.ToName} <{_config.Recipients.ToEmail}>");
+        Console.WriteLine($"Test address: {_config.Recipients.TestName} <{_config.Recipients.TestEmail}>");
+        Console.WriteLine($"Greeting    : Hi {_config.Recipients.Greeting},");
         Console.WriteLine($"Feedback URL: {_config.Feedback.Url}");
         Console.WriteLine("Schedule    :");
         foreach (var e in _config.Campaign)
@@ -66,129 +65,256 @@ public sealed class CampaignRunner
         Console.WriteLine();
     }
 
+    public void PrintRecipients()
+    {
+        Console.WriteLine();
+        Console.WriteLine($"   Live : {_config.Recipients.ToName} <{_config.Recipients.ToEmail}>");
+        Console.WriteLine($"   Test : {_config.Recipients.TestName} <{_config.Recipients.TestEmail}>");
+        var cc = SplitAddresses(_config.Recipients.Cc);
+        var bcc = SplitAddresses(_config.Recipients.Bcc);
+        if (cc.Count > 0) Console.WriteLine($"   Cc   : {string.Join(", ", cc)}");
+        if (bcc.Count > 0) Console.WriteLine($"   Bcc  : {string.Join(", ", bcc)}");
+        Console.WriteLine();
+    }
+
     /// <summary>Renders every campaign email to a self-contained HTML preview file.</summary>
     public void RenderPreviews()
     {
         var outDir = ResolvePath(_config.Sending.PreviewOutputFolder);
         Directory.CreateDirectory(outDir);
-        var sampleName = _recipients[0].Name ?? _config.Recipients.GreetingFallback;
 
         foreach (var email in _config.Campaign)
         {
-            var html = _renderer.Render(email, sampleName, _config.Feedback.Url, embedImageInline: true);
+            var html = _renderer.Render(email, _config.Recipients.Greeting, _config.Feedback.Url, embedImageInline: true);
             var path = Path.Combine(outDir, $"{email.Key}.html");
             File.WriteAllText(path, html);
             Console.WriteLine($"[preview] {email.Key} -> {path}");
         }
     }
 
-    /// <summary>Runs the campaign: for each email, optionally wait for its scheduled time then send to all recipients.</summary>
+    // ---- High-level entry points -------------------------------------------------
+
+    /// <summary>CLI compatibility: run the whole (or one) campaign, honouring the schedule unless ignored.</summary>
     public async Task RunAsync(bool ignoreSchedule, string? onlyKey)
     {
-        var emails = _config.Campaign
-            .Where(e => onlyKey is null || string.Equals(e.Key, onlyKey, StringComparison.OrdinalIgnoreCase))
-            .ToList();
-
+        var emails = SelectEmails(onlyKey);
         if (emails.Count == 0)
         {
             Console.WriteLine($"[run] No campaign emails matched '{onlyKey}'. Nothing to do.");
             return;
         }
 
-        var cc = SplitAddresses(_config.Recipients.Cc);
-        var bcc = SplitAddresses(_config.Recipients.Bcc);
+        if (ignoreSchedule)
+            await SendNowAsync(emails);
+        else
+            await RunScheduledAsync(emails);
+    }
 
-        // Validate the delivery channel up front (unless we are only previewing).
-        if (!_config.Sending.DryRun)
-        {
-            try
-            {
-                using var probe = EmailSenderFactory.Create(_config);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[run] Cannot start sending: {ex.Message}");
-                return;
-            }
-        }
+    /// <summary>Send the given emails immediately to all recipients.</summary>
+    public async Task SendNowAsync(IReadOnlyList<CampaignEmail> emails)
+    {
+        if (!ValidateChannel()) return;
+        foreach (var email in emails)
+            await DispatchAsync(email, _recipients);
+        Console.WriteLine("\n[run] Done.");
+    }
 
+    /// <summary>Wait until <paramref name="when"/>, then send the given emails to all recipients.</summary>
+    public async Task SendAtAsync(DateTime when, IReadOnlyList<CampaignEmail> emails)
+    {
+        if (!ValidateChannel()) return;
+        await WaitUntilAsync(when, "custom time");
+        foreach (var email in emails)
+            await DispatchAsync(email, _recipients);
+        Console.WriteLine("\n[run] Done.");
+    }
+
+    /// <summary>Run the configured schedule: each email waits for its own SendAtLocal.</summary>
+    public async Task RunScheduledAsync(IReadOnlyList<CampaignEmail> emails)
+    {
+        if (!ValidateChannel()) return;
         foreach (var email in emails)
         {
-            if (!ignoreSchedule)
-                await WaitUntilAsync(email);
-
-            Console.WriteLine($"\n[send] === {email.Key} :: \"{email.Subject}\" -> {_recipients.Count} recipient(s) ===");
-
-            if (_config.Sending.DryRun)
-            {
-                RenderDryRun(email);
-                continue;
-            }
-
-            using var sender = EmailSenderFactory.Create(_config);
-            int ok = 0, fail = 0;
-            foreach (var r in _recipients)
-            {
-                try
-                {
-                    var html = _renderer.Render(email, GreetingFor(r), _config.Feedback.Url, embedImageInline: false);
-                    await sender.SendAsync(r, email.Subject, html, _renderer.NexaImagePath, cc, bcc);
-                    ok++;
-                    Console.WriteLine($"   [ok]   {r.Email}");
-                }
-                catch (Exception ex)
-                {
-                    fail++;
-                    Console.WriteLine($"   [FAIL] {r.Email} : {ex.Message}");
-                }
-
-                if (_config.Sending.ThrottleMillisecondsBetweenEmails > 0)
-                    await Task.Delay(_config.Sending.ThrottleMillisecondsBetweenEmails);
-            }
-            Console.WriteLine($"[send] {email.Key} complete. Sent={ok} Failed={fail}");
+            await WaitUntilAsync(email.ParseSendAt(), email.Key);
+            await DispatchAsync(email, _recipients);
         }
-
         Console.WriteLine("\n[run] Campaign finished.");
     }
 
-    private void RenderDryRun(CampaignEmail email)
+    /// <summary>Send a single email to one explicit address (a test send). Always attempts real delivery.</summary>
+    public async Task SendTestAsync(string toEmail, string? toName, CampaignEmail email)
+    {
+        var recipient = new Recipient { Email = toEmail, Name = toName };
+        if (!recipient.IsValid)
+        {
+            Console.WriteLine($"[test] '{toEmail}' is not a valid email address.");
+            return;
+        }
+
+        IEmailSender sender;
+        try
+        {
+            sender = EmailSenderFactory.Create(_config);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[test] Cannot create sender: {ex.Message}");
+            return;
+        }
+
+        using (sender)
+        {
+            Console.WriteLine($"\n[test] Sending \"{email.Subject}\" ({email.Key}) to {toEmail} via {EmailSenderFactory.DescribeEndpoint(_config)}");
+            var html = _renderer.Render(email, GreetingFor(recipient), _config.Feedback.Url, embedImageInline: false);
+            LogRequest(email, recipient, html);
+            try
+            {
+                await sender.SendAsync(recipient, email.Subject, html, _renderer.NexaImagePath,
+                    SplitAddresses(_config.Recipients.Cc), SplitAddresses(_config.Recipients.Bcc));
+                Console.WriteLine($"   [ok]   test email delivered to {toEmail}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"   [FAIL] {toEmail} : {(Verbose ? ex.ToString() : ex.Message)}");
+            }
+        }
+    }
+
+    /// <summary>Print the exact request body that would be sent (Graph JSON or SMTP MIME) without sending.</summary>
+    public async Task InspectAsync(CampaignEmail email, Recipient? recipient = null)
+    {
+        var r = recipient ?? _recipients[0];
+        var html = _renderer.Render(email, GreetingFor(r), _config.Feedback.Url, embedImageInline: false);
+        var cc = SplitAddresses(_config.Recipients.Cc);
+        var bcc = SplitAddresses(_config.Recipients.Bcc);
+
+        Console.WriteLine($"\n--- Inspect {email.Key} -> {r.Email} ---");
+        Console.WriteLine($"Endpoint: {EmailSenderFactory.DescribeEndpoint(_config)}");
+
+        if (EmailSenderFactory.IsGraph(_config))
+        {
+            var msg = GraphEmailSender.BuildMessage(r, email.Subject, html, _renderer.NexaImagePath, cc, bcc);
+            var json = await GraphEmailSender.ToDebugJsonAsync(msg);
+            Console.WriteLine("Request body (application/json):");
+            Console.WriteLine(json);
+        }
+        else
+        {
+            var mime = SmtpEmailSender.BuildMimeMessage(_config.Sender, r, email.Subject, html, _renderer.NexaImagePath, cc, bcc);
+            Console.WriteLine("MIME headers:");
+            Console.WriteLine($"  From   : {mime.From}");
+            Console.WriteLine($"  To     : {mime.To}");
+            if (mime.Cc.Count > 0) Console.WriteLine($"  Cc     : {mime.Cc}");
+            if (mime.Bcc.Count > 0) Console.WriteLine($"  Bcc    : {mime.Bcc}");
+            Console.WriteLine($"  Subject: {mime.Subject}");
+            var mimeType = mime.Body?.ContentType?.MimeType ?? "multipart/related";
+            Console.WriteLine($"  Body   : {mimeType} (html {html.Length} chars, inline image {(html.Contains("cid:" + EmailTemplateRenderer.NexaImageContentId) ? "yes" : "no")})");
+        }
+        Console.WriteLine("--- end inspect ---\n");
+    }
+
+    // ---- Core dispatch -----------------------------------------------------------
+
+    private List<CampaignEmail> SelectEmails(string? onlyKey) =>
+        _config.Campaign
+            .Where(e => onlyKey is null || string.Equals(e.Key, onlyKey, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+    private bool ValidateChannel()
+    {
+        if (_config.Sending.DryRun) return true;
+        try
+        {
+            using var probe = EmailSenderFactory.Create(_config);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[run] Cannot start sending: {ex.Message}");
+            return false;
+        }
+    }
+
+    private async Task DispatchAsync(CampaignEmail email, IReadOnlyList<Recipient> recipients)
+    {
+        Console.WriteLine($"\n[send] === {email.Key} :: \"{email.Subject}\" -> {recipients.Count} recipient(s) ===");
+
+        if (_config.Sending.DryRun)
+        {
+            RenderDryRun(email, recipients);
+            return;
+        }
+
+        var cc = SplitAddresses(_config.Recipients.Cc);
+        var bcc = SplitAddresses(_config.Recipients.Bcc);
+
+        using var sender = EmailSenderFactory.Create(_config);
+        int ok = 0, fail = 0;
+        foreach (var r in recipients)
+        {
+            try
+            {
+                var html = _renderer.Render(email, GreetingFor(r), _config.Feedback.Url, embedImageInline: false);
+                LogRequest(email, r, html);
+                await sender.SendAsync(r, email.Subject, html, _renderer.NexaImagePath, cc, bcc);
+                ok++;
+                Console.WriteLine($"   [ok]   {r.Email}");
+            }
+            catch (Exception ex)
+            {
+                fail++;
+                Console.WriteLine($"   [FAIL] {r.Email} : {(Verbose ? ex.ToString() : ex.Message)}");
+            }
+
+            if (_config.Sending.ThrottleMillisecondsBetweenEmails > 0)
+                await Task.Delay(_config.Sending.ThrottleMillisecondsBetweenEmails);
+        }
+        Console.WriteLine($"[send] {email.Key} complete. Sent={ok} Failed={fail}");
+    }
+
+    private void LogRequest(CampaignEmail email, Recipient r, string html)
+    {
+        if (!Verbose) return;
+        var hasImage = html.Contains("cid:" + EmailTemplateRenderer.NexaImageContentId);
+        var cc = SplitAddresses(_config.Recipients.Cc).Count;
+        var bcc = SplitAddresses(_config.Recipients.Bcc).Count;
+        Console.WriteLine($"   [debug] {EmailSenderFactory.DescribeEndpoint(_config)}");
+        Console.WriteLine($"   [debug] To={r.Email} greeting=\"{GreetingFor(r)}\" subject=\"{email.Subject}\" " +
+                          $"htmlChars={html.Length} inlineImage={hasImage} cc={cc} bcc={bcc} saveToSent={_config.Graph.SaveToSentItems}");
+    }
+
+    private void RenderDryRun(CampaignEmail email, IReadOnlyList<Recipient> recipients)
     {
         var outDir = ResolvePath(_config.Sending.PreviewOutputFolder);
         Directory.CreateDirectory(outDir);
-        var html = _renderer.Render(email, _recipients[0].Name ?? _config.Recipients.GreetingFallback,
-            _config.Feedback.Url, embedImageInline: true);
+        var html = _renderer.Render(email, _config.Recipients.Greeting, _config.Feedback.Url, embedImageInline: true);
         var path = Path.Combine(outDir, $"{email.Key}.html");
         File.WriteAllText(path, html);
-        Console.WriteLine($"   [DRY RUN] Would send to {_recipients.Count} recipient(s). Preview written: {path}");
-        foreach (var r in _recipients.Take(10))
+        Console.WriteLine($"   [DRY RUN] Would send to {recipients.Count} recipient(s). Preview written: {path}");
+        foreach (var r in recipients.Take(10))
             Console.WriteLine($"             -> {r.Email}");
-        if (_recipients.Count > 10)
-            Console.WriteLine($"             ... and {_recipients.Count - 10} more");
+        if (recipients.Count > 10)
+            Console.WriteLine($"             ... and {recipients.Count - 10} more");
     }
 
-    private static async Task WaitUntilAsync(CampaignEmail email)
+    private static async Task WaitUntilAsync(DateTime target, string label)
     {
-        var target = email.ParseSendAt();
         if (target == DateTime.MinValue)
         {
-            Console.WriteLine($"[schedule] {email.Key} has no valid SendAtLocal; sending immediately.");
+            Console.WriteLine($"[schedule] {label} has no valid time; sending immediately.");
             return;
         }
 
         while (true)
         {
-            var now = DateTime.Now;
-            var remaining = target - now;
+            var remaining = target - DateTime.Now;
             if (remaining <= TimeSpan.Zero)
             {
-                Console.WriteLine($"[schedule] {email.Key} due ({target:ddd dd MMM HH:mm}). Sending now.");
+                Console.WriteLine($"[schedule] {label} due ({target:ddd dd MMM HH:mm}). Sending now.");
                 return;
             }
 
-            Console.WriteLine($"[schedule] Waiting for {email.Key} at {target:ddd dd MMM HH:mm} " +
-                              $"(in {FormatRemaining(remaining)})...");
-
-            // Cap each sleep so the countdown updates periodically.
+            Console.WriteLine($"[schedule] Waiting for {label} at {target:ddd dd MMM HH:mm} (in {FormatRemaining(remaining)})...");
             var sleep = remaining > TimeSpan.FromMinutes(5) ? TimeSpan.FromMinutes(5) : remaining;
             await Task.Delay(sleep);
         }

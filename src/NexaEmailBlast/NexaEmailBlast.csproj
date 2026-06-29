@@ -10,7 +10,6 @@
 
   <ItemGroup>
     <PackageReference Include="Azure.Identity" Version="1.21.0" />
-    <PackageReference Include="CsvHelper" Version="33.1.0" />
     <PackageReference Include="MailKit" Version="4.17.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="8.0.2" />
@@ -23,8 +22,6 @@
     <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Templates\**\*" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Assets\**\*" CopyToOutputDirectory="PreserveNewest" />
-    <None Update="recipients.csv" CopyToOutputDirectory="PreserveNewest" Condition="Exists('recipients.csv')" />
-    <None Update="recipients.sample.csv" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

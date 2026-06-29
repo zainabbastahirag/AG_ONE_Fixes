@@ -95,6 +95,23 @@ public sealed class GraphEmailSender : IEmailSender
         return message;
     }
 
+    /// <summary>Serializes the Graph request body to JSON (with the image bytes truncated) for API-style debugging.</summary>
+    public static async Task<string> ToDebugJsonAsync(Graph.Message message)
+    {
+        Microsoft.Kiota.Abstractions.Serialization.SerializationWriterFactoryRegistry.DefaultInstance
+            .ContentTypeAssociatedFactories["application/json"] =
+            new Microsoft.Kiota.Serialization.Json.JsonSerializationWriterFactory();
+
+        var body = new SendMailPostRequestBody { Message = message, SaveToSentItems = true };
+        var json = await Microsoft.Kiota.Abstractions.Serialization.KiotaJsonSerializer.SerializeAsStringAsync(body);
+
+        // Replace the huge base64 attachment payload with a short marker so the dump stays readable.
+        return System.Text.RegularExpressions.Regex.Replace(
+            json,
+            "(\"contentBytes\":\")[^\"]+(\")",
+            m => m.Groups[1].Value + "<base64 image bytes omitted>" + m.Groups[2].Value);
+    }
+
     private static Graph.Recipient ToGraph(string address, string? name) => new()
     {
         EmailAddress = new Graph.EmailAddress

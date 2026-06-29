@@ -44,8 +44,23 @@ public sealed class SmtpEmailSender : IEmailSender
         IEnumerable<string>? cc = null,
         IEnumerable<string>? bcc = null)
     {
+        var message = BuildMimeMessage(_sender, recipient, subject, htmlBody, nexaImagePath, cc, bcc);
+        await ConnectAsync();
+        await _client.SendAsync(message);
+    }
+
+    /// <summary>Builds the MIME message (exposed so it can be inspected without sending).</summary>
+    public static MimeMessage BuildMimeMessage(
+        SenderConfig sender,
+        Recipient recipient,
+        string subject,
+        string htmlBody,
+        string nexaImagePath,
+        IEnumerable<string>? cc = null,
+        IEnumerable<string>? bcc = null)
+    {
         var message = new MimeMessage();
-        message.From.Add(new MailboxAddress(_sender.Name, _sender.Email));
+        message.From.Add(new MailboxAddress(sender.Name, sender.Email));
         message.To.Add(new MailboxAddress(recipient.Name ?? recipient.Email, recipient.Email));
         message.Subject = subject;
 
@@ -62,9 +77,7 @@ public sealed class SmtpEmailSender : IEmailSender
         }
 
         message.Body = builder.ToMessageBody();
-
-        await ConnectAsync();
-        await _client.SendAsync(message);
+        return message;
     }
 
     private SecureSocketOptions ResolveSecurity()

@@ -1,9 +1,10 @@
 # Nexa Email Blast
 
-A small **C# / .NET 8 console utility** that bulk-sends the AG ONE Marketplace
-launch campaign from **Nexa `<nexa@aventragroup.com>`**. It reads recipients from
-a CSV, renders four ready-made HTML emails (pixel-matched to the approved
-designs), and delivers them either immediately or on a configured schedule.
+A small **C# / .NET 8 console utility** that sends the AG ONE Marketplace
+launch campaign from **Nexa `<nexa@aventragroup.com>`**. It renders four
+ready-made HTML emails (pixel-matched to the approved designs) and delivers them
+to **AG All Employee** (or a test address) either immediately or on a configured
+schedule.
 
 > Everything is driven by `appsettings.json` — no code changes needed to run it.
 
@@ -25,20 +26,60 @@ designs), and delivers them either immediately or on a configured schedule.
 
 ---
 
-## Quick start
+## Interactive console (default)
+
+Just run it with no arguments to get a menu where you can send now, schedule,
+send a test, inspect the outgoing request like an API call, and flip debug /
+dry-run on the fly:
+
+```bash
+cd src/NexaEmailBlast
+dotnet run
+```
+
+```
+  Provider : Microsoft Graph (graph.microsoft.com, ...)
+  Endpoint : POST https://graph.microsoft.com/v1.0/users/nexa@aventragroup.com/sendMail
+  DryRun   : True      Debug: False      Recipients: 2
+   1) Show plan & config
+   2) Show recipients
+   3) Preview emails (render HTML)
+   4) Inspect request (API-style dump, no send)   <- see exact Graph JSON / SMTP MIME
+   5) Send TEST to a single address
+   6) Send ALL emails now
+   7) Send ONE email now
+   8) Send at a custom date/time
+   9) Run the configured SCHEDULE
+   D) Toggle Debug      R) Toggle DryRun      P) Switch provider
+   Q) Quit
+```
+
+- **Inspect (4)** prints the actual request body — Graph `sendMail` JSON (with the
+  image bytes omitted) or the SMTP MIME headers — without sending anything.
+- **Test (5)** delivers one chosen email to an address you type (defaults to
+  `zain.abbas@aventragroup.com`).
+- **Custom time (8)** waits until a date/time you enter, then sends.
+- **Debug (D)** adds per-recipient, API-style request logging.
+- **DryRun (R)** flips between "render only" and live sending.
+
+## Quick start (non-interactive)
 
 ```bash
 cd src/NexaEmailBlast
 
-# 1) Preview the designs (writes self-contained .html files to ./preview)
+# Preview the designs (writes self-contained .html files to ./preview)
 dotnet run -- preview
 
-# 2) See the plan (schedule + recipient count + config)
+# See the plan (schedule + recipients + provider/config)
 dotnet run -- plan
 
-# 3) Send (DryRun is ON by default — nothing leaves your machine)
-dotnet run -- send --now          # send all 4 right now
-dotnet run -- send                # wait for each scheduled time, then send
+# Inspect the exact outgoing request for one email (no send)
+dotnet run -- inspect email4
+
+# Send (DryRun is ON by default — nothing leaves your machine)
+dotnet run -- send --now              # send all 4 right now
+dotnet run -- send                    # wait for each scheduled time, then send
+dotnet run -- send --now --debug      # send everything now with verbose logging
 dotnet run -- send --now --email email4   # just the launch email
 ```
 
@@ -49,7 +90,7 @@ dotnet run -- send --now --email email4   # just the launch email
    - **`Graph`** (default) — Microsoft Graph API, app-only auth. Fill in
      `Graph.TenantId`, `Graph.ClientId`, `Graph.ClientSecret`.
    - **`Smtp`** — fill in `Smtp.Username` / `Smtp.Password`.
-4. Point `Recipients.CsvPath` at your real list.
+4. Confirm the recipients in `Recipients` (live `ToEmail`, `TestEmail`).
 5. Run `dotnet run -- send` and leave it running until 1 Jul 12 PM, or use
    `--now` to fire immediately.
 
@@ -84,26 +125,28 @@ NEXA_Graph__ClientSecret='•••' dotnet run -- send --now
 
 ---
 
-## Recipients CSV
+## Recipients
 
-Copy `recipients.sample.csv` to `recipients.csv` and edit. Headers are
-case-insensitive; only `Email` is required, `Name` is optional.
+There is no CSV — recipients live in `appsettings.json`:
 
-```csv
-Email,Name
-allemployee@aventragroup.com,AG All Employee
-zain.abbas@aventragroup.com,Zain Abbas
+```jsonc
+"Recipients": {
+  "ToName": "AG All Employee",
+  "ToEmail": "allemployee@aventragroup.com",   // live target for every email
+  "TestName": "Zain Abbas",
+  "TestEmail": "zain.abbas@aventragroup.com",  // used by the "Send TEST" actions
+  "Greeting": "Aventrian",                       // shows as "Hi Aventrian," in the body
+  "Cc": "",
+  "Bcc": ""
+}
 ```
 
-- One email is sent **per row** so the greeting can be personalised.
-- Rows with no `Name` fall back to the greeting word `Aventrian`
-  (`Recipients.GreetingFallback`).
-- Duplicate / invalid emails are skipped automatically.
-- If the CSV is missing or empty, the campaign falls back to a single default
-  recipient (`Recipients.DefaultToEmail`, default `zain.abbas@aventragroup.com`)
-  so you can test safely.
-
-You can also set a global `Cc` / `Bcc` (comma-separated) in `appsettings.json`.
+- **Live** sends (menu 7/8/9/S, or `dotnet run -- send`) go to `ToEmail`
+  (`AG All Employee <allemployee@aventragroup.com>`).
+- **Test** sends (menu 5/6) go to `TestEmail`
+  (`zain.abbas@aventragroup.com`) so you can preview the exact same emails first.
+- The body greeting is always `Hi {Greeting},` (defaults to `Aventrian`).
+- Optional global `Cc` / `Bcc` (comma-separated) apply to every message.
 
 ---
 
@@ -119,13 +162,13 @@ You can also set a global `Cc` / `Bcc` (comma-separated) in `appsettings.json`.
 | `Smtp` | `Security` | `starttls` (default), `ssl`, `none`, or `auto` |
 | `Smtp` | `Username`, `Password` | SMTP credentials for `nexa@aventragroup.com` |
 | `Sender` | `Name`, `Email` | From header (Nexa) |
-| `Recipients` | `CsvPath` | Path to the recipient CSV (relative paths resolve next to the app) |
-| `Recipients` | `DefaultToEmail`, `DefaultToName` | Fallback recipient when the CSV is empty |
-| `Recipients` | `GreetingFallback` | Greeting used when a row has no name |
+| `Recipients` | `ToName`, `ToEmail` | Live target (AG All Employee) |
+| `Recipients` | `TestName`, `TestEmail` | Test target (zain.abbas@...) |
+| `Recipients` | `Greeting` | Greeting word shown as `Hi {Greeting},` |
 | `Recipients` | `Cc`, `Bcc` | Optional global copy lists |
 | `Feedback` | `Url` | Shareable link behind the word **feedback** in the launch email |
-| `Sending` | `DryRun` | `true` = render to `./preview` only, no SMTP |
-| `Sending` | `ThrottleMillisecondsBetweenEmails` | Pause between recipients |
+| `Sending` | `DryRun` | `true` = render to `./preview` only, no send |
+| `Sending` | `ThrottleMillisecondsBetweenEmails` | Pause between messages |
 | `Campaign[]` | `Subject`, `Preheader`, `Template`, `SendAtLocal` | Per-email content & timing |
 
 Any setting can be overridden with environment variables using the `NEXA_`
@@ -141,9 +184,8 @@ NEXA_Smtp__Password='•••' NEXA_Sending__DryRun=false dotnet run -- send --
 
 ```
 NexaEmailBlast/
-├─ Program.cs                 # CLI entry point (preview | plan | send)
-├─ appsettings.json           # all configuration
-├─ recipients.sample.csv      # example list
+├─ Program.cs                 # entry point (menu | preview | plan | inspect | send)
+├─ appsettings.json           # all configuration (incl. recipients)
 ├─ Assets/nexa_sphere.png     # Nexa mascot (embedded inline via Content-ID)
 ├─ Templates/
 │  ├─ _layout.html            # shared header (AG ONE) + dark footer
@@ -153,17 +195,17 @@ NexaEmailBlast/
 │  └─ email4_launch.html
 ├─ Models/                    # config + recipient models
 └─ Services/
-   ├─ CsvRecipientReader.cs   # CsvHelper-based loader
    ├─ EmailTemplateRenderer.cs# layout + fragment composition / token replace
    ├─ IEmailSender.cs         # delivery-channel abstraction
    ├─ EmailSenderFactory.cs   # picks Graph or SMTP from config
    ├─ GraphEmailSender.cs     # Microsoft Graph API (app-only), inline attachment
    ├─ EmailSender.cs          # MailKit SMTP, inline CID image
-   └─ CampaignRunner.cs       # scheduling + orchestration
+   ├─ CampaignRunner.cs       # send now / scheduled / test / inspect + debug
+   └─ InteractiveMenu.cs      # the interactive console (REPL)
 ```
 
 - **Templates** use table-based, inline-styled HTML for broad email-client
   compatibility. The Nexa sphere is embedded inline (Content-ID) when sending,
   and as a base64 data-URI in `preview`/dry-run files so they open standalone.
 - **Packages:** `Microsoft.Graph` + `Azure.Identity` (Graph API), `MailKit` (SMTP),
-  `CsvHelper` (CSV), `Microsoft.Extensions.Configuration.*`.
+  `Microsoft.Extensions.Configuration.*`.

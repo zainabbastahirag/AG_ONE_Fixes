@@ -59,15 +59,16 @@ public sealed class SenderConfig
 
 public sealed class RecipientsConfig
 {
-    /// <summary>Path to the CSV file holding the bulk recipient list.</summary>
-    public string CsvPath { get; set; } = "recipients.csv";
+    /// <summary>Production recipient — the real campaign target.</summary>
+    public string ToName { get; set; } = "AG All Employee";
+    public string ToEmail { get; set; } = "allemployee@aventragroup.com";
 
-    /// <summary>Used when the CSV is missing/empty so the campaign still has a target.</summary>
-    public string DefaultToName { get; set; } = "AG All Employee";
-    public string DefaultToEmail { get; set; } = "zain.abbas@aventragroup.com";
+    /// <summary>Test recipient — used by the "Send TEST" actions.</summary>
+    public string TestName { get; set; } = "Zain Abbas";
+    public string TestEmail { get; set; } = "zain.abbas@aventragroup.com";
 
-    /// <summary>Greeting word used when a recipient has no name (e.g. "Aventrian").</summary>
-    public string GreetingFallback { get; set; } = "Aventrian";
+    /// <summary>Greeting word shown in the email body, e.g. "Hi Aventrian,".</summary>
+    public string Greeting { get; set; } = "Aventrian";
 
     /// <summary>Optional addresses copied on every message (comma separated).</summary>
     public string Cc { get; set; } = "";

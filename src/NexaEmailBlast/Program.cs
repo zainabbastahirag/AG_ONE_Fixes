@@ -12,16 +12,24 @@ var configuration = new ConfigurationBuilder()
 
 var appConfig = configuration.Get<AppConfig>() ?? new AppConfig();
 
-var command = (args.FirstOrDefault() ?? "help").ToLowerInvariant();
+var command = (args.FirstOrDefault() ?? "menu").ToLowerInvariant();
 var ignoreSchedule = args.Contains("--now", StringComparer.OrdinalIgnoreCase);
 var onlyKey = GetOption(args, "--email");
 
 PrintBanner();
 
 var runner = new CampaignRunner(appConfig, baseDir);
+if (args.Contains("--debug", StringComparer.OrdinalIgnoreCase))
+    runner.Verbose = true;
 
 switch (command)
 {
+    case "menu":
+    case "interactive":
+    case "i":
+        await new InteractiveMenu(runner).RunAsync();
+        break;
+
     case "preview":
         runner.PrintPlan();
         runner.RenderPreviews();
@@ -32,6 +40,17 @@ switch (command)
     case "list":
         runner.PrintPlan();
         break;
+
+    case "inspect":
+    {
+        var key = onlyKey ?? args.ElementAtOrDefault(1);
+        var email = key is null ? runner.Emails.FirstOrDefault() : runner.GetEmail(key);
+        if (email is null)
+            Console.WriteLine($"No email matched '{key}'. Try email1..email4.");
+        else
+            await runner.InspectAsync(email);
+        break;
+    }
 
     case "send":
         runner.PrintPlan();
@@ -70,21 +89,27 @@ static void PrintHelp()
 Usage: dotnet run -- <command> [options]
 
 Commands:
+  menu | i           Interactive console: send now / at a time / test, inspect
+                     requests like an API, toggle debug & dry-run. (default)
   preview            Render all campaign emails to self-contained HTML files
                      in the preview folder (no sending).
   plan | list        Print the campaign schedule, recipient count and config.
+  inspect [key]      Print the exact outgoing request (Graph JSON / SMTP MIME)
+                     for one email without sending.
   send               Run the campaign. Waits for each email's scheduled time,
                      then sends to every recipient from the CSV.
 
 Options:
   --now              Ignore the schedule and send immediately.
   --email <key>      Only process a single campaign email (e.g. email1).
+  --debug            Verbose, API-style request logging.
 
 Examples:
+  dotnet run                          # opens the interactive menu
   dotnet run -- preview
-  dotnet run -- plan
-  dotnet run -- send                 # follows the configured schedule
-  dotnet run -- send --now           # send everything right now
+  dotnet run -- inspect email4        # dump the launch email request body
+  dotnet run -- send                  # follows the configured schedule
+  dotnet run -- send --now --debug    # send everything now, verbose
   dotnet run -- send --now --email email4
 
 Configuration lives in appsettings.json. Set Sending.DryRun=false to deliver
