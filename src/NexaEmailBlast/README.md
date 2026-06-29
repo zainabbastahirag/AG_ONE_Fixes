@@ -216,12 +216,12 @@ NexaEmailBlast/
   with your own** (keep the same filenames) — the code embeds whatever is there.
   Only the images a template actually references are attached to that email.
 - **Card gradient:** the Nexa card uses the brand *AI Color/Light 01* gradient
-  (`linear-gradient(114.99deg, #EBF3FF, #EBFDFE, #F8FED8)`). Because most email
-  clients (Outlook, Gmail) ignore CSS gradients, it's delivered as a **background
-  image** (`card_bg.png`, embedded via cid) with the `background` attribute + CSS
-  `background-size:cover`, and the CSS gradient / `#EBF3FF` color kept as fallbacks.
-  Gmail doesn't render cid backgrounds — set `Branding.CardBackgroundUrl` to a
-  hosted `https` copy of the gradient if you need it there.
+  (`#EBF3FF` → `#EBFDFE` → `#F8FED8`). Email clients are inconsistent with CSS
+  backgrounds, so the card uses a **bulletproof pattern**: a visible gradient
+  `<img>` (works in Gmail/mobile), VML fill (Outlook desktop), and `background`
+  on the cell as a fallback. The image is `card_bg.png`, embedded inline via cid.
+  If Gmail still shows a flat colour, host `card_bg.png` on a public `https` URL
+  and set `Branding.CardBackgroundUrl` — hosted images work everywhere.
 - **Templates** use table-based, inline-styled HTML for broad email-client
   compatibility. Images are embedded inline (Content-ID) when sending, and as
   base64 data-URIs in `preview`/dry-run files so they open standalone.

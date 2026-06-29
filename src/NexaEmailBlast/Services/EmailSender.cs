@@ -74,7 +74,9 @@ public sealed class SmtpEmailSender : IEmailSender
             if (!File.Exists(img.Path)) continue;
             var resource = builder.LinkedResources.Add(img.Path);
             resource.ContentId = img.ContentId;
-            ((MimePart)resource).ContentTransferEncoding = ContentEncoding.Base64;
+            var part = (MimePart)resource;
+            part.ContentTransferEncoding = ContentEncoding.Base64;
+            part.Headers[HeaderId.ContentLocation] = img.ContentId;
         }
 
         message.Body = builder.ToMessageBody();

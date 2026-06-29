@@ -25,12 +25,16 @@ public sealed class EmailTemplateRenderer
     private readonly string _templatesDir;
     private readonly string _assetsDir;
     private readonly string _layout;
+    private readonly string _cardStart;
+    private readonly string _cardEnd;
 
     public EmailTemplateRenderer(string baseDir)
     {
         _templatesDir = Path.Combine(baseDir, "Templates");
         _assetsDir = Path.Combine(baseDir, "Assets");
         _layout = File.ReadAllText(Path.Combine(_templatesDir, "_layout.html"));
+        _cardStart = File.ReadAllText(Path.Combine(_templatesDir, "_card_start.html"));
+        _cardEnd = File.ReadAllText(Path.Combine(_templatesDir, "_card_end.html"));
     }
 
     public string AssetPath(string key) => Path.Combine(_assetsDir, AssetFiles[key]);
@@ -47,11 +51,12 @@ public sealed class EmailTemplateRenderer
     /// </param>
     public string Render(CampaignEmail email, string greeting, string feedbackUrl, bool embedImageInline, string? cardBackgroundUrl = null)
     {
-        var content = File.ReadAllText(Path.Combine(_templatesDir, email.Template));
+        var content = File.ReadAllText(Path.Combine(_templatesDir, email.Template))
+            .Replace("{{CARD_START}}", _cardStart)
+            .Replace("{{CARD_END}}", _cardEnd);
 
-        // The card gradient is delivered as a background IMAGE because most email
-        // clients ignore CSS linear-gradient. A hosted URL (if provided) wins; otherwise
-        // it is embedded inline (preview) or referenced via cid (real email).
+        // The card gradient is delivered as a visible <img> (Gmail/mobile) plus VML/background
+        // fallbacks (Outlook). A hosted https URL (if provided) is used everywhere.
         var cardBg = !string.IsNullOrWhiteSpace(cardBackgroundUrl)
             ? cardBackgroundUrl!
             : embedImageInline ? BuildDataUri(AssetPath("cardbg")) : "cid:cardbg";
@@ -67,6 +72,8 @@ public sealed class EmailTemplateRenderer
         {
             var key = m.Groups[1].Value;
             if (!AssetFiles.ContainsKey(key)) return m.Value;
+            if (key == "cardbg" && !string.IsNullOrWhiteSpace(cardBackgroundUrl))
+                return cardBackgroundUrl;
             return embedImageInline ? BuildDataUri(AssetPath(key)) : $"cid:{key}";
         });
     }
