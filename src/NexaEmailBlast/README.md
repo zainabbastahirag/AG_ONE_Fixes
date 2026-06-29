@@ -190,7 +190,8 @@ NexaEmailBlast/
 │  ├─ ag_one_logo.png         #   header logo            ({{IMG:agone}})
 │  ├─ nexa_sphere.png         #   Nexa ball / mascot     ({{IMG:ball}})
 │  ├─ nexa_wordmark.png       #   "NeXa" wordmark        ({{IMG:nexaword}})
-│  └─ footer.png              #   whole Aventra footer   ({{IMG:footer}})
+│  ├─ footer.png              #   whole Aventra footer   ({{IMG:footer}})
+│  └─ card_bg.png             #   card gradient bg image ({{CARD_BG}})
 ├─ Templates/
 │  ├─ _layout.html            # shared header (AG ONE) + dark footer
 │  ├─ email1_partner.html
@@ -214,6 +215,13 @@ NexaEmailBlast/
   **To use the official artwork, just replace those four PNG files in `Assets/`
   with your own** (keep the same filenames) — the code embeds whatever is there.
   Only the images a template actually references are attached to that email.
+- **Card gradient:** the Nexa card uses the brand *AI Color/Light 01* gradient
+  (`linear-gradient(114.99deg, #EBF3FF, #EBFDFE, #F8FED8)`). Because most email
+  clients (Outlook, Gmail) ignore CSS gradients, it's delivered as a **background
+  image** (`card_bg.png`, embedded via cid) with the `background` attribute + CSS
+  `background-size:cover`, and the CSS gradient / `#EBF3FF` color kept as fallbacks.
+  Gmail doesn't render cid backgrounds — set `Branding.CardBackgroundUrl` to a
+  hosted `https` copy of the gradient if you need it there.
 - **Templates** use table-based, inline-styled HTML for broad email-client
   compatibility. Images are embedded inline (Content-ID) when sending, and as
   base64 data-URIs in `preview`/dry-run files so they open standalone.

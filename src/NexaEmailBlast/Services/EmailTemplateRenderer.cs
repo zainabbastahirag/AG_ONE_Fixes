@@ -17,6 +17,7 @@ public sealed class EmailTemplateRenderer
         ["ball"] = "nexa_sphere.png",
         ["nexaword"] = "nexa_wordmark.png",
         ["footer"] = "footer.png",
+        ["cardbg"] = "card_bg.png",
     };
 
     private static readonly Regex ImgToken = new(@"\{\{IMG:(\w+)\}\}", RegexOptions.Compiled);
@@ -44,15 +45,23 @@ public sealed class EmailTemplateRenderer
     /// When true, images are embedded as base64 data-URIs (great for standalone preview files).
     /// When false, <c>cid:</c> references are used so the sender can attach the real images.
     /// </param>
-    public string Render(CampaignEmail email, string greeting, string feedbackUrl, bool embedImageInline)
+    public string Render(CampaignEmail email, string greeting, string feedbackUrl, bool embedImageInline, string? cardBackgroundUrl = null)
     {
         var content = File.ReadAllText(Path.Combine(_templatesDir, email.Template));
+
+        // The card gradient is delivered as a background IMAGE because most email
+        // clients ignore CSS linear-gradient. A hosted URL (if provided) wins; otherwise
+        // it is embedded inline (preview) or referenced via cid (real email).
+        var cardBg = !string.IsNullOrWhiteSpace(cardBackgroundUrl)
+            ? cardBackgroundUrl!
+            : embedImageInline ? BuildDataUri(AssetPath("cardbg")) : "cid:cardbg";
 
         var html = _layout
             .Replace("{{PREHEADER}}", System.Net.WebUtility.HtmlEncode(email.Preheader))
             .Replace("{{CONTENT}}", content)
             .Replace("{{NAME}}", System.Net.WebUtility.HtmlEncode(greeting))
-            .Replace("{{FEEDBACK_URL}}", feedbackUrl);
+            .Replace("{{FEEDBACK_URL}}", feedbackUrl)
+            .Replace("{{CARD_BG}}", cardBg);
 
         return ImgToken.Replace(html, m =>
         {

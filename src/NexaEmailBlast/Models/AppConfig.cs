@@ -7,6 +7,7 @@ public sealed class AppConfig
     public SenderConfig Sender { get; set; } = new();
     public RecipientsConfig Recipients { get; set; } = new();
     public FeedbackConfig Feedback { get; set; } = new();
+    public BrandingConfig Branding { get; set; } = new();
     public SendingConfig Sending { get; set; } = new();
     public List<CampaignEmail> Campaign { get; set; } = new();
 }
@@ -79,6 +80,16 @@ public sealed class FeedbackConfig
 {
     /// <summary>Shareable link rendered behind the word "feedback" in the launch email.</summary>
     public string Url { get; set; } = "https://forms.office.com/r/agone-marketplace-feedback";
+}
+
+public sealed class BrandingConfig
+{
+    /// <summary>
+    /// Optional hosted (https) URL for the card gradient background image. When set, it is used
+    /// instead of the inline (cid) image — useful for clients like Gmail that don't render
+    /// cid backgrounds. Leave empty to embed the bundled gradient image inline.
+    /// </summary>
+    public string CardBackgroundUrl { get; set; } = "";
 }
 
 public sealed class SendingConfig
