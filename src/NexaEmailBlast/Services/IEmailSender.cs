@@ -9,7 +9,7 @@ public interface IEmailSender : IDisposable
         Recipient recipient,
         string subject,
         string htmlBody,
-        string nexaImagePath,
+        IReadOnlyList<InlineImage> inlineImages,
         IEnumerable<string>? cc = null,
         IEnumerable<string>? bcc = null);
 }

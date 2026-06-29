@@ -39,11 +39,11 @@ public sealed class GraphEmailSender : IEmailSender
         Recipient recipient,
         string subject,
         string htmlBody,
-        string nexaImagePath,
+        IReadOnlyList<InlineImage> inlineImages,
         IEnumerable<string>? cc = null,
         IEnumerable<string>? bcc = null)
     {
-        var message = BuildMessage(recipient, subject, htmlBody, nexaImagePath, cc, bcc);
+        var message = BuildMessage(recipient, subject, htmlBody, inlineImages, cc, bcc);
         var requestBody = new SendMailPostRequestBody
         {
             Message = message,
@@ -59,7 +59,7 @@ public sealed class GraphEmailSender : IEmailSender
         Recipient recipient,
         string subject,
         string htmlBody,
-        string nexaImagePath,
+        IReadOnlyList<InlineImage> inlineImages,
         IEnumerable<string>? cc = null,
         IEnumerable<string>? bcc = null)
     {
@@ -76,21 +76,21 @@ public sealed class GraphEmailSender : IEmailSender
         var bccList = ToGraphList(bcc);
         if (bccList.Count > 0) message.BccRecipients = bccList;
 
-        if (File.Exists(nexaImagePath) && htmlBody.Contains($"cid:{EmailTemplateRenderer.NexaImageContentId}"))
+        var attachments = new List<Graph.Attachment>();
+        foreach (var img in inlineImages)
         {
-            message.Attachments = new List<Graph.Attachment>
+            if (!File.Exists(img.Path)) continue;
+            attachments.Add(new Graph.FileAttachment
             {
-                new Graph.FileAttachment
-                {
-                    OdataType = "#microsoft.graph.fileAttachment",
-                    Name = Path.GetFileName(nexaImagePath),
-                    ContentType = "image/png",
-                    ContentBytes = File.ReadAllBytes(nexaImagePath),
-                    ContentId = EmailTemplateRenderer.NexaImageContentId,
-                    IsInline = true,
-                },
-            };
+                OdataType = "#microsoft.graph.fileAttachment",
+                Name = Path.GetFileName(img.Path),
+                ContentType = img.ContentType,
+                ContentBytes = File.ReadAllBytes(img.Path),
+                ContentId = img.ContentId,
+                IsInline = true,
+            });
         }
+        if (attachments.Count > 0) message.Attachments = attachments;
 
         return message;
     }

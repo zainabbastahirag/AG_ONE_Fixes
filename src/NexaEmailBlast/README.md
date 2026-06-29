@@ -186,7 +186,11 @@ NEXA_Smtp__Password='•••' NEXA_Sending__DryRun=false dotnet run -- send --
 NexaEmailBlast/
 ├─ Program.cs                 # entry point (menu | preview | plan | inspect | send)
 ├─ appsettings.json           # all configuration (incl. recipients)
-├─ Assets/nexa_sphere.png     # Nexa mascot (embedded inline via Content-ID)
+├─ Assets/                    # brand images, embedded inline via Content-ID
+│  ├─ ag_one_logo.png         #   header logo            ({{IMG:agone}})
+│  ├─ nexa_sphere.png         #   Nexa ball / mascot     ({{IMG:ball}})
+│  ├─ nexa_wordmark.png       #   "NeXa" wordmark        ({{IMG:nexaword}})
+│  └─ footer.png              #   whole Aventra footer   ({{IMG:footer}})
 ├─ Templates/
 │  ├─ _layout.html            # shared header (AG ONE) + dark footer
 │  ├─ email1_partner.html
@@ -204,8 +208,14 @@ NexaEmailBlast/
    └─ InteractiveMenu.cs      # the interactive console (REPL)
 ```
 
+- **Brand images:** the AG ONE header logo, the Nexa ball, the "NeXa" wordmark
+  and the entire Aventra footer are real images under `Assets/`, referenced in the
+  templates with `{{IMG:agone}}`, `{{IMG:ball}}`, `{{IMG:nexaword}}`, `{{IMG:footer}}`.
+  **To use the official artwork, just replace those four PNG files in `Assets/`
+  with your own** (keep the same filenames) — the code embeds whatever is there.
+  Only the images a template actually references are attached to that email.
 - **Templates** use table-based, inline-styled HTML for broad email-client
-  compatibility. The Nexa sphere is embedded inline (Content-ID) when sending,
-  and as a base64 data-URI in `preview`/dry-run files so they open standalone.
+  compatibility. Images are embedded inline (Content-ID) when sending, and as
+  base64 data-URIs in `preview`/dry-run files so they open standalone.
 - **Packages:** `Microsoft.Graph` + `Azure.Identity` (Graph API), `MailKit` (SMTP),
   `Microsoft.Extensions.Configuration.*`.

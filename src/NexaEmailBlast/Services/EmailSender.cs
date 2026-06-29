@@ -40,11 +40,11 @@ public sealed class SmtpEmailSender : IEmailSender
         Recipient recipient,
         string subject,
         string htmlBody,
-        string nexaImagePath,
+        IReadOnlyList<InlineImage> inlineImages,
         IEnumerable<string>? cc = null,
         IEnumerable<string>? bcc = null)
     {
-        var message = BuildMimeMessage(_sender, recipient, subject, htmlBody, nexaImagePath, cc, bcc);
+        var message = BuildMimeMessage(_sender, recipient, subject, htmlBody, inlineImages, cc, bcc);
         await ConnectAsync();
         await _client.SendAsync(message);
     }
@@ -55,7 +55,7 @@ public sealed class SmtpEmailSender : IEmailSender
         Recipient recipient,
         string subject,
         string htmlBody,
-        string nexaImagePath,
+        IReadOnlyList<InlineImage> inlineImages,
         IEnumerable<string>? cc = null,
         IEnumerable<string>? bcc = null)
     {
@@ -69,11 +69,12 @@ public sealed class SmtpEmailSender : IEmailSender
 
         var builder = new BodyBuilder { HtmlBody = htmlBody };
 
-        if (File.Exists(nexaImagePath) && htmlBody.Contains($"cid:{EmailTemplateRenderer.NexaImageContentId}"))
+        foreach (var img in inlineImages)
         {
-            var image = builder.LinkedResources.Add(nexaImagePath);
-            image.ContentId = EmailTemplateRenderer.NexaImageContentId;
-            ((MimePart)image).ContentTransferEncoding = ContentEncoding.Base64;
+            if (!File.Exists(img.Path)) continue;
+            var resource = builder.LinkedResources.Add(img.Path);
+            resource.ContentId = img.ContentId;
+            ((MimePart)resource).ContentTransferEncoding = ContentEncoding.Base64;
         }
 
         message.Body = builder.ToMessageBody();

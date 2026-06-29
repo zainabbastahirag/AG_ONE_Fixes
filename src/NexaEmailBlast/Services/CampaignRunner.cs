@@ -169,7 +169,7 @@ public sealed class CampaignRunner
             LogRequest(email, recipient, html);
             try
             {
-                await sender.SendAsync(recipient, email.Subject, html, _renderer.NexaImagePath,
+                await sender.SendAsync(recipient, email.Subject, html, _renderer.InlineImagesFor(html),
                     SplitAddresses(_config.Recipients.Cc), SplitAddresses(_config.Recipients.Bcc));
                 Console.WriteLine($"   [ok]   test email delivered to {toEmail}");
             }
@@ -191,16 +191,17 @@ public sealed class CampaignRunner
         Console.WriteLine($"\n--- Inspect {email.Key} -> {r.Email} ---");
         Console.WriteLine($"Endpoint: {EmailSenderFactory.DescribeEndpoint(_config)}");
 
+        var images = _renderer.InlineImagesFor(html);
         if (EmailSenderFactory.IsGraph(_config))
         {
-            var msg = GraphEmailSender.BuildMessage(r, email.Subject, html, _renderer.NexaImagePath, cc, bcc);
+            var msg = GraphEmailSender.BuildMessage(r, email.Subject, html, images, cc, bcc);
             var json = await GraphEmailSender.ToDebugJsonAsync(msg);
             Console.WriteLine("Request body (application/json):");
             Console.WriteLine(json);
         }
         else
         {
-            var mime = SmtpEmailSender.BuildMimeMessage(_config.Sender, r, email.Subject, html, _renderer.NexaImagePath, cc, bcc);
+            var mime = SmtpEmailSender.BuildMimeMessage(_config.Sender, r, email.Subject, html, images, cc, bcc);
             Console.WriteLine("MIME headers:");
             Console.WriteLine($"  From   : {mime.From}");
             Console.WriteLine($"  To     : {mime.To}");
@@ -208,7 +209,7 @@ public sealed class CampaignRunner
             if (mime.Bcc.Count > 0) Console.WriteLine($"  Bcc    : {mime.Bcc}");
             Console.WriteLine($"  Subject: {mime.Subject}");
             var mimeType = mime.Body?.ContentType?.MimeType ?? "multipart/related";
-            Console.WriteLine($"  Body   : {mimeType} (html {html.Length} chars, inline image {(html.Contains("cid:" + EmailTemplateRenderer.NexaImageContentId) ? "yes" : "no")})");
+            Console.WriteLine($"  Body   : {mimeType} (html {html.Length} chars, inline images: {string.Join(", ", images.Select(i => i.ContentId))})");
         }
         Console.WriteLine("--- end inspect ---\n");
     }
@@ -256,7 +257,7 @@ public sealed class CampaignRunner
             {
                 var html = _renderer.Render(email, GreetingFor(r), _config.Feedback.Url, embedImageInline: false);
                 LogRequest(email, r, html);
-                await sender.SendAsync(r, email.Subject, html, _renderer.NexaImagePath, cc, bcc);
+                await sender.SendAsync(r, email.Subject, html, _renderer.InlineImagesFor(html), cc, bcc);
                 ok++;
                 Console.WriteLine($"   [ok]   {r.Email}");
             }
@@ -275,12 +276,12 @@ public sealed class CampaignRunner
     private void LogRequest(CampaignEmail email, Recipient r, string html)
     {
         if (!Verbose) return;
-        var hasImage = html.Contains("cid:" + EmailTemplateRenderer.NexaImageContentId);
+        var images = string.Join("+", _renderer.InlineImagesFor(html).Select(i => i.ContentId));
         var cc = SplitAddresses(_config.Recipients.Cc).Count;
         var bcc = SplitAddresses(_config.Recipients.Bcc).Count;
         Console.WriteLine($"   [debug] {EmailSenderFactory.DescribeEndpoint(_config)}");
         Console.WriteLine($"   [debug] To={r.Email} greeting=\"{GreetingFor(r)}\" subject=\"{email.Subject}\" " +
-                          $"htmlChars={html.Length} inlineImage={hasImage} cc={cc} bcc={bcc} saveToSent={_config.Graph.SaveToSentItems}");
+                          $"htmlChars={html.Length} inlineImages=[{images}] cc={cc} bcc={bcc} saveToSent={_config.Graph.SaveToSentItems}");
     }
 
     private void RenderDryRun(CampaignEmail email, IReadOnlyList<Recipient> recipients)
