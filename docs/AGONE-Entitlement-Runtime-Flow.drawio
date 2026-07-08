@@ -1,0 +1,185 @@
+<mxfile host="app.diagrams.net" agent="AG ONE runtime" version="24.0.0">
+  <diagram id="component" name="1. Component / Deployment">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" /><mxCell id="1" parent="0" />
+        <mxCell id="t" value="AG ONE runtime — where the Permission→Feature layer lives (green = the only new part)" style="text;html=1;align=center;fontSize=16;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="40" y="16" width="1620" height="30" as="geometry" /></mxCell>
+
+        <mxCell id="browser" value="Browser / SPA / Mobile&#10;(holds JWT cookie)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#666;" vertex="1" parent="1"><mxGeometry x="60" y="120" width="180" height="70" as="geometry" /></mxCell>
+        <mxCell id="idp" value="Identity Provider&#10;(Azure AD / SAML SSO)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#666;" vertex="1" parent="1"><mxGeometry x="60" y="320" width="180" height="70" as="geometry" /></mxCell>
+        <mxCell id="pay" value="Payment / Billing provider&#10;(subscription webhooks)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#666;" vertex="1" parent="1"><mxGeometry x="60" y="520" width="180" height="70" as="geometry" /></mxCell>
+
+        <mxCell id="az" value="Azure — App Services" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eef6ff;strokeColor=#6c8ebf;verticalAlign=top;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="320" y="80" width="960" height="800" as="geometry" /></mxCell>
+
+        <mxCell id="agone" value="AG ONE Gateway (App Service)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;verticalAlign=top;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="360" y="120" width="420" height="330" as="geometry" /></mxCell>
+        <mxCell id="ag_auth" value="Auth + SSO + JWT issuer&#10;claims: user_id, tenant_id, products[], tier, ent_version" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="380" y="160" width="380" height="70" as="geometry" /></mxCell>
+        <mxCell id="ag_sub" value="Subscription + Entitlement engine&#10;tier → available features → permissions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="380" y="250" width="380" height="70" as="geometry" /></mxCell>
+        <mxCell id="ag_perm" value="Permissions API  ★ now returns EFFECTIVE&#10;GET /api/permissions/{userId}  = RBAC ∩ entitlement" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="380" y="345" width="380" height="80" as="geometry" /></mxCell>
+
+        <mxCell id="hire" value="Hire App Service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;verticalAlign=top;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="360" y="500" width="290" height="160" as="geometry" /></mxCell>
+        <mxCell id="hire_c" value="Permission cache (10 min)&#10;keyed by user + ent_version" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="380" y="540" width="250" height="50" as="geometry" /></mxCell>
+        <mxCell id="hire_e" value="[RequirePermission] enforce (unchanged)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="380" y="600" width="250" height="45" as="geometry" /></mxCell>
+
+        <mxCell id="work" value="Work App Service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;verticalAlign=top;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="680" y="500" width="270" height="160" as="geometry" /></mxCell>
+        <mxCell id="work_c" value="Permission cache (10 min) + enforce" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="700" y="560" width="230" height="60" as="geometry" /></mxCell>
+
+        <mxCell id="learn" value="Learn App Service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;verticalAlign=top;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="980" y="500" width="270" height="160" as="geometry" /></mxCell>
+        <mxCell id="learn_c" value="Permission cache (10 min) + enforce" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="1000" y="560" width="230" height="60" as="geometry" /></mxCell>
+
+        <mxCell id="db" value="Azure SQL  [agone-dev]&#10;──────────&#10;core.*  (RBAC + catalog +&#10;Subscriptions + ★ ProductFeaturePermissions)&#10;hire.*   learn.*   work.*" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1"><mxGeometry x="1360" y="180" width="260" height="240" as="geometry" /></mxCell>
+
+        <mxCell id="ce1" value="1. login (SSO / password)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="browser" target="agone"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ce2" value="validate SSO" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;dashed=1;" edge="1" parent="1" source="agone" target="idp"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ce3" value="webhook" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;dashed=1;" edge="1" parent="1" source="pay" target="ag_sub"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ce4" value="2. use app (JWT cookie)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="browser" target="hire"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ce5" value="3. get effective permissions (userId)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeColor=#82b366;strokeWidth=2;" edge="1" parent="1" source="hire_c" target="ag_perm"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ce6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeColor=#82b366;dashed=1;" edge="1" parent="1" source="work_c" target="ag_perm"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ce7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeColor=#82b366;dashed=1;" edge="1" parent="1" source="learn_c" target="ag_perm"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ce8" value="core.*" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="ag_sub" target="db"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ce9" value="hire.*" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="hire" target="db"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ce10" value="work.*" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="work" target="db"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ce11" value="learn.*" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="learn" target="db"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <diagram id="login" name="2. Login &amp; JWT (step by step)">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="1150" math="0" shadow="0">
+      <root>
+        <mxCell id="0" /><mxCell id="1" parent="0" />
+        <mxCell id="lt" value="Login flow — subscription is checked once, then baked into the JWT" style="text;html=1;align=center;fontSize=16;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="40" y="16" width="1120" height="30" as="geometry" /></mxCell>
+
+        <mxCell id="l1" value="① Browser → AG ONE&#10;open app / POST /login  (SSO or username+password)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="360" y="70" width="440" height="60" as="geometry" /></mxCell>
+        <mxCell id="l2" value="② AG ONE ⇄ Identity Provider (SSO)  OR  verify password (non-SSO)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="360" y="170" width="440" height="60" as="geometry" /></mxCell>
+        <mxCell id="l3" value="③ AG ONE → core.Users / Tenants: resolve user + tenant" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="360" y="270" width="440" height="55" as="geometry" /></mxCell>
+        <mxCell id="l4" value="④ AG ONE → core.Subscriptions + ProductPlanTiers:&#10;which products are ACTIVE and at which tier (Freemium/Lite/Standard/Enterprise)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="360" y="365" width="440" height="70" as="geometry" /></mxCell>
+        <mxCell id="l5" value="⑤ AG ONE builds JWT claims&#10;user_id, tenant_id, products[], per-product tier, ent_version" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="360" y="475" width="440" height="70" as="geometry" /></mxCell>
+        <mxCell id="l6" value="⑥ AG ONE → Browser: set JWT cookie / bearer token" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="360" y="585" width="440" height="55" as="geometry" /></mxCell>
+        <mxCell id="l7" value="⑦ Browser can now call Hire / Work / Learn with that JWT&#10;(permissions are fetched separately — see page 3)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="360" y="680" width="440" height="65" as="geometry" /></mxCell>
+
+        <mxCell id="ln" value="Note: the JWT carries WHAT the tenant bought (products + tier).&#10;It does NOT carry every permission — those stay in the permissions API + app cache." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=2;" vertex="1" parent="1"><mxGeometry x="360" y="800" width="440" height="70" as="geometry" /></mxCell>
+
+        <mxCell id="le1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="l1" target="l2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="le2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="l2" target="l3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="le3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="l3" target="l4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="le4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="l4" target="l5"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="le5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="l5" target="l6"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="le6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="l6" target="l7"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <diagram id="perm" name="3. Permission fetch + Feature intersection">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="1250" math="0" shadow="0">
+      <root>
+        <mxCell id="0" /><mxCell id="1" parent="0" />
+        <mxCell id="pt" value="How an app gets EFFECTIVE permissions — the Permission→Feature step (green = NEW, inside AG ONE)" style="text;html=1;align=center;fontSize=15;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="40" y="16" width="1220" height="30" as="geometry" /></mxCell>
+
+        <mxCell id="p1" value="① Browser → Hire App: request page/API (JWT cookie)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="360" y="70" width="460" height="50" as="geometry" /></mxCell>
+        <mxCell id="p2" value="② Hire validates JWT → extract user_id, tenant_id, ent_version" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="360" y="150" width="460" height="50" as="geometry" /></mxCell>
+        <mxCell id="p3" value="③ Cache hit for (user, ent_version)?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="470" y="230" width="240" height="110" as="geometry" /></mxCell>
+        <mxCell id="pcache" value="use cached effective permissions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="870" y="255" width="220" height="60" as="geometry" /></mxCell>
+
+        <mxCell id="p4" value="④ Cache miss → Hire → AG ONE&#10;GET /api/permissions/{userId}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="360" y="380" width="460" height="60" as="geometry" /></mxCell>
+        <mxCell id="p5" value="⑤ AG ONE builds RBAC set (existing)&#10;UserRoles → RolePermissions → Permissions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="360" y="470" width="460" height="60" as="geometry" /></mxCell>
+        <mxCell id="p6" value="⑥ ★ NEW — AG ONE builds ENTITLED set&#10;active tier → ProductFeatures.Available&lt;Tier&gt; → ProductFeaturePermissions → Permissions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="360" y="560" width="460" height="75" as="geometry" /></mxCell>
+        <mxCell id="p7" value="⑦ ★ EFFECTIVE = RBAC ∩ ENTITLED&#10;return { products[], effective permissions, ent_version, ttl=600s }" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="360" y="665" width="460" height="75" as="geometry" /></mxCell>
+        <mxCell id="p8" value="⑧ Hire caches (10 min) &amp; enforces [RequirePermission] — UNCHANGED" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="360" y="775" width="460" height="60" as="geometry" /></mxCell>
+        <mxCell id="p9" value="⑨ Allowed if permission ∈ cached effective set → run action" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="360" y="875" width="460" height="55" as="geometry" /></mxCell>
+
+        <mxCell id="pnote" value="Because AG ONE already intersects with entitlement, the apps keep their exact code:&#10;same fetch, same 10-min cache, same enforcement. Only the returned list is now plan-aware." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=2;" vertex="1" parent="1"><mxGeometry x="360" y="975" width="460" height="70" as="geometry" /></mxCell>
+
+        <mxCell id="pe1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="p1" target="p2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="pe2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="p2" target="p3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="pe3" value="yes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="p3" target="pcache"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="pe3b" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;dashed=1;" edge="1" parent="1" source="pcache" target="p8"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="pe4" value="no" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="p3" target="p4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="pe5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="p4" target="p5"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="pe6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="p5" target="p6"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="pe7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="p6" target="p7"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="pe8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="p7" target="p8"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="pe9" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="p8" target="p9"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <diagram id="dfd" name="4. Data Flow Diagram">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1050" math="0" shadow="0">
+      <root>
+        <mxCell id="0" /><mxCell id="1" parent="0" />
+        <mxCell id="dt" value="Data Flow Diagram — where identity, subscription and permission data move" style="text;html=1;align=center;fontSize=16;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="40" y="16" width="1620" height="30" as="geometry" /></mxCell>
+
+        <!-- external entities -->
+        <mxCell id="e_user" value="User / Browser&#10;(external entity)" style="whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333;" vertex="1" parent="1"><mxGeometry x="60" y="120" width="170" height="70" as="geometry" /></mxCell>
+        <mxCell id="e_idp" value="Identity Provider&#10;(external entity)" style="whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333;" vertex="1" parent="1"><mxGeometry x="60" y="320" width="170" height="70" as="geometry" /></mxCell>
+        <mxCell id="e_pay" value="Payment provider&#10;(external entity)" style="whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333;" vertex="1" parent="1"><mxGeometry x="60" y="640" width="170" height="70" as="geometry" /></mxCell>
+
+        <!-- processes -->
+        <mxCell id="p_auth" value="P1&#10;Authenticate&#10;&amp; issue JWT&#10;(AG ONE)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="360" y="110" width="150" height="110" as="geometry" /></mxCell>
+        <mxCell id="p_sub" value="P2&#10;Resolve&#10;subscription&#10;&amp; tier (AG ONE)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="360" y="440" width="150" height="110" as="geometry" /></mxCell>
+        <mxCell id="p_eff" value="P3 ★&#10;Build EFFECTIVE&#10;permissions&#10;RBAC ∩ entitlement" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="760" y="290" width="170" height="130" as="geometry" /></mxCell>
+        <mxCell id="p_enf" value="P4&#10;Cache (10 min)&#10;&amp; enforce&#10;(Hire/Work/Learn)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="1180" y="290" width="170" height="130" as="geometry" /></mxCell>
+
+        <!-- data stores (open rectangles) -->
+        <mxCell id="d_rbac" value="D1  core RBAC&#10;Users/Roles/Permissions/RolePermissions/UserRoles" style="shape=partialRectangle;top=0;right=0;bottom=1;left=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;spacingLeft=6;" vertex="1" parent="1"><mxGeometry x="720" y="600" width="270" height="60" as="geometry" /></mxCell>
+        <mxCell id="d_cat" value="D2 ★ core Catalog&#10;Products/Modules/Features(tier bits)/PlanTiers&#10;+ ProductFeaturePermissions" style="shape=partialRectangle;top=0;right=0;bottom=1;left=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;spacingLeft=6;" vertex="1" parent="1"><mxGeometry x="720" y="700" width="270" height="70" as="geometry" /></mxCell>
+        <mxCell id="d_sub" value="D3  core Subscriptions&#10;tenant × product × tier, status, licenses" style="shape=partialRectangle;top=0;right=0;bottom=1;left=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;align=left;spacingLeft=6;" vertex="1" parent="1"><mxGeometry x="360" y="700" width="290" height="60" as="geometry" /></mxCell>
+        <mxCell id="d_cache" value="D4  App permission cache&#10;effective permissions, TTL 10 min, ent_version" style="shape=partialRectangle;top=0;right=0;bottom=1;left=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;spacingLeft=6;" vertex="1" parent="1"><mxGeometry x="1180" y="600" width="270" height="60" as="geometry" /></mxCell>
+
+        <mxCell id="df1" value="credentials" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="e_user" target="p_auth"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="df2" value="SSO assertion" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;dashed=1;" edge="1" parent="1" source="e_idp" target="p_auth"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="df3" value="user lookup" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="p_auth" target="d_rbac"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="df4" value="which products?" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="p_auth" target="p_sub"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="df5" value="read subscription" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="p_sub" target="d_sub"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="df6" value="tier + features" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="p_sub" target="d_cat"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="df7" value="JWT (products, tier, ent_version)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="p_auth" target="e_user"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="df8" value="webhook: plan change" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;dashed=1;" edge="1" parent="1" source="e_pay" target="p_sub"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="df9" value="GET permissions(userId)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="p_enf" target="p_eff"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="df10" value="RBAC permissions" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="p_eff" target="d_rbac"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="df11" value="feature→permission map" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeColor=#82b366;strokeWidth=2;" edge="1" parent="1" source="p_eff" target="d_cat"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="df12" value="effective permissions + version" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeColor=#82b366;strokeWidth=2;" edge="1" parent="1" source="p_eff" target="p_enf"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="df13" value="store / read (10 min)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="p_enf" target="d_cache"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="df14" value="request + JWT" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="e_user" target="p_enf"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <diagram id="process" name="5. Process flow (Permission → Feature)">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1250" pageHeight="1300" math="0" shadow="0">
+      <root>
+        <mxCell id="0" /><mxCell id="1" parent="0" />
+        <mxCell id="qt" value="Process flow — how one permission is decided (Permission → Feature gating)" style="text;html=1;align=center;fontSize=16;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="40" y="16" width="1170" height="30" as="geometry" /></mxCell>
+
+        <mxCell id="q0" value="For each RBAC permission the user's role grants (product P, tenant T)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="380" y="70" width="360" height="60" as="geometry" /></mxCell>
+
+        <mxCell id="q1" value="Is P's subscription active for T?&#10;(status + dates + licenses)" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="410" y="170" width="300" height="120" as="geometry" /></mxCell>
+        <mxCell id="qx1" value="EXCLUDE permission&#10;(402 renew)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1"><mxGeometry x="840" y="195" width="220" height="60" as="geometry" /></mxCell>
+
+        <mxCell id="q2" value="Is this permission MAPPED to any Feature?&#10;(core.ProductFeaturePermissions)" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="400" y="330" width="320" height="130" as="geometry" /></mxCell>
+        <mxCell id="qbase" value="BASELINE permission (not a premium feature)&#10;→ INCLUDE (keep as today)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="820" y="355" width="260" height="80" as="geometry" /></mxCell>
+
+        <mxCell id="q3" value="Is that Feature available at T's tier?&#10;ProductFeatures.Available&lt;Tier&gt; = 1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="400" y="510" width="320" height="130" as="geometry" /></mxCell>
+        <mxCell id="qx2" value="EXCLUDE permission&#10;(402 upsell — upgrade tier)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="820" y="545" width="260" height="60" as="geometry" /></mxCell>
+
+        <mxCell id="q4" value="Is the Feature Coming Soon?&#10;(IsComingSoon = 1)" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="410" y="690" width="300" height="120" as="geometry" /></mxCell>
+        <mxCell id="qx3" value="EXCLUDE permission&#10;(not launched yet)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1"><mxGeometry x="840" y="720" width="220" height="60" as="geometry" /></mxCell>
+
+        <mxCell id="qok" value="INCLUDE permission in EFFECTIVE set&#10;→ user may perform the action" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=13;" vertex="1" parent="1"><mxGeometry x="410" y="870" width="300" height="70" as="geometry" /></mxCell>
+
+        <mxCell id="qnote" value="Design choice: permissions NOT mapped to any feature stay ungated (baseline) so nothing breaks on rollout.&#10;Switch to strict deny-by-default later by mapping every premium permission and denying unmapped ones." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=2;" vertex="1" parent="1"><mxGeometry x="300" y="990" width="620" height="70" as="geometry" /></mxCell>
+
+        <mxCell id="qe0" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="q0" target="q1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="qe1n" value="no" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="q1" target="qx1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="qe1y" value="yes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="q1" target="q2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="qe2n" value="no" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="q2" target="qbase"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="qe2y" value="yes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="q2" target="q3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="qe3n" value="no" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="q3" target="qx2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="qe3y" value="yes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="q3" target="q4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="qe4y" value="yes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="q4" target="qx3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="qe4n" value="no" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="q4" target="qok"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="qeb" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;dashed=1;" edge="1" parent="1" source="qbase" target="qok"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
