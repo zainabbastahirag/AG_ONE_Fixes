@@ -30,6 +30,8 @@ public static class ServiceCollectionExtensions
             sp.GetRequiredService<Microsoft.Extensions.Caching.Memory.IMemoryCache>()));
 
         services.AddScoped<IAccessResolver, AccessResolver>();
+        services.AddScoped<AgOne.Entitlements.Gateway.IGatewayEntitlementService,
+                           AgOne.Entitlements.Gateway.GatewayEntitlementService>();
 
         // Request-scoped tenant/user context.
         services.AddScoped<TenantContext>();
