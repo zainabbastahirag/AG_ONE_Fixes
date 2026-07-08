@@ -4,6 +4,111 @@
 **Scope:** Add per-tenant subscription plans (Starter / Lite / Standard / Enterprise) on top of the **existing** RBAC (`core.Permissions`, `core.Roles`, `core.Users`) with the least possible change to what you already built, and make it reusable across all three products (`hire.*`, `learn.*`, `work.*`).
 **Reference code:** [`src/Subscriptions`](../src/Subscriptions) · **SQL:** [`src/Subscriptions/sql`](../src/Subscriptions/sql) · **Editable diagram:** [`Subscription-Entitlement-Architecture.drawio`](Subscription-Entitlement-Architecture.drawio) (open in [draw.io / diagrams.net](https://app.diagrams.net) — 3 pages: Solution Architecture, Data Model ERD, Authorization Decision)
 
+> **Read this first if you have the `agone-dev` database →** [Section 0: Injecting into your existing `core.*` schema](#0-injecting-into-your-existing-core-schema). Sections 1–16 describe the same design generically (using placeholder table names such as `billing.*`); Section 0 maps every concept onto the **real tables you already have** so the change is *one new table*.
+
+---
+
+## 0. Injecting into your existing `core.*` schema
+
+You already have the whole catalog and commercial model. Mapping the generic design onto your real `[agone-dev].[core]` tables:
+
+| Generic concept (Sections 1–16) | Your existing table | Notes |
+|---|---|---|
+| Product | `core.Products` | `Code` = hire/learn/work |
+| Feature module | `core.ProductFeatureModules` | grouping under a product |
+| **Feature** | `core.ProductFeatures` | availability is stored as **per-tier bits**: `AvailableFreemium`, `AvailableLite`, `AvailableStandard`, `AvailableEnterprise`, plus `IsComingSoon` |
+| Plan / tier | `core.ProductPlanTiers` | `PlanTier` ∈ *Freemium / Lite / Standard / Enterprise* |
+| Plan price | `core.ProductPlanTierPrices` | currency + actual/discounted |
+| Plan marketing bullets | `core.ProductPlanTierFeatures` | free-text only — not used for enforcement |
+| Subscription | `core.Subscriptions` | tenant × product, `Status`, licenses, dates |
+| RBAC | `core.Users` / `Roles` / `Permissions` / `RolePermissions` / `UserRoles` | unchanged |
+
+### What is missing (and all you add)
+
+Your `ProductFeatures` tell you *what a tier sells*, but nothing links a feature to the **permissions** it should unlock. That single link is the whole injection:
+
+1. **One new table — the bridge:** `core.ProductFeaturePermissions (ProductFeatureId → PermissionId)`. Follows your conventions (`Id/CreatedAt/UpdatedAt/IsDeleted`).
+2. **One recommended column:** `core.Subscriptions.ProductPlanTierId` (FK → `core.ProductPlanTiers`) so a subscription unambiguously resolves to a tier. *(Alternative: if `core.PricingPlans` already carries the tier, skip the column and adjust the tier-resolution view instead.)*
+3. **Read-only resolution objects:** `core.vSubscriptionTier`, `core.vTenantEntitledPermissions`, and `core.fnEffectivePermissions(@TenantId,@UserId)` — no changes to existing tables.
+
+Full, safe, additive script: **[`sql/003_inject_existing_core.sql`](../src/Subscriptions/sql/003_inject_existing_core.sql)**.
+
+### How entitlement is computed on your schema
+
+```
+Entitled permissions (tenant, product)
+  = for the tenant's ACTIVE core.Subscriptions row
+    → its ProductPlanTier.PlanTier  (Freemium | Lite | Standard | Enterprise)
+    → core.ProductFeatures of that product where Available<Tier> = 1 AND IsComingSoon = 0
+    → core.ProductFeaturePermissions → core.Permissions
+
+Effective permissions (user)
+  = RBAC (UserRoles → RolePermissions → Permissions, scoped by TenantId)
+    ∩ Entitled permissions
+```
+
+Because a tier is expressed as a **bit column per feature**, no plan-feature join table is needed — the `Available<Tier>` flag *is* the plan→feature matrix. The bridge maps those features onto the permissions you already defined.
+
+```mermaid
+flowchart LR
+    subgraph RBAC["core.* RBAC (unchanged)"]
+        U[core.Users] --> UR[core.UserRoles]
+        UR --> R[core.Roles]
+        R --> RP[core.RolePermissions]
+        RP --> P[core.Permissions]
+    end
+    subgraph CAT["core.* catalog (existing)"]
+        PR[core.Products] --> M[core.ProductFeatureModules]
+        M --> F[core.ProductFeatures<br/>Available Freemium/Lite/Standard/Enterprise]
+        PR --> T[core.ProductPlanTiers]
+    end
+    S[core.Subscriptions<br/>+ ProductPlanTierId] --> T
+    F --> BR[core.ProductFeaturePermissions<br/>★ NEW bridge]
+    P -. by PermissionId .- BR
+    BR --> EFF{{core.fnEffectivePermissions<br/>= RBAC ∩ Entitlement}}
+    P --> EFF
+```
+
+### Seeding the bridge (the only ongoing authoring)
+
+```sql
+INSERT INTO core.ProductFeaturePermissions (ProductFeatureId, PermissionId)
+SELECT pf.Id, p.Id
+FROM core.ProductFeatures pf
+JOIN core.Permissions p ON p.Code IN (N'hire.employee.read', N'hire.employee.write')
+WHERE pf.Name = N'Employee Master Data'
+  AND NOT EXISTS (SELECT 1 FROM core.ProductFeaturePermissions x
+                  WHERE x.ProductFeatureId = pf.Id AND x.PermissionId = p.Id);
+```
+
+### Enforcing it in .NET
+
+The shared engine ([`src/Subscriptions`](../src/Subscriptions)) is schema-agnostic — you bind three adapters to the tables above and keep everything else. Example RBAC + subscription adapters:
+
+```csharp
+// RBAC: exactly your existing permission read, scoped to tenant.
+public sealed class EfUserPermissionProvider(CoreDbContext db, ITenantContext ctx) : IUserPermissionProvider
+{
+    public async Task<IReadOnlySet<string>> GetPermissionCodesAsync(Guid userId, CancellationToken ct = default)
+    {
+        var codes = await (from ur in db.UserRoles
+            where ur.UserId == userId && ur.TenantId == ctx.TenantId && !ur.IsDeleted
+            join rp in db.RolePermissions on ur.RoleId equals rp.RoleId
+            join p  in db.Permissions    on rp.PermissionId equals p.Id
+            where !rp.IsDeleted && !p.IsDeleted
+            select p.Code).Distinct().ToListAsync(ct);
+        return codes.ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+}
+
+// Catalog: build entitled feature/permission set for a tenant+product from the tier bits.
+public sealed class EfCatalogProvider(CoreDbContext db) : ICatalogProvider { /* reads ProductFeatures + ProductFeaturePermissions per tier */ }
+```
+
+You can also enforce entirely in SQL via `core.fnUserHasEffectivePermission(@TenantId,@UserId,@Code)` for stored-proc/data-layer guards.
+
+The remaining sections describe the engine, caching, lifecycle, rollout, security and testing in detail — all of which apply unchanged; only the table names differ.
+
 ---
 
 ## 1. The one idea that makes this cheap
