@@ -2,7 +2,7 @@
 
 **Status:** Design + reference implementation
 **Scope:** Add per-tenant subscription plans (Starter / Lite / Standard / Enterprise) on top of the **existing** RBAC (`core.Permissions`, `core.Roles`, `core.Users`) with the least possible change to what you already built, and make it reusable across all three products (`hire.*`, `learn.*`, `work.*`).
-**Reference code:** [`src/Subscriptions`](../src/Subscriptions) · **SQL:** [`src/Subscriptions/sql`](../src/Subscriptions/sql)
+**Reference code:** [`src/Subscriptions`](../src/Subscriptions) · **SQL:** [`src/Subscriptions/sql`](../src/Subscriptions/sql) · **Editable diagram:** [`Subscription-Entitlement-Architecture.drawio`](Subscription-Entitlement-Architecture.drawio) (open in [draw.io / diagrams.net](https://app.diagrams.net) — 3 pages: Solution Architecture, Data Model ERD, Authorization Decision)
 
 ---
 
