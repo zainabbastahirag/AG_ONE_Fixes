@@ -234,10 +234,17 @@ def top_readme(sprints) -> str:
     return f"""# Release Documentation
 
 A single home for the **sprint release documentation** of all
-{len(PROJECTS)} products, for the whole of **{YEAR}**. Each project has its own
-folder with a detailed release-notes document per sprint, so every team updates
-their own docs in one predictable place, and each doc links back to your
-existing **release-number register**.
+{len(PROJECTS)} products, for the whole of **{YEAR}**. Two ways to work:
+
+- **One Excel file** \u2014 `release-tracker-{YEAR}.xlsx`: every project x sprint on
+  one sheet with status dropdowns, colour-coding, progress bars and a live
+  Dashboard tab. Best when you want a single file to share and update.
+- **Per-project markdown docs** \u2014 a folder per project with a detailed
+  release-notes document per sprint, for long-form detail. The Excel tracker's
+  "Detailed doc" column links to these.
+
+Both share the same projects, sprint calendar and **release-number register**
+links, and are generated from the same config.
 
 ## The 7 projects
 
@@ -250,7 +257,9 @@ existing **release-number register**.
 ```
 release-docs/
 \u251c\u2500 README.md                     \u2190 you are here
-\u251c\u2500 generate_release_docs.py      \u2190 regenerate / extend the scaffold
+\u251c\u2500 release-tracker-{YEAR}.xlsx     \u2190 the single-file Excel tracker
+\u251c\u2500 generate_release_docs.py      \u2190 regenerate the markdown scaffold
+\u251c\u2500 generate_release_tracker.py   \u2190 regenerate the Excel tracker
 \u251c\u2500 templates/
 \u2502  \u251c\u2500 sprint-release-notes.template.md
 \u2502  \u2514\u2500 project-year-index.template.md
@@ -287,11 +296,14 @@ Edit the `CONFIG` block in `generate_release_docs.py` (projects, year, cadence,
 register links) and run:
 
 ```bash
-python3 release-docs/generate_release_docs.py
+python3 release-docs/generate_release_docs.py      # markdown docs + indexes
+python3 release-docs/generate_release_tracker.py    # release-tracker-{YEAR}.xlsx
 ```
 
-Re-running never overwrites a sprint doc your team has already edited. To reset
-everything back to blank templates, run with `--force`.
+Re-running the markdown generator never overwrites a sprint doc your team has
+already edited (use `--force` to reset to blank templates). The Excel generator
+rewrites the whole workbook, so regenerate it before teams start filling it in.
+Requires `openpyxl` (`pip install openpyxl`).
 
 ## Release status legend
 
