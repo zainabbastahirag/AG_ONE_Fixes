@@ -1,0 +1,280 @@
+{
+  "benchmark": "Microsoft365",
+  "version": "CIS Microsoft 365 Foundations Benchmark v4.0.0",
+  "controls": [
+    {
+      "reference": "7.2.3",
+      "domain": "SharePoint & OneDrive",
+      "title": "Ensure external content sharing is restricted",
+      "description": "Tenant sharing capability must be no more permissive than existing guests.",
+      "rationale": "Anonymous sharing links leave the tenant's control the moment they are created and are indexable if forwarded.",
+      "level": "L1",
+      "severity": "High",
+      "userImpact": "Impact: Users will no longer be able to create anyone-with-the-link sharing links.",
+      "cisControl": "CIS Control 3: Data Protection",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.DS-01 Data-at-rest is protected",
+      "auditProcedure": "Get-SPOTenant | Select-Object SharingCapability",
+      "remediationProcedure": "Set-SPOTenant -SharingCapability ExistingExternalUserSharingOnly",
+      "riskWeight": 9,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the tenant sharing capability",
+        "executor": "PowerShell",
+        "module": "SharePointOnline",
+        "scopes": "Sites.FullControl.All",
+        "payload": "Get-SPOTenant | Select-Object SharingCapability | ConvertTo-Json -Compress",
+        "assertions": [
+          {
+            "path": "SharingCapability",
+            "operator": "Regex",
+            "expected": "^(ExistingExternalUserSharingOnly|Disabled)$",
+            "failure": "SharePoint sharing capability is {actual}; anonymous links can be created.",
+            "hint": "Run Set-SPOTenant -SharingCapability ExistingExternalUserSharingOnly (or Disabled if no external collaboration is required)."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Restrict external content sharing",
+        "executor": "PowerShell",
+        "module": "SharePointOnline",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "ExistingExternalUserSharingOnly",
+          "estimatedSeconds": "30"
+        },
+        "payload": "Set-SPOTenant -SharingCapability ExistingExternalUserSharingOnly\nGet-SPOTenant | Select-Object SharingCapability | ConvertTo-Json -Compress",
+        "destructive": true
+      },
+      "rollback": {
+        "name": "Restore the previous sharing capability",
+        "executor": "PowerShell",
+        "module": "SharePointOnline",
+        "payload": "Set-SPOTenant -SharingCapability {{SharingCapability}}\nGet-SPOTenant | Select-Object SharingCapability | ConvertTo-Json -Compress"
+      },
+      "emulatorState": {
+        "Get-SPOTenant": {
+          "SharingCapability": "ExternalUserAndGuestSharing",
+          "DefaultSharingLinkType": "AnonymousAccess",
+          "DefaultLinkPermission": "Edit",
+          "ExternalUserExpirationRequired": false,
+          "ExternalUserExpireInDays": 365,
+          "PreventExternalUsersFromResharing": false,
+          "RequireAcceptingAccountMatchInvitedAccount": false,
+          "DenyAddAndCustomizePages": false
+        }
+      }
+    },
+    {
+      "reference": "7.2.5",
+      "domain": "SharePoint & OneDrive",
+      "title": "Ensure that SharePoint guest users cannot share items they don't own",
+      "description": "Guests must be prevented from re-sharing content they do not own.",
+      "rationale": "Re-sharing by guests extends access to people the data owner never approved and never sees.",
+      "level": "L1",
+      "severity": "Medium",
+      "userImpact": "Impact: Guests will no longer be able to re-share files.",
+      "cisControl": "CIS Control 3: Data Protection",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.DS-01 Data-at-rest is protected",
+      "auditProcedure": "Get-SPOTenant | Select-Object PreventExternalUsersFromResharing",
+      "remediationProcedure": "Set-SPOTenant -PreventExternalUsersFromResharing $true",
+      "riskWeight": 6,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the guest re-sharing setting",
+        "executor": "PowerShell",
+        "module": "SharePointOnline",
+        "scopes": "Sites.FullControl.All",
+        "payload": "Get-SPOTenant | Select-Object PreventExternalUsersFromResharing | ConvertTo-Json -Compress",
+        "assertions": [
+          {
+            "path": "PreventExternalUsersFromResharing",
+            "operator": "IsTrue",
+            "failure": "Guests can re-share content they do not own (PreventExternalUsersFromResharing is {actual}).",
+            "hint": "Run Set-SPOTenant -PreventExternalUsersFromResharing $true."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Prevent guests from re-sharing",
+        "executor": "PowerShell",
+        "module": "SharePointOnline",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "PreventExternalUsersFromResharing = true",
+          "estimatedSeconds": "25"
+        },
+        "payload": "Set-SPOTenant -PreventExternalUsersFromResharing $true\nGet-SPOTenant | Select-Object PreventExternalUsersFromResharing | ConvertTo-Json -Compress"
+      },
+      "rollback": {
+        "name": "Restore the previous re-sharing setting",
+        "executor": "PowerShell",
+        "module": "SharePointOnline",
+        "payload": "Set-SPOTenant -PreventExternalUsersFromResharing {{PreventExternalUsersFromResharing}}\nGet-SPOTenant | Select-Object PreventExternalUsersFromResharing | ConvertTo-Json -Compress"
+      }
+    },
+    {
+      "reference": "7.2.7",
+      "domain": "SharePoint & OneDrive",
+      "title": "Ensure link sharing is restricted in SharePoint and OneDrive",
+      "description": "The default sharing link must be scoped to people in the organisation, with view permission.",
+      "rationale": "The default link type is what most users accept without thinking, so it has to be the safe option.",
+      "level": "L1",
+      "severity": "Medium",
+      "userImpact": "Impact: New links default to internal, view-only; users can still widen a link deliberately.",
+      "cisControl": "CIS Control 3: Data Protection",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.DS-01 Data-at-rest is protected",
+      "auditProcedure": "Get-SPOTenant | Select-Object DefaultSharingLinkType, DefaultLinkPermission",
+      "remediationProcedure": "Set-SPOTenant -DefaultSharingLinkType Internal -DefaultLinkPermission View",
+      "riskWeight": 6,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the default sharing link configuration",
+        "executor": "PowerShell",
+        "module": "SharePointOnline",
+        "scopes": "Sites.FullControl.All",
+        "payload": "Get-SPOTenant | Select-Object DefaultSharingLinkType, DefaultLinkPermission | ConvertTo-Json -Compress",
+        "assertions": [
+          {
+            "path": "DefaultSharingLinkType",
+            "operator": "Equals",
+            "expected": "Internal",
+            "failure": "The default sharing link type is {actual}; CIS requires {expected}.",
+            "hint": "Run Set-SPOTenant -DefaultSharingLinkType Internal."
+          },
+          {
+            "path": "DefaultLinkPermission",
+            "operator": "Equals",
+            "expected": "View",
+            "failure": "The default link permission is {actual}; CIS requires {expected}.",
+            "hint": "Run Set-SPOTenant -DefaultLinkPermission View."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Default new links to internal, view-only",
+        "executor": "PowerShell",
+        "module": "SharePointOnline",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "Internal / View",
+          "estimatedSeconds": "25"
+        },
+        "payload": "Set-SPOTenant -DefaultSharingLinkType Internal -DefaultLinkPermission View\nGet-SPOTenant | Select-Object DefaultSharingLinkType, DefaultLinkPermission | ConvertTo-Json -Compress"
+      },
+      "rollback": {
+        "name": "Restore the previous link defaults",
+        "executor": "PowerShell",
+        "module": "SharePointOnline",
+        "payload": "Set-SPOTenant -DefaultSharingLinkType {{DefaultSharingLinkType}} -DefaultLinkPermission {{DefaultLinkPermission}}\nGet-SPOTenant | Select-Object DefaultSharingLinkType, DefaultLinkPermission | ConvertTo-Json -Compress"
+      }
+    },
+    {
+      "reference": "7.2.9",
+      "domain": "SharePoint & OneDrive",
+      "title": "Ensure guest access to a site or OneDrive will expire automatically",
+      "description": "Guest access must expire after no more than 30 days.",
+      "rationale": "Guest accounts routinely outlive the project that created them, leaving standing external access nobody reviews.",
+      "level": "L1",
+      "severity": "Medium",
+      "userImpact": "Impact: Guests will lose access after the expiry window unless it is extended.",
+      "cisControl": "CIS Control 6: Access Control Management",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.AA-05 Access permissions and authorizations",
+      "auditProcedure": "Get-SPOTenant | Select-Object ExternalUserExpirationRequired, ExternalUserExpireInDays",
+      "remediationProcedure": "Set-SPOTenant -ExternalUserExpirationRequired $true -ExternalUserExpireInDays 30",
+      "riskWeight": 6,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the guest expiry configuration",
+        "executor": "PowerShell",
+        "module": "SharePointOnline",
+        "scopes": "Sites.FullControl.All",
+        "payload": "Get-SPOTenant | Select-Object ExternalUserExpirationRequired, ExternalUserExpireInDays | ConvertTo-Json -Compress",
+        "assertions": [
+          {
+            "path": "ExternalUserExpirationRequired",
+            "operator": "IsTrue",
+            "failure": "Guest access never expires automatically ({actual}).",
+            "hint": "Run Set-SPOTenant -ExternalUserExpirationRequired $true."
+          },
+          {
+            "path": "ExternalUserExpireInDays",
+            "operator": "LessThanOrEqual",
+            "expected": "30",
+            "failure": "Guest access expires after {actual} days; CIS requires no more than {expected}.",
+            "hint": "Run Set-SPOTenant -ExternalUserExpireInDays 30."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Expire guest access after 30 days",
+        "executor": "PowerShell",
+        "module": "SharePointOnline",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "expiry required, 30 days",
+          "estimatedSeconds": "25"
+        },
+        "payload": "Set-SPOTenant -ExternalUserExpirationRequired $true -ExternalUserExpireInDays 30\nGet-SPOTenant | Select-Object ExternalUserExpirationRequired, ExternalUserExpireInDays | ConvertTo-Json -Compress"
+      },
+      "rollback": {
+        "name": "Restore the previous guest expiry configuration",
+        "executor": "PowerShell",
+        "module": "SharePointOnline",
+        "payload": "Set-SPOTenant -ExternalUserExpirationRequired {{ExternalUserExpirationRequired}} -ExternalUserExpireInDays {{ExternalUserExpireInDays}}\nGet-SPOTenant | Select-Object ExternalUserExpirationRequired, ExternalUserExpireInDays | ConvertTo-Json -Compress"
+      }
+    },
+    {
+      "reference": "7.3.4",
+      "domain": "SharePoint & OneDrive",
+      "title": "Ensure custom script execution is restricted on personal sites",
+      "description": "Users must not be able to run custom script on OneDrive and personal sites.",
+      "rationale": "Custom script on a personal site is arbitrary code execution in the tenant's own origin.",
+      "level": "L1",
+      "severity": "Medium",
+      "userImpact": "Impact: Pages relying on custom script will stop rendering that script.",
+      "cisControl": "CIS Control 2: Inventory and Control of Software Assets",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.PS-05 Installation of unauthorized software is prevented",
+      "auditProcedure": "Get-SPOTenant | Select-Object DenyAddAndCustomizePages",
+      "remediationProcedure": "Set-SPOTenant -DenyAddAndCustomizePages $true",
+      "riskWeight": 5,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the custom script setting",
+        "executor": "PowerShell",
+        "module": "SharePointOnline",
+        "scopes": "Sites.FullControl.All",
+        "payload": "Get-SPOTenant | Select-Object DenyAddAndCustomizePages | ConvertTo-Json -Compress",
+        "assertions": [
+          {
+            "path": "DenyAddAndCustomizePages",
+            "operator": "IsTrue",
+            "failure": "Custom script execution is permitted on personal sites ({actual}).",
+            "hint": "Run Set-SPOTenant -DenyAddAndCustomizePages $true."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Block custom script on personal sites",
+        "executor": "PowerShell",
+        "module": "SharePointOnline",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "DenyAddAndCustomizePages = true",
+          "estimatedSeconds": "25"
+        },
+        "payload": "Set-SPOTenant -DenyAddAndCustomizePages $true\nGet-SPOTenant | Select-Object DenyAddAndCustomizePages | ConvertTo-Json -Compress"
+      },
+      "rollback": {
+        "name": "Restore the previous custom script setting",
+        "executor": "PowerShell",
+        "module": "SharePointOnline",
+        "payload": "Set-SPOTenant -DenyAddAndCustomizePages {{DenyAddAndCustomizePages}}\nGet-SPOTenant | Select-Object DenyAddAndCustomizePages | ConvertTo-Json -Compress"
+      }
+    }
+  ]
+}

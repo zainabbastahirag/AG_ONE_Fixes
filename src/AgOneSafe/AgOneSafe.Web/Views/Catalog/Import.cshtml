@@ -1,0 +1,87 @@
+@using AgOneSafe.Infrastructure.Catalog
+@{
+    ViewData["Title"] = "Import benchmark workbook";
+    var result = ViewBag.Result as CatalogImportResult;
+}
+
+<div class="ag-page-head">
+    <div>
+        <h1>Import benchmark workbook</h1>
+        <p class="ag-sub">
+            Loads a CIS workbook laid out as Vendor Reference · Level · Title · Audit by · Remediation ·
+            User impact · CIS Critical Security Control · NIST CSF Core Area. Column headers are matched by
+            name, so the sheet does not have to be in a fixed order.
+        </p>
+    </div>
+    <a class="btn" asp-action="Index">Back to catalog</a>
+</div>
+
+<div class="ag-grid cols-2">
+    <div class="ag-card">
+        <h2>Upload</h2>
+        <form method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="All" class="validation-summary-errors"></div>
+
+            <div class="field">
+                <label for="workbook">Workbook (.xlsx)</label>
+                <input type="file" id="workbook" name="workbook" accept=".xlsx" required />
+            </div>
+
+            <div class="form-row">
+                <div class="field">
+                    <label for="benchmark">Benchmark family</label>
+                    <select id="benchmark" name="benchmark">
+                        <option value="Microsoft365">Microsoft 365</option>
+                        <option value="Azure">Azure</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="version">Version label</label>
+                    <input type="text" id="version" name="version" value="CIS Microsoft 365 Foundations Benchmark v4.0.0" />
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Import controls</button>
+        </form>
+    </div>
+
+    <div class="ag-card">
+        <h2>What the importer does</h2>
+        <ul class="small" style="padding-left:18px; color:var(--ag-muted)">
+            <li>Upserts on (benchmark, vendor reference), so re-importing an updated workbook preserves findings history.</li>
+            <li>Stores the "Audit by" and "Remediation" cells verbatim for analysts.</li>
+            <li>Promotes a cell containing exactly one read-only PowerShell pipeline into a runnable audit action and rewrites a trailing <span class="mono">| fl</span> into <span class="mono">| Select-Object</span> so the result serialises to JSON.</li>
+            <li>Leaves everything else as a manual control, which keeps it visible in the roadmap rather than silently passing.</li>
+            <li>Never invents assertion rules. A control returns a verdict only once an engineer has written the rules that define pass and fail.</li>
+        </ul>
+    </div>
+</div>
+
+@if (result is not null)
+{
+    <div class="ag-card mt-3">
+        <h2>Import result</h2>
+        <div class="ag-grid cols-4">
+            <div class="ag-kpi"><div class="label">Rows read</div><div class="value">@result.RowsRead</div></div>
+            <div class="ag-kpi"><div class="label">Controls upserted</div><div class="value">@result.ControlsImported</div></div>
+            <div class="ag-kpi"><div class="label">Runnable audits</div><div class="value">@result.AutomatedAudits</div></div>
+            <div class="ag-kpi"><div class="label">Manual controls</div><div class="value">@result.ManualAudits</div></div>
+        </div>
+
+        @if (result.Warnings.Count > 0)
+        {
+            <h3 class="mt-3">Follow-up needed</h3>
+            <div class="ag-table-wrap">
+                <table class="ag-table">
+                    <tbody>
+                    @foreach (var warning in result.Warnings.Take(100))
+                    {
+                        <tr><td class="wrap small">@warning</td></tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+}

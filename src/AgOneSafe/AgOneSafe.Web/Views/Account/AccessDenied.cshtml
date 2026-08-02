@@ -1,0 +1,12 @@
+@{
+    ViewData["Title"] = "Access denied";
+}
+
+<div class="ag-card">
+    <h1>Access denied</h1>
+    <p class="ag-sub">
+        Your role does not permit this action. Approving or executing a change requires the CISO or
+        Cloud Security Engineer role; auditors have read-only access to posture and the proof centre.
+    </p>
+    <a class="btn btn-primary" asp-controller="Dashboard" asp-action="Index">Back to the dashboard</a>
+</div>

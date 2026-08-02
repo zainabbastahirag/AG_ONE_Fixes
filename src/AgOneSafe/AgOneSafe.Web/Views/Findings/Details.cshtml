@@ -1,0 +1,180 @@
+@model FindingDetailsViewModel
+@{
+    var finding = Model.Finding;
+    var control = finding.ControlDefinition!;
+    ViewData["Title"] = $"{control.VendorReference} gap";
+    var plan = Model.Plan;
+    var canExecute = User.IsInRole(AgRoles.Ciso) || User.IsInRole(AgRoles.SecurityAdmin);
+}
+
+<div class="ag-page-head">
+    <div>
+        <h1>@control.VendorReference — @control.Title</h1>
+        <div class="flex" style="margin-top:6px">
+            <span class="badge @ViewHelpers.FindingBadge(finding.Status)">@finding.Status</span>
+            <span class="badge @ViewHelpers.SeverityBadge(finding.Severity)">@finding.Severity</span>
+            <span class="badge @ViewHelpers.LevelBadge(control.Level)">CIS @control.Level</span>
+            <span class="badge badge-neutral">@control.Domain</span>
+            <span class="badge badge-info">Risk @finding.RiskScore.ToString("0")/100</span>
+        </div>
+    </div>
+    <div class="flex">
+        <a class="btn" asp-controller="Catalog" asp-action="Details" asp-route-id="@control.Id">Catalog entry</a>
+        @if (canExecute && plan?.CanAct == true)
+        {
+            <form asp-controller="Remediation" asp-action="Plan" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="findingId" value="@finding.Id" />
+                <button type="submit" class="btn btn-primary">Plan remediation</button>
+            </form>
+        }
+        @if (Model.ActiveTask is not null)
+        {
+            <a class="btn" asp-controller="Remediation" asp-action="Details" asp-route-id="@Model.ActiveTask.Id">Open task #@Model.ActiveTask.Id</a>
+        }
+    </div>
+</div>
+
+<div class="ag-grid cols-2">
+    <div class="ag-card">
+        <h2>Why this failed</h2>
+        @if (string.IsNullOrWhiteSpace(finding.FailureReason))
+        {
+            <p class="muted small">This control currently passes.</p>
+        }
+        else
+        {
+            <div class="ag-alert ag-alert-danger" style="white-space:pre-wrap">@finding.FailureReason</div>
+        }
+
+        <h3>What needs to be done</h3>
+        <div class="ag-alert ag-alert-warn" style="white-space:pre-wrap">@finding.RequiredAction</div>
+
+        @if (Model.Assertions.Count > 0)
+        {
+            <h3 class="mt-3">Assertion results</h3>
+            <div class="ag-table-wrap">
+                <table class="ag-table">
+                    <thead>
+                    <tr><th>Checked value</th><th>Operator</th><th>Expected</th><th>Actual</th><th>Verdict</th></tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var assertion in Model.Assertions)
+                    {
+                        <tr>
+                            <td class="mono small nowrap">@assertion.JsonPath</td>
+                            <td class="small">@assertion.Operator</td>
+                            <td class="mono small">@assertion.Expected</td>
+                            <td class="mono small">@assertion.Actual</td>
+                            <td><span class="badge @(assertion.Passed ? "badge-pass" : "badge-fail")">@(assertion.Passed ? "Pass" : "Fail")</span></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    <div class="ag-card">
+        <h2>Agent decision</h2>
+        @if (plan is null)
+        {
+            <p class="muted small">No plan available.</p>
+        }
+        else
+        {
+            <div class="ag-alert @(plan.CanAct ? "ag-alert-ok" : "ag-alert-warn")">
+                @(plan.CanAct ? plan.Summary : plan.Advisory)
+            </div>
+
+            <dl class="ag-dl">
+                <dt>Mode</dt><dd>@(plan.CanAct ? "Autonomous execution, gated by approval" : "Advisory only")</dd>
+                <dt>Impact tier</dt><dd><span class="badge @ViewHelpers.SeverityBadge(plan.ImpactSeverity)">@plan.ImpactSeverity</span></dd>
+                <dt>Approval required</dt><dd>@(plan.RequiresApproval ? $"Yes — {plan.RequiredSignatures} signature(s)" : "No, policy permits autonomous action")</dd>
+                <dt>Blast radius</dt>
+                <dd>
+                    @plan.BlastRadius.TotalImpacted object(s):
+                    @plan.BlastRadius.ImpactedUsers users, @plan.BlastRadius.ImpactedResources resources,
+                    @plan.BlastRadius.ImpactedPolicies policies
+                </dd>
+                <dt>Reversible</dt><dd>@(plan.BlastRadius.IsReversible ? "Yes, snapshot rollback" : "No rollback payload published")</dd>
+            </dl>
+
+            <h3 class="mt-3">Plan</h3>
+            <ol class="ag-steps">
+                @foreach (var step in plan.Steps.OrderBy(s => s.Order))
+                {
+                    <li>
+                        <div class="ag-step-num @(step.IsAutomated ? "auto" : "")">@step.Order</div>
+                        <div class="ag-step">
+                            <b>@step.Description</b>
+                            <span>@step.Detail</span>
+                        </div>
+                    </li>
+                }
+            </ol>
+
+            @if (plan.BlastRadius.Warnings.Count > 0)
+            {
+                <h3 class="mt-3">Warnings</h3>
+                @foreach (var warning in plan.BlastRadius.Warnings)
+                {
+                    <div class="ag-alert ag-alert-warn">@warning</div>
+                }
+            }
+        }
+    </div>
+</div>
+
+<div class="ag-grid cols-2 mt-3">
+    <div class="ag-card">
+        <h2>Evidence</h2>
+        <p class="small muted">Exactly what the audit action returned from the tenant, retained for the auditor.</p>
+        @if (Model.Finding.LatestControlResult is { } result && !string.IsNullOrWhiteSpace(result.ExecutedCommand))
+        {
+            <h3>Command executed</h3>
+            <pre class="ag-code">@result.ExecutedCommand</pre>
+        }
+        <h3 class="mt-3">Returned state</h3>
+        <pre class="ag-code">@Model.EvidenceJson</pre>
+    </div>
+
+    <div class="ag-card">
+        <h2>Accept the residual risk</h2>
+        <p class="small muted">
+            A CISO can close a gap without changing the tenant. The decision, the person and the reason are
+            written to the immutable audit log.
+        </p>
+        @if (finding.Status == FindingStatus.RiskAccepted)
+        {
+            <div class="ag-alert ag-alert-ok">
+                Accepted by @finding.RiskAcceptedBy: @finding.RiskAcceptanceReason
+            </div>
+        }
+        else if (User.IsInRole(AgRoles.Ciso))
+        {
+            <form asp-action="AcceptRisk" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@finding.Id" />
+                <div class="field">
+                    <label for="reason">Justification</label>
+                    <textarea id="reason" name="reason" rows="3" required placeholder="Compensating control, business constraint, or planned project reference"></textarea>
+                </div>
+                <button type="submit" class="btn btn-danger">Accept residual risk</button>
+            </form>
+        }
+        else
+        {
+            <p class="small muted">Only the CISO role can accept residual risk.</p>
+        }
+
+        @if (control.RequiresLicenseUpgrade)
+        {
+            <h3 class="mt-3">Licence gap</h3>
+            <div class="ag-alert ag-alert-warn">
+                This fix needs @control.RequiredLicense, which the tenant does not hold.
+            </div>
+            <a class="btn" asp-controller="Escalations" asp-action="Index">Raise a licence request</a>
+        }
+    </div>
+</div>

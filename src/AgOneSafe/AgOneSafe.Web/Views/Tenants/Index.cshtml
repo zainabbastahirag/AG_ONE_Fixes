@@ -1,0 +1,61 @@
+@model IReadOnlyList<TenantConnection>
+@{
+    ViewData["Title"] = "Tenants";
+    var canExecute = User.IsInRole(AgRoles.Ciso) || User.IsInRole(AgRoles.SecurityAdmin);
+}
+
+<div class="ag-page-head">
+    <div>
+        <h1>Tenant connections</h1>
+        <p class="ag-sub">
+            Each customer tenant is reached through its own multi-tenant app registration, with Azure
+            Lighthouse delegation for cross-tenant Azure work. Credentials live in Key Vault; only the
+            reference is stored here.
+        </p>
+    </div>
+    @if (canExecute)
+    {
+        <a class="btn btn-primary" asp-action="Connect">Connect a tenant</a>
+    }
+</div>
+
+<div class="ag-card">
+    <div class="ag-table-wrap">
+        <table class="ag-table">
+            <thead>
+            <tr>
+                <th>Tenant</th><th>Status</th><th>Mode</th><th>Target</th><th>Lighthouse</th>
+                <th>Connectors</th><th>Last scan</th><th class="num">Posture</th><th></th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var tenant in Model)
+            {
+                var healthy = tenant.HealthChecks.Count(h => h.IsHealthy);
+                <tr>
+                    <td>
+                        <strong>@tenant.DisplayName</strong>
+                        <div class="small muted">@tenant.PrimaryDomain · @tenant.TenantId</div>
+                    </td>
+                    <td>
+                        <span class="badge @(tenant.Status == TenantConnectionStatus.Connected ? "badge-pass" : tenant.Status == TenantConnectionStatus.Degraded ? "badge-medium" : "badge-fail")">
+                            @tenant.Status
+                        </span>
+                    </td>
+                    <td><span class="badge badge-neutral">@tenant.ExecutionMode</span></td>
+                    <td><span class="badge @ViewHelpers.LevelBadge(tenant.TargetLevel)">CIS @tenant.TargetLevel</span></td>
+                    <td class="small">@(tenant.LighthouseEnabled ? "Delegated" : "Not delegated")</td>
+                    <td class="small">@healthy / @tenant.HealthChecks.Count healthy</td>
+                    <td class="small nowrap">@(tenant.LastAssessmentAt?.ToString("dd MMM HH:mm") ?? "Never")</td>
+                    <td class="num"><strong style="color:@ViewHelpers.ScoreColour(tenant.LatestPostureScore)">@tenant.LatestPostureScore.ToString("0.#")%</strong></td>
+                    <td><a class="btn btn-sm" asp-action="Details" asp-route-id="@tenant.Id">Open</a></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    @if (Model.Count == 0)
+    {
+        <div class="ag-empty">No tenants are connected yet.</div>
+    }
+</div>

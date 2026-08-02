@@ -1,0 +1,102 @@
+@model FindingsIndexViewModel
+@{
+    ViewData["Title"] = "Gap analysis";
+}
+
+<div class="ag-page-head">
+    <div>
+        <h1>Gap analysis</h1>
+        <p class="ag-sub">
+            Every failed control, why it failed, and what has to change. The reason and the required action
+            come from the assertion rules that produced the verdict, not from a generic description.
+        </p>
+    </div>
+    <a class="btn btn-primary" asp-controller="Roadmap" asp-action="Index">Build action roadmap</a>
+</div>
+
+<div class="ag-card">
+    <form method="get" class="ag-filters">
+        <div class="field">
+            <label>Severity</label>
+            <select name="Severity">
+                <option value="">All</option>
+                @foreach (var value in Enum.GetValues<Severity>().OrderByDescending(v => v))
+                {
+                    <option value="@value" selected="@(Model.Filter.Severity == value)">@value</option>
+                }
+            </select>
+        </div>
+        <div class="field">
+            <label>Status</label>
+            <select name="Status">
+                <option value="">All</option>
+                @foreach (var value in Enum.GetValues<FindingStatus>())
+                {
+                    <option value="@value" selected="@(Model.Filter.Status == value)">@value</option>
+                }
+            </select>
+        </div>
+        <div class="field">
+            <label>Domain</label>
+            <select name="Domain">
+                <option value="">All</option>
+                @foreach (var domain in Model.Domains)
+                {
+                    <option value="@domain" selected="@(Model.Filter.Domain == domain)">@domain</option>
+                }
+            </select>
+        </div>
+        <div class="field checkbox" style="margin-bottom:2px">
+            <input type="checkbox" id="OpenOnly" name="OpenOnly" value="true" checked="@Model.Filter.OpenOnly" />
+            <label for="OpenOnly" style="margin:0">Open gaps only</label>
+        </div>
+        <button type="submit" class="btn btn-primary">Filter</button>
+        <a class="btn" asp-action="Index" asp-route-OpenOnly="false">Show everything</a>
+    </form>
+
+    <div class="ag-table-wrap">
+        <table class="ag-table">
+            <thead>
+            <tr>
+                <th>Control</th>
+                <th>Severity</th>
+                <th>Risk</th>
+                <th>Why it failed</th>
+                <th>What needs to be done</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var finding in Model.Findings)
+            {
+                <tr>
+                    <td class="nowrap">
+                        <strong>@finding.ControlDefinition?.VendorReference</strong>
+                        <div class="small muted">@finding.ControlDefinition?.Domain</div>
+                    </td>
+                    <td><span class="badge @ViewHelpers.SeverityBadge(finding.Severity)">@finding.Severity</span></td>
+                    <td class="num">@finding.RiskScore.ToString("0")</td>
+                    <td class="wrap">
+                        <div>@ViewHelpers.Truncate(finding.ControlDefinition?.Title, 80)</div>
+                        <div class="small" style="color:var(--ag-fail)">@ViewHelpers.Truncate(finding.FailureReason, 180)</div>
+                    </td>
+                    <td class="wrap small muted">@ViewHelpers.Truncate(finding.RequiredAction, 180)</td>
+                    <td>
+                        <span class="badge @ViewHelpers.FindingBadge(finding.Status)">@finding.Status</span>
+                        @if (finding.ControlDefinition?.RequiresLicenseUpgrade == true)
+                        {
+                            <div class="small muted" style="margin-top:4px">@finding.ControlDefinition.RequiredLicense</div>
+                        }
+                    </td>
+                    <td><a class="btn btn-sm" asp-action="Details" asp-route-id="@finding.Id">Open</a></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    @if (Model.Findings.Count == 0)
+    {
+        <div class="ag-empty">No findings match these filters. Run a baseline scan if this tenant has not been assessed yet.</div>
+    }
+</div>

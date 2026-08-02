@@ -1,0 +1,100 @@
+@model TenantConnection
+@{
+    ViewData["Title"] = Model.DisplayName;
+    var canExecute = User.IsInRole(AgRoles.Ciso) || User.IsInRole(AgRoles.SecurityAdmin);
+}
+
+<div class="ag-page-head">
+    <div>
+        <h1>@Model.DisplayName</h1>
+        <p class="ag-sub">@Model.PrimaryDomain · tenant @Model.TenantId</p>
+        <div class="flex" style="margin-top:6px">
+            <span class="badge @(Model.Status == TenantConnectionStatus.Connected ? "badge-pass" : Model.Status == TenantConnectionStatus.Degraded ? "badge-medium" : "badge-fail")">@Model.Status</span>
+            <span class="badge badge-neutral">@Model.ExecutionMode mode</span>
+            <span class="badge @ViewHelpers.LevelBadge(Model.TargetLevel)">Target CIS @Model.TargetLevel</span>
+            @if (Model.LighthouseEnabled)
+            {
+                <span class="badge badge-info">Azure Lighthouse delegated</span>
+            }
+        </div>
+    </div>
+    <div class="flex">
+        @if (canExecute)
+        {
+            <a class="btn" asp-action="OnboardingScript" asp-route-id="@Model.Id">Download onboarding script</a>
+            <form asp-action="RunHealthCheck" method="post" class="inline-form">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button type="submit" class="btn btn-primary">Re-check connectors</button>
+            </form>
+            @if (Model.ExecutionMode == ExecutionMode.Simulation)
+            {
+                <form asp-action="ResetEmulator" method="post" class="inline-form">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <button type="submit" class="btn btn-danger">Reset emulated tenant</button>
+                </form>
+            }
+        }
+    </div>
+</div>
+
+@if (Model.ExecutionMode == ExecutionMode.Simulation)
+{
+    <div class="ag-alert ag-alert-warn">
+        This tenant runs against the deterministic tenant emulator. Audit and remediation payloads execute for
+        real in <span class="mono">pwsh</span>, but the cmdlets read and write a local state document instead of
+        Microsoft 365. Switch to Live mode once the app registration has admin consent.
+    </div>
+}
+
+<div class="ag-grid cols-2">
+    <div class="ag-card">
+        <h2>Connection</h2>
+        <dl class="ag-dl">
+            <dt>Application (client) id</dt><dd class="mono">@Model.ClientId</dd>
+            <dt>Credential reference</dt><dd class="mono">@Model.SecretReference</dd>
+            <dt>Azure subscriptions</dt><dd class="mono">@(string.IsNullOrWhiteSpace(Model.AzureSubscriptionIds) ? "none" : Model.AzureSubscriptionIds)</dd>
+            <dt>Detected licences</dt><dd>@(string.IsNullOrWhiteSpace(Model.LicenseSkus) ? "unknown" : Model.LicenseSkus)</dd>
+            <dt>Connected</dt><dd>@(Model.ConnectedAt?.ToString("dd MMM yyyy HH:mm") ?? "—")</dd>
+            <dt>Last health check</dt><dd>@(Model.LastHealthCheckAt?.ToString("dd MMM yyyy HH:mm") ?? "—")</dd>
+            <dt>Last scan</dt><dd>@(Model.LastAssessmentAt?.ToString("dd MMM yyyy HH:mm") ?? "Never")</dd>
+            <dt>Latest posture</dt><dd><strong style="color:@ViewHelpers.ScoreColour(Model.LatestPostureScore)">@Model.LatestPostureScore.ToString("0.#")%</strong></dd>
+        </dl>
+    </div>
+
+    <div class="ag-card">
+        <div class="ag-card-head">
+            <h2>Connector health</h2>
+            <span class="small muted">@Model.LastHealthMessage</span>
+        </div>
+        @if (Model.HealthChecks.Count == 0)
+        {
+            <div class="ag-empty">No health check has run yet.</div>
+        }
+        else
+        {
+            <div class="ag-table-wrap">
+                <table class="ag-table">
+                    <thead>
+                    <tr><th>Workload</th><th>State</th><th class="num">Latency</th><th>Scopes in use</th></tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var check in Model.HealthChecks.OrderBy(h => h.Module))
+                    {
+                        <tr>
+                            <td><strong>@check.Module</strong></td>
+                            <td>
+                                <span class="badge @(check.IsHealthy ? "badge-pass" : "badge-fail")">@(check.IsHealthy ? "Healthy" : "Unavailable")</span>
+                                <div class="small muted">@check.Message</div>
+                            </td>
+                            <td class="num small">@check.LatencyMs ms</td>
+                            <td class="wrap mono small muted">@check.GrantedScopes</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

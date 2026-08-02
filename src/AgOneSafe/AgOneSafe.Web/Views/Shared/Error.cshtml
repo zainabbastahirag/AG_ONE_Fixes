@@ -1,0 +1,14 @@
+﻿@model ErrorViewModel
+@{
+    ViewData["Title"] = "Error";
+}
+
+<div class="ag-card">
+    <h1>Something went wrong</h1>
+    <p class="ag-sub">The request could not be completed. Nothing was written to any customer tenant.</p>
+    @if (Model.ShowRequestId)
+    {
+        <p class="small muted">Request id <span class="mono">@Model.RequestId</span></p>
+    }
+    <a class="btn btn-primary" asp-controller="Dashboard" asp-action="Index">Back to the dashboard</a>
+</div>

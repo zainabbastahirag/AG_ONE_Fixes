@@ -1,0 +1,445 @@
+{
+  "benchmark": "Microsoft365",
+  "version": "CIS Microsoft 365 Foundations Benchmark v4.0.0",
+  "controls": [
+    {
+      "reference": "8.1.1",
+      "domain": "Teams",
+      "title": "Ensure external file sharing in Teams is enabled for only approved cloud storage services",
+      "description": "Only cloud storage providers the organisation has approved may be surfaced inside Teams.",
+      "rationale": "Unapproved storage providers inside Teams are an uncontrolled path for data to leave the tenant.",
+      "level": "L2",
+      "severity": "Medium",
+      "userImpact": "Impact: Users will no longer be able to attach files from unapproved third-party storage in Teams.",
+      "cisControl": "CIS Control 3: Data Protection",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.DS-01 Data-at-rest is protected",
+      "auditProcedure": "Get-CsTeamsClientConfiguration | fl AllowDropbox,AllowBox,AllowGoogleDrive,AllowShareFile,AllowEgnyte",
+      "remediationProcedure": "1. Connect to Teams PowerShell using Connect-MicrosoftTeams\n2. Run the following PowerShell command to disable external providers that are not authorized. (the example disables Citrix Files, DropBox, Box, Google Drive and Egnyte)\n$storageParams = @{\n  AllowGoogleDrive = $false\n  AllowShareFile = $false\n  AllowBox = $false\n  AllowDropBox = $false\n  AllowEgnyte = $false\n}\nSet-CsTeamsClientConfiguration @storageParams",
+      "riskWeight": 6,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the Teams third-party storage providers",
+        "executor": "PowerShell",
+        "module": "MicrosoftTeams",
+        "scopes": "TeamsConfiguration.Read.All",
+        "payload": "Get-CsTeamsClientConfiguration | Select-Object AllowDropBox, AllowBox, AllowGoogleDrive, AllowShareFile, AllowEgnyte | ConvertTo-Json -Compress",
+        "assertions": [
+          {
+            "path": "AllowDropBox",
+            "operator": "IsFalse",
+            "failure": "Dropbox is available as a storage provider in Teams ({actual}).",
+            "hint": "Set AllowDropBox to $false with Set-CsTeamsClientConfiguration."
+          },
+          {
+            "path": "AllowBox",
+            "operator": "IsFalse",
+            "failure": "Box is available as a storage provider in Teams ({actual}).",
+            "hint": "Set AllowBox to $false with Set-CsTeamsClientConfiguration."
+          },
+          {
+            "path": "AllowGoogleDrive",
+            "operator": "IsFalse",
+            "failure": "Google Drive is available as a storage provider in Teams ({actual}).",
+            "hint": "Set AllowGoogleDrive to $false with Set-CsTeamsClientConfiguration."
+          },
+          {
+            "path": "AllowShareFile",
+            "operator": "IsFalse",
+            "failure": "Citrix ShareFile is available as a storage provider in Teams ({actual}).",
+            "hint": "Set AllowShareFile to $false with Set-CsTeamsClientConfiguration."
+          },
+          {
+            "path": "AllowEgnyte",
+            "operator": "IsFalse",
+            "failure": "Egnyte is available as a storage provider in Teams ({actual}).",
+            "hint": "Set AllowEgnyte to $false with Set-CsTeamsClientConfiguration."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Disable unapproved Teams storage providers",
+        "executor": "PowerShell",
+        "module": "MicrosoftTeams",
+        "scopes": "TeamsConfiguration.ReadWrite.All",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "all third-party providers disabled",
+          "estimatedSeconds": "30"
+        },
+        "payload": "Set-CsTeamsClientConfiguration -Identity Global -AllowDropBox $false -AllowBox $false -AllowGoogleDrive $false -AllowShareFile $false -AllowEgnyte $false\nGet-CsTeamsClientConfiguration | Select-Object AllowDropBox, AllowBox, AllowGoogleDrive, AllowShareFile, AllowEgnyte | ConvertTo-Json -Compress"
+      },
+      "rollback": {
+        "name": "Restore the previous storage provider configuration",
+        "executor": "PowerShell",
+        "module": "MicrosoftTeams",
+        "payload": "Set-CsTeamsClientConfiguration -Identity Global -AllowDropBox {{AllowDropBox}} -AllowBox {{AllowBox}} -AllowGoogleDrive {{AllowGoogleDrive}} -AllowShareFile {{AllowShareFile}} -AllowEgnyte {{AllowEgnyte}}\nGet-CsTeamsClientConfiguration | Select-Object AllowDropBox, AllowBox, AllowGoogleDrive, AllowShareFile, AllowEgnyte | ConvertTo-Json -Compress"
+      },
+      "emulatorState": {
+        "Get-CsTeamsClientConfiguration": {
+          "Identity": "Global",
+          "AllowDropBox": true,
+          "AllowBox": true,
+          "AllowGoogleDrive": true,
+          "AllowShareFile": true,
+          "AllowEgnyte": false,
+          "AllowEmailIntoChannel": true
+        }
+      }
+    },
+    {
+      "reference": "8.1.2",
+      "domain": "Teams",
+      "title": "Ensure users can't send emails to a channel email address",
+      "description": "Channel email addresses must be disabled.",
+      "rationale": "A channel email address accepts mail from outside the tenant and bypasses normal mail-flow inspection.",
+      "level": "L1",
+      "severity": "Medium",
+      "userImpact": "Impact: Existing channel email addresses will stop receiving mail.",
+      "cisControl": "CIS Control 9: Email and Web Browser Protections",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.PS-05 Installation of unauthorized software is prevented",
+      "auditProcedure": "Get-CsTeamsClientConfiguration -Identity Global | fl AllowEmailIntoChannel",
+      "remediationProcedure": "Set-CsTeamsClientConfiguration -Identity Global -AllowEmailIntoChannel $false",
+      "riskWeight": 6,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the channel email setting",
+        "executor": "PowerShell",
+        "module": "MicrosoftTeams",
+        "scopes": "TeamsConfiguration.Read.All",
+        "payload": "Get-CsTeamsClientConfiguration | Select-Object AllowEmailIntoChannel | ConvertTo-Json -Compress",
+        "assertions": [
+          {
+            "path": "AllowEmailIntoChannel",
+            "operator": "IsFalse",
+            "failure": "Email into channel is {actual}; external senders can post directly into Teams channels.",
+            "hint": "Run Set-CsTeamsClientConfiguration -Identity Global -AllowEmailIntoChannel $false."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Disable email into channel",
+        "executor": "PowerShell",
+        "module": "MicrosoftTeams",
+        "scopes": "TeamsConfiguration.ReadWrite.All",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "AllowEmailIntoChannel = false",
+          "estimatedSeconds": "25"
+        },
+        "payload": "Set-CsTeamsClientConfiguration -Identity Global -AllowEmailIntoChannel $false\nGet-CsTeamsClientConfiguration | Select-Object AllowEmailIntoChannel | ConvertTo-Json -Compress"
+      },
+      "rollback": {
+        "name": "Restore the previous channel email setting",
+        "executor": "PowerShell",
+        "module": "MicrosoftTeams",
+        "payload": "Set-CsTeamsClientConfiguration -Identity Global -AllowEmailIntoChannel {{AllowEmailIntoChannel}}\nGet-CsTeamsClientConfiguration | Select-Object AllowEmailIntoChannel | ConvertTo-Json -Compress"
+      }
+    },
+    {
+      "reference": "8.2.1",
+      "domain": "Teams",
+      "title": "Ensure 'external access' is restricted in the Teams admin center",
+      "description": "Federation must be limited to an explicit list of approved partner domains.",
+      "rationale": "Open federation lets any Teams tenant in the world start a conversation with your staff.",
+      "level": "L2",
+      "severity": "Medium",
+      "userImpact": "Impact: Users can only chat with partners on the approved domain list.",
+      "cisControl": "CIS Control 4: Secure Configuration",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.AA-05 Access permissions and authorizations",
+      "auditProcedure": "Get-CsTenantFederationConfiguration | fl AllowFederatedUsers,AllowedDomains",
+      "remediationProcedure": "1. Connect to Teams PowerShell using Connect-MicrosoftTeams\n2. Run one of the following commands:\n- To allow only specific external domains run these commands replacing the example domains with approved domains:\n$list = New-Object Collections.Generic.List[String]\n$list.add(\"contoso.com\")\n$list.add(\"fabrikam.com\")\nSet-CsTenantFederationConfiguration -AllowFederatedUsers $true -AllowedDomainsAsAList $list\n- To block all external domains:\nSet-CsTenantFederationConfiguration -AllowFederatedUsers $false",
+      "riskWeight": 5,
+      "effortWeight": 2,
+      "automatedRemediation": false,
+      "audit": {
+        "name": "Read the tenant federation configuration",
+        "executor": "PowerShell",
+        "module": "MicrosoftTeams",
+        "scopes": "TeamsConfiguration.Read.All",
+        "payload": "Get-CsTenantFederationConfiguration | Select-Object AllowFederatedUsers, AllowedDomains, AllowTeamsConsumer | ConvertTo-Json -Depth 4 -Compress",
+        "assertions": [
+          {
+            "path": "AllowedDomains",
+            "operator": "IsNotEmpty",
+            "failure": "Federation is open to every Teams tenant: AllowFederatedUsers is on and the allowed domain list is {actual}.",
+            "hint": "Either set AllowFederatedUsers to $false, or populate AllowedDomainsAsAList with the approved partner domains only."
+          }
+        ]
+      },
+      "emulatorState": {
+        "Get-CsTenantFederationConfiguration": {
+          "AllowFederatedUsers": true,
+          "AllowedDomains": [],
+          "AllowTeamsConsumer": true,
+          "AllowTeamsConsumerInbound": true
+        }
+      }
+    },
+    {
+      "reference": "8.2.2",
+      "domain": "Teams",
+      "title": "Ensure communication with unmanaged Teams users is disabled",
+      "description": "Teams accounts not managed by an organisation must not be able to communicate with tenant users.",
+      "rationale": "Consumer Teams accounts are free and unverifiable, which makes them the cheapest possible vector for social engineering.",
+      "level": "L1",
+      "severity": "High",
+      "userImpact": "Impact: Users will no longer be able to chat with personal Teams accounts.",
+      "cisControl": "CIS Control 4: Secure Configuration",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.AA-05 Access permissions and authorizations",
+      "auditProcedure": "To audit using the UI:\n1. Navigate to Microsoft Teams admin center https://admin.teams.microsoft.com/.\n2. Click to expand Users select External access.\n3. Scroll to Teams accounts not managed by an organization\n4. Ensure People in my organization can communicate with Teams users whose accounts aren't managed by an organization is Off\n\nGet-CsTenantFederationConfiguration | fl AllowTeamsConsumer",
+      "remediationProcedure": "Set-CsTenantFederationConfiguration -AllowTeamsConsumer $false",
+      "riskWeight": 8,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the unmanaged Teams user setting",
+        "executor": "PowerShell",
+        "module": "MicrosoftTeams",
+        "scopes": "TeamsConfiguration.Read.All",
+        "payload": "Get-CsTenantFederationConfiguration | Select-Object AllowTeamsConsumer, AllowTeamsConsumerInbound | ConvertTo-Json -Compress",
+        "assertions": [
+          {
+            "path": "AllowTeamsConsumer",
+            "operator": "IsFalse",
+            "failure": "Communication with unmanaged (consumer) Teams accounts is {actual}.",
+            "hint": "Run Set-CsTenantFederationConfiguration -AllowTeamsConsumer $false."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Block unmanaged Teams accounts",
+        "executor": "PowerShell",
+        "module": "MicrosoftTeams",
+        "scopes": "TeamsConfiguration.ReadWrite.All",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "AllowTeamsConsumer = false",
+          "estimatedSeconds": "25"
+        },
+        "payload": "Set-CsTenantFederationConfiguration -AllowTeamsConsumer $false -AllowTeamsConsumerInbound $false\nGet-CsTenantFederationConfiguration | Select-Object AllowTeamsConsumer, AllowTeamsConsumerInbound | ConvertTo-Json -Compress"
+      },
+      "rollback": {
+        "name": "Restore the previous consumer federation setting",
+        "executor": "PowerShell",
+        "module": "MicrosoftTeams",
+        "payload": "Set-CsTenantFederationConfiguration -AllowTeamsConsumer {{AllowTeamsConsumer}} -AllowTeamsConsumerInbound {{AllowTeamsConsumerInbound}}\nGet-CsTenantFederationConfiguration | Select-Object AllowTeamsConsumer, AllowTeamsConsumerInbound | ConvertTo-Json -Compress"
+      }
+    },
+    {
+      "reference": "8.5.1",
+      "domain": "Teams",
+      "title": "Ensure anonymous users can't join a meeting",
+      "description": "The global meeting policy must block anonymous participants.",
+      "rationale": "Anonymous join means an unauthenticated party can sit silently in a meeting where confidential material is discussed.",
+      "level": "L2",
+      "severity": "Medium",
+      "userImpact": "Impact: External participants will need to authenticate before joining.",
+      "cisControl": "CIS Control 4: Secure Configuration",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.AA-05 Access permissions and authorizations",
+      "auditProcedure": "Get-CsTeamsMeetingPolicy -Identity Global | fl AllowAnonymousUsersToJoinMeeting",
+      "remediationProcedure": "Set-CsTeamsMeetingPolicy -Identity Global -AllowAnonymousUsersToJoinMeeting $false",
+      "riskWeight": 5,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the anonymous join setting",
+        "executor": "PowerShell",
+        "module": "MicrosoftTeams",
+        "scopes": "TeamsPolicy.Read.All",
+        "payload": "Get-CsTeamsMeetingPolicy | Select-Object Identity, AllowAnonymousUsersToJoinMeeting, AllowAnonymousUsersToStartMeeting, DesignatedPresenterRoleMode | ConvertTo-Json -Compress",
+        "assertions": [
+          {
+            "path": "AllowAnonymousUsersToJoinMeeting",
+            "operator": "IsFalse",
+            "failure": "Anonymous users can join meetings ({actual}).",
+            "hint": "Run Set-CsTeamsMeetingPolicy -Identity Global -AllowAnonymousUsersToJoinMeeting $false."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Block anonymous meeting join",
+        "executor": "PowerShell",
+        "module": "MicrosoftTeams",
+        "scopes": "TeamsPolicy.ReadWrite.All",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "AllowAnonymousUsersToJoinMeeting = false",
+          "estimatedSeconds": "25"
+        },
+        "payload": "Set-CsTeamsMeetingPolicy -Identity Global -AllowAnonymousUsersToJoinMeeting $false\nGet-CsTeamsMeetingPolicy | Select-Object Identity, AllowAnonymousUsersToJoinMeeting | ConvertTo-Json -Compress"
+      },
+      "rollback": {
+        "name": "Restore the previous anonymous join setting",
+        "executor": "PowerShell",
+        "module": "MicrosoftTeams",
+        "payload": "Set-CsTeamsMeetingPolicy -Identity Global -AllowAnonymousUsersToJoinMeeting {{AllowAnonymousUsersToJoinMeeting}}\nGet-CsTeamsMeetingPolicy | Select-Object Identity, AllowAnonymousUsersToJoinMeeting | ConvertTo-Json -Compress"
+      },
+      "emulatorState": {
+        "Get-CsTeamsMeetingPolicy": {
+          "Identity": "Global",
+          "AllowAnonymousUsersToJoinMeeting": true,
+          "AllowAnonymousUsersToStartMeeting": true,
+          "DesignatedPresenterRoleMode": "EveryoneUserOverride",
+          "AllowExternalParticipantGiveRequestControl": true
+        }
+      }
+    },
+    {
+      "reference": "8.5.2",
+      "domain": "Teams",
+      "title": "Ensure anonymous users and dial-in callers can't start a meeting",
+      "description": "Anonymous participants must not be able to start a meeting on their own.",
+      "rationale": "If anonymous users can start a meeting they can also use the tenant's conferencing resources unattended.",
+      "level": "L1",
+      "severity": "Medium",
+      "userImpact": "No Impact",
+      "cisControl": "CIS Control 4: Secure Configuration",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.AA-05 Access permissions and authorizations",
+      "auditProcedure": "Get-CsTeamsMeetingPolicy -Identity Global | fl AllowAnonymousUsersToStartMeeting",
+      "remediationProcedure": "Set-CsTeamsMeetingPolicy -Identity Global -AllowAnonymousUsersToStartMeeting $false",
+      "riskWeight": 5,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the anonymous meeting start setting",
+        "executor": "PowerShell",
+        "module": "MicrosoftTeams",
+        "scopes": "TeamsPolicy.Read.All",
+        "payload": "Get-CsTeamsMeetingPolicy | Select-Object AllowAnonymousUsersToStartMeeting | ConvertTo-Json -Compress",
+        "assertions": [
+          {
+            "path": "AllowAnonymousUsersToStartMeeting",
+            "operator": "IsFalse",
+            "failure": "Anonymous users can start meetings ({actual}).",
+            "hint": "Run Set-CsTeamsMeetingPolicy -Identity Global -AllowAnonymousUsersToStartMeeting $false."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Block anonymous meeting start",
+        "executor": "PowerShell",
+        "module": "MicrosoftTeams",
+        "scopes": "TeamsPolicy.ReadWrite.All",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "AllowAnonymousUsersToStartMeeting = false",
+          "estimatedSeconds": "25"
+        },
+        "payload": "Set-CsTeamsMeetingPolicy -Identity Global -AllowAnonymousUsersToStartMeeting $false\nGet-CsTeamsMeetingPolicy | Select-Object AllowAnonymousUsersToStartMeeting | ConvertTo-Json -Compress"
+      },
+      "rollback": {
+        "name": "Restore the previous anonymous start setting",
+        "executor": "PowerShell",
+        "module": "MicrosoftTeams",
+        "payload": "Set-CsTeamsMeetingPolicy -Identity Global -AllowAnonymousUsersToStartMeeting {{AllowAnonymousUsersToStartMeeting}}\nGet-CsTeamsMeetingPolicy | Select-Object AllowAnonymousUsersToStartMeeting | ConvertTo-Json -Compress"
+      }
+    },
+    {
+      "reference": "8.5.6",
+      "domain": "Teams",
+      "title": "Ensure only organizers and co-organizers can present",
+      "description": "The default presenter role must be restricted to organisers.",
+      "rationale": "Anyone who can present can share their screen to the whole meeting, including an uninvited guest who got the link.",
+      "level": "L1",
+      "severity": "Low",
+      "userImpact": "Impact: Presenters must be promoted explicitly by the organiser.",
+      "cisControl": "CIS Control 4: Secure Configuration",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.AA-05 Access permissions and authorizations",
+      "auditProcedure": "Get-CsTeamsMeetingPolicy -Identity Global | fl DesignatedPresenterRoleMode",
+      "remediationProcedure": "Set-CsTeamsMeetingPolicy -Identity Global -DesignatedPresenterRoleMode OrganizerOnlyUserOverride",
+      "riskWeight": 3,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the designated presenter mode",
+        "executor": "PowerShell",
+        "module": "MicrosoftTeams",
+        "scopes": "TeamsPolicy.Read.All",
+        "payload": "Get-CsTeamsMeetingPolicy | Select-Object DesignatedPresenterRoleMode | ConvertTo-Json -Compress",
+        "assertions": [
+          {
+            "path": "DesignatedPresenterRoleMode",
+            "operator": "Equals",
+            "expected": "OrganizerOnlyUserOverride",
+            "failure": "The default presenter mode is {actual}; CIS requires {expected}.",
+            "hint": "Run Set-CsTeamsMeetingPolicy -Identity Global -DesignatedPresenterRoleMode OrganizerOnlyUserOverride."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Restrict presenting to organisers",
+        "executor": "PowerShell",
+        "module": "MicrosoftTeams",
+        "scopes": "TeamsPolicy.ReadWrite.All",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "OrganizerOnlyUserOverride",
+          "estimatedSeconds": "25"
+        },
+        "payload": "Set-CsTeamsMeetingPolicy -Identity Global -DesignatedPresenterRoleMode OrganizerOnlyUserOverride\nGet-CsTeamsMeetingPolicy | Select-Object DesignatedPresenterRoleMode | ConvertTo-Json -Compress"
+      },
+      "rollback": {
+        "name": "Restore the previous presenter mode",
+        "executor": "PowerShell",
+        "module": "MicrosoftTeams",
+        "payload": "Set-CsTeamsMeetingPolicy -Identity Global -DesignatedPresenterRoleMode {{DesignatedPresenterRoleMode}}\nGet-CsTeamsMeetingPolicy | Select-Object DesignatedPresenterRoleMode | ConvertTo-Json -Compress"
+      }
+    },
+    {
+      "reference": "8.6.1",
+      "domain": "Teams",
+      "title": "Ensure users can report security concerns in Teams",
+      "description": "End-user reporting of suspicious Teams messages must be enabled and routed to the security team.",
+      "rationale": "User reporting is the fastest detection channel for a phishing campaign that reached the inbox.",
+      "level": "L1",
+      "severity": "Medium",
+      "userImpact": "No Impact",
+      "cisControl": "CIS Control 17: Incident Response Management",
+      "nistFunction": "Respond",
+      "nistCategory": "RS.CO-02 Incidents are reported",
+      "auditProcedure": "Get-CsTeamsMessagingPolicy -Identity Global | fl AllowSecurityEndUserReporting",
+      "remediationProcedure": "Set-CsTeamsMessagingPolicy -Identity Global -AllowSecurityEndUserReporting $true",
+      "riskWeight": 6,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the Teams security reporting setting",
+        "executor": "PowerShell",
+        "module": "MicrosoftTeams",
+        "scopes": "TeamsPolicy.Read.All",
+        "payload": "Get-CsTeamsMessagingPolicy | Select-Object Identity, AllowSecurityEndUserReporting | ConvertTo-Json -Compress",
+        "assertions": [
+          {
+            "path": "AllowSecurityEndUserReporting",
+            "operator": "IsTrue",
+            "failure": "Users cannot report suspicious Teams messages ({actual}).",
+            "hint": "Run Set-CsTeamsMessagingPolicy -Identity Global -AllowSecurityEndUserReporting $true."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Enable end-user security reporting in Teams",
+        "executor": "PowerShell",
+        "module": "MicrosoftTeams",
+        "scopes": "TeamsPolicy.ReadWrite.All",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "AllowSecurityEndUserReporting = true",
+          "estimatedSeconds": "25"
+        },
+        "payload": "Set-CsTeamsMessagingPolicy -Identity Global -AllowSecurityEndUserReporting $true\nGet-CsTeamsMessagingPolicy | Select-Object Identity, AllowSecurityEndUserReporting | ConvertTo-Json -Compress"
+      },
+      "rollback": {
+        "name": "Restore the previous reporting setting",
+        "executor": "PowerShell",
+        "module": "MicrosoftTeams",
+        "payload": "Set-CsTeamsMessagingPolicy -Identity Global -AllowSecurityEndUserReporting {{AllowSecurityEndUserReporting}}\nGet-CsTeamsMessagingPolicy | Select-Object Identity, AllowSecurityEndUserReporting | ConvertTo-Json -Compress"
+      },
+      "emulatorState": {
+        "Get-CsTeamsMessagingPolicy": { "Identity": "Global", "AllowSecurityEndUserReporting": false }
+      }
+    }
+  ]
+}

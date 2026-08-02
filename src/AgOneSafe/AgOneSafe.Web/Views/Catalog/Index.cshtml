@@ -1,0 +1,153 @@
+@model CatalogIndexViewModel
+@{
+    ViewData["Title"] = "Control catalog";
+}
+
+<div class="ag-page-head">
+    <div>
+        <h1>Control catalog</h1>
+        <p class="ag-sub">
+            Every control is a row in SQL: the benchmark metadata, the verbatim "Audit by" and "Remediation"
+            text from the workbook, and the executable action plus assertion rules the engine runs.
+            Adding a control is a data change, not a code change.
+        </p>
+    </div>
+    <div class="flex">
+        <a class="btn" asp-action="Import">Import workbook</a>
+    </div>
+</div>
+
+<div class="ag-grid cols-4">
+    <div class="ag-card ag-kpi"><div class="label">Controls</div><div class="value">@Model.TotalControls</div><div class="foot">enabled in the catalog</div></div>
+    <div class="ag-card ag-kpi"><div class="label">Automated audits</div><div class="value">@Model.AutomatedAudits</div><div class="foot">run without a human</div></div>
+    <div class="ag-card ag-kpi"><div class="label">Agentic fixes</div><div class="value">@Model.AutomatedRemediations</div><div class="foot">remediation payload published</div></div>
+    <div class="ag-card ag-kpi"><div class="label">Licence gated</div><div class="value">@Model.LicenseGated</div><div class="foot">need an SKU uplift first</div></div>
+</div>
+
+<div class="ag-card mt-3">
+    <form method="get" class="ag-filters">
+        <div class="field">
+            <label>Search</label>
+            <input type="search" name="Search" value="@Model.Filter.Search" placeholder="2.1.1 or Safe Links" />
+        </div>
+        <div class="field">
+            <label>Benchmark</label>
+            <select name="Benchmark">
+                <option value="">All</option>
+                @foreach (var value in Enum.GetValues<BenchmarkFamily>())
+                {
+                    <option value="@value" selected="@(Model.Filter.Benchmark == value)">@value</option>
+                }
+            </select>
+        </div>
+        <div class="field">
+            <label>Domain</label>
+            <select name="Domain">
+                <option value="">All</option>
+                @foreach (var domain in Model.Domains)
+                {
+                    <option value="@domain" selected="@(Model.Filter.Domain == domain)">@domain</option>
+                }
+            </select>
+        </div>
+        <div class="field">
+            <label>Level</label>
+            <select name="Level">
+                <option value="">All</option>
+                @foreach (var value in Enum.GetValues<ProfileLevel>())
+                {
+                    <option value="@value" selected="@(Model.Filter.Level == value)">@value</option>
+                }
+            </select>
+        </div>
+        <div class="field">
+            <label>Severity</label>
+            <select name="Severity">
+                <option value="">All</option>
+                @foreach (var value in Enum.GetValues<Severity>().OrderByDescending(v => v))
+                {
+                    <option value="@value" selected="@(Model.Filter.Severity == value)">@value</option>
+                }
+            </select>
+        </div>
+        <div class="field checkbox" style="margin-bottom:2px">
+            <input type="checkbox" id="AutomatedOnly" name="AutomatedOnly" value="true" checked="@(Model.Filter.AutomatedOnly == true)" />
+            <label for="AutomatedOnly" style="margin:0">Agentic fix only</label>
+        </div>
+        <button type="submit" class="btn btn-primary">Filter</button>
+        <a class="btn" asp-action="Index">Reset</a>
+    </form>
+
+    <div class="ag-table-wrap">
+        <table class="ag-table">
+            <thead>
+            <tr>
+                <th>Reference</th>
+                <th>Level</th>
+                <th>Title</th>
+                <th>Audit by</th>
+                <th>Remediation</th>
+                <th>User impact</th>
+                <th>CIS control</th>
+                <th>NIST CSF</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var control in Model.Controls)
+            {
+                var audit = control.Actions.FirstOrDefault(a => a.Kind == ControlActionKind.Audit);
+                var fix = control.Actions.FirstOrDefault(a => a.Kind == ControlActionKind.Remediate);
+                <tr>
+                    <td class="nowrap">
+                        <strong>@control.VendorReference</strong>
+                        <div class="small muted">@control.Benchmark</div>
+                    </td>
+                    <td><span class="badge @ViewHelpers.LevelBadge(control.Level)">@control.Level</span></td>
+                    <td class="wrap">
+                        <a asp-action="Details" asp-route-id="@control.Id">@control.Title</a>
+                        <div class="small">
+                            <span class="badge @ViewHelpers.SeverityBadge(control.Severity)">@control.Severity</span>
+                            <span class="badge badge-neutral">@control.Domain</span>
+                            @if (control.RequiresLicenseUpgrade)
+                            {
+                                <span class="badge badge-medium">Requires @control.RequiredLicense</span>
+                            }
+                        </div>
+                    </td>
+                    <td class="wrap small mono">
+                        @if (audit is null)
+                        {
+                            <span class="muted">not configured</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-info">@audit.ExecutorType</span>
+                            <div class="muted">@ViewHelpers.Truncate(control.AuditProcedure, 110)</div>
+                        }
+                    </td>
+                    <td class="wrap small mono">
+                        @if (fix is null)
+                        {
+                            <span class="badge badge-neutral">advisory</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-pass">agentic</span>
+                        }
+                        <div class="muted">@ViewHelpers.Truncate(control.RemediationProcedure, 110)</div>
+                    </td>
+                    <td class="wrap small">@ViewHelpers.Truncate(control.UserImpact, 60)</td>
+                    <td class="wrap small">@control.CisCriticalSecurityControl</td>
+                    <td class="nowrap small">@control.NistCsfFunction</td>
+                    <td><a class="btn btn-sm" asp-action="Details" asp-route-id="@control.Id">Open</a></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    @if (Model.Controls.Count == 0)
+    {
+        <div class="ag-empty">No controls match these filters.</div>
+    }
+</div>

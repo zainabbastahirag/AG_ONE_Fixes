@@ -1,0 +1,521 @@
+{
+  "benchmark": "Microsoft365",
+  "version": "CIS Microsoft 365 Foundations Benchmark v4.0.0",
+  "controls": [
+    {
+      "reference": "2.1.1",
+      "domain": "Defender",
+      "title": "Ensure Safe Links for Office Applications is Enabled",
+      "description": "Safe Links must rewrite and time-of-click verify URLs inside Office applications, Teams and email.",
+      "rationale": "Attackers weaponise links after delivery. Time-of-click protection is the only control that catches that.",
+      "level": "L2",
+      "severity": "High",
+      "userImpact": "Impact: Users may see warnings or be blocked from opening a rewritten link.",
+      "cisControl": "CIS Control 9: Email and Web Browser Protections",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.PS-05 Installation of unauthorized software is prevented",
+      "auditProcedure": "Get-SafeLinksPolicy | Select-Object Name, EnableSafeLinksForEmail, EnableSafeLinksForTeams, EnableSafeLinksForOffice, TrackClicks, AllowClickThrough",
+      "remediationProcedure": "Set-SafeLinksPolicy -Identity \"Standard Preset Security Policy\" -EnableSafeLinksForEmail $true -EnableSafeLinksForTeams $true -EnableSafeLinksForOffice $true -TrackClicks $true -AllowClickThrough $false",
+      "riskWeight": 9,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the Safe Links policy",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "scopes": "Exchange.ManageAsApp",
+        "payload": "Get-SafeLinksPolicy | Select-Object Name, EnableSafeLinksForEmail, EnableSafeLinksForTeams, EnableSafeLinksForOffice, TrackClicks, AllowClickThrough | ConvertTo-Json -Depth 4 -Compress",
+        "assertions": [
+          {
+            "path": "EnableSafeLinksForOffice",
+            "operator": "IsTrue",
+            "failure": "Safe Links for Office applications is {actual}; CIS 2.1.1 requires it to be True.",
+            "hint": "Set EnableSafeLinksForOffice to $true on the Safe Links policy."
+          },
+          {
+            "path": "EnableSafeLinksForEmail",
+            "operator": "IsTrue",
+            "failure": "Safe Links for email is {actual}; links in inbound mail are not being rewritten.",
+            "hint": "Set EnableSafeLinksForEmail to $true."
+          },
+          {
+            "path": "EnableSafeLinksForTeams",
+            "operator": "IsTrue",
+            "failure": "Safe Links for Teams is {actual}; links shared in chat and channels are not scanned at click time.",
+            "hint": "Set EnableSafeLinksForTeams to $true."
+          },
+          {
+            "path": "AllowClickThrough",
+            "operator": "IsFalse",
+            "failure": "AllowClickThrough is {actual}, so users can dismiss the warning page and open a blocked URL.",
+            "hint": "Set AllowClickThrough to $false so the block page cannot be bypassed."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Enable Safe Links across Office, email and Teams",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "Safe Links enabled, click-through blocked",
+          "estimatedSeconds": "40"
+        },
+        "payload": "Set-SafeLinksPolicy -Identity 'Standard Preset Security Policy' -EnableSafeLinksForEmail $true -EnableSafeLinksForTeams $true -EnableSafeLinksForOffice $true -TrackClicks $true -AllowClickThrough $false\nGet-SafeLinksPolicy | Select-Object Name, EnableSafeLinksForEmail, EnableSafeLinksForTeams, EnableSafeLinksForOffice, TrackClicks, AllowClickThrough | ConvertTo-Json -Compress"
+      },
+      "rollback": {
+        "name": "Restore the previous Safe Links configuration",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "payload": "Set-SafeLinksPolicy -Identity 'Standard Preset Security Policy' -EnableSafeLinksForEmail {{EnableSafeLinksForEmail}} -EnableSafeLinksForTeams {{EnableSafeLinksForTeams}} -EnableSafeLinksForOffice {{EnableSafeLinksForOffice}} -TrackClicks {{TrackClicks}} -AllowClickThrough {{AllowClickThrough}}\nGet-SafeLinksPolicy | Select-Object Name, EnableSafeLinksForEmail, EnableSafeLinksForTeams, EnableSafeLinksForOffice, TrackClicks, AllowClickThrough | ConvertTo-Json -Compress"
+      },
+      "emulatorState": {
+        "Get-SafeLinksPolicy": {
+          "Name": "Standard Preset Security Policy",
+          "EnableSafeLinksForEmail": true,
+          "EnableSafeLinksForTeams": false,
+          "EnableSafeLinksForOffice": false,
+          "TrackClicks": true,
+          "AllowClickThrough": true
+        }
+      }
+    },
+    {
+      "reference": "2.1.2",
+      "domain": "Defender",
+      "title": "Ensure the Common Attachment Types Filter is enabled",
+      "description": "The anti-malware policy must block the common executable attachment types.",
+      "rationale": "Blocking risky file types at the transport layer removes an entire class of delivery technique.",
+      "level": "L1",
+      "severity": "High",
+      "userImpact": "Impact: Common risky attachment types will be blocked.",
+      "cisControl": "CIS Control 9: Email and Web Browser Protections",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.PS-05 Installation of unauthorized software is prevented",
+      "auditProcedure": "Get-MalwareFilterPolicy -Identity Default | Select-Object EnableFileFilter",
+      "remediationProcedure": "Set-MalwareFilterPolicy -Identity Default -EnableFileFilter $true",
+      "riskWeight": 8,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the common attachment filter",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "scopes": "Exchange.ManageAsApp",
+        "payload": "Get-MalwareFilterPolicy | Select-Object Identity, EnableFileFilter, ZapEnabled | ConvertTo-Json -Depth 4 -Compress",
+        "assertions": [
+          {
+            "path": "EnableFileFilter",
+            "operator": "IsTrue",
+            "failure": "The common attachment types filter is {actual}; executable attachments are not being blocked.",
+            "hint": "Run Set-MalwareFilterPolicy -Identity Default -EnableFileFilter $true."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Enable the common attachment types filter",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "EnableFileFilter = true",
+          "estimatedSeconds": "20"
+        },
+        "payload": "Set-MalwareFilterPolicy -Identity Default -EnableFileFilter $true\nGet-MalwareFilterPolicy | Select-Object Identity, EnableFileFilter, ZapEnabled | ConvertTo-Json -Compress"
+      },
+      "rollback": {
+        "name": "Restore the previous attachment filter setting",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "payload": "Set-MalwareFilterPolicy -Identity Default -EnableFileFilter {{EnableFileFilter}}\nGet-MalwareFilterPolicy | Select-Object Identity, EnableFileFilter, ZapEnabled | ConvertTo-Json -Compress"
+      },
+      "emulatorState": {
+        "Get-MalwareFilterPolicy": { "Identity": "Default", "EnableFileFilter": false, "ZapEnabled": true }
+      }
+    },
+    {
+      "reference": "2.1.4",
+      "domain": "Defender",
+      "title": "Ensure Safe Attachments policy is enabled",
+      "description": "Attachments must be detonated in a sandbox before delivery.",
+      "rationale": "Signature-based scanning misses novel payloads; detonation catches them before the user does.",
+      "level": "L2",
+      "severity": "High",
+      "userImpact": "Impact: Mail delivery may be delayed by up to a few minutes while attachments are scanned.",
+      "cisControl": "CIS Control 9: Email and Web Browser Protections",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.PS-05 Installation of unauthorized software is prevented",
+      "auditProcedure": "Get-SafeAttachmentPolicy | Where-Object { $_.Enable -eq $true }",
+      "remediationProcedure": "Set-SafeAttachmentPolicy -Identity \"Standard Preset Security Policy\" -Enable $true -Action Block",
+      "riskWeight": 8,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the Safe Attachments policy",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "scopes": "Exchange.ManageAsApp",
+        "payload": "Get-SafeAttachmentPolicy | Select-Object Identity, Enable, Action | ConvertTo-Json -Depth 4 -Compress",
+        "assertions": [
+          {
+            "path": "Enable",
+            "operator": "IsTrue",
+            "failure": "Safe Attachments is {actual}; attachments are delivered without sandbox detonation.",
+            "hint": "Enable the Safe Attachments policy and set its action to Block."
+          },
+          {
+            "path": "Action",
+            "operator": "Equals",
+            "expected": "Block",
+            "failure": "The Safe Attachments action is {actual}; CIS requires {expected}.",
+            "hint": "Set the Safe Attachments action to Block."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Enable Safe Attachments with the Block action",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "Enable = true, Action = Block",
+          "estimatedSeconds": "30"
+        },
+        "payload": "Set-SafeAttachmentPolicy -Identity 'Standard Preset Security Policy' -Enable $true -Action Block\nGet-SafeAttachmentPolicy | Select-Object Identity, Enable, Action | ConvertTo-Json -Compress"
+      },
+      "rollback": {
+        "name": "Restore the previous Safe Attachments configuration",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "payload": "Set-SafeAttachmentPolicy -Identity 'Standard Preset Security Policy' -Enable {{Enable}} -Action {{Action}}\nGet-SafeAttachmentPolicy | Select-Object Identity, Enable, Action | ConvertTo-Json -Compress"
+      },
+      "emulatorState": {
+        "Get-SafeAttachmentPolicy": { "Identity": "Standard Preset Security Policy", "Enable": false, "Action": "Allow" }
+      }
+    },
+    {
+      "reference": "2.1.7",
+      "domain": "Defender",
+      "title": "Ensure that an anti-phishing policy has been created",
+      "description": "A custom anti-phishing policy with mailbox intelligence and impersonation protection must exist.",
+      "rationale": "The default policy does not enable impersonation protection, which is what catches business email compromise.",
+      "level": "L1",
+      "severity": "Critical",
+      "userImpact": "Impact: Users may see safety tips and first-contact banners on inbound mail.",
+      "cisControl": "CIS Control 9: Email and Web Browser Protections",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.PS-05 Installation of unauthorized software is prevented",
+      "auditProcedure": "Get-AntiPhishPolicy | Select-Object Name, Enabled, EnableMailboxIntelligence, EnableSpoofIntelligence, PhishThresholdLevel",
+      "remediationProcedure": "Set-AntiPhishPolicy -Identity \"Office365 AntiPhish Default\" -Enabled $true -EnableMailboxIntelligence $true -EnableSpoofIntelligence $true -PhishThresholdLevel 3",
+      "riskWeight": 10,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the anti-phishing policy",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "scopes": "Exchange.ManageAsApp",
+        "payload": "Get-AntiPhishPolicy | Select-Object Name, Enabled, EnableMailboxIntelligence, EnableSpoofIntelligence, PhishThresholdLevel | ConvertTo-Json -Depth 4 -Compress",
+        "assertions": [
+          {
+            "path": "Enabled",
+            "operator": "IsTrue",
+            "failure": "The anti-phishing policy is {actual}.",
+            "hint": "Enable the anti-phishing policy."
+          },
+          {
+            "path": "EnableMailboxIntelligence",
+            "operator": "IsTrue",
+            "failure": "Mailbox intelligence is {actual}; impersonation of known senders will not be detected.",
+            "hint": "Set EnableMailboxIntelligence to $true."
+          },
+          {
+            "path": "PhishThresholdLevel",
+            "operator": "GreaterThanOrEqual",
+            "expected": "2",
+            "failure": "The phishing threshold is {actual}; CIS requires at least {expected} (Aggressive).",
+            "hint": "Raise PhishThresholdLevel to 2 or higher."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Harden the anti-phishing policy",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "Mailbox intelligence on, threshold 3",
+          "estimatedSeconds": "35"
+        },
+        "payload": "Set-AntiPhishPolicy -Identity 'Office365 AntiPhish Default' -Enabled $true -EnableMailboxIntelligence $true -EnableSpoofIntelligence $true -PhishThresholdLevel 3\nGet-AntiPhishPolicy | Select-Object Name, Enabled, EnableMailboxIntelligence, EnableSpoofIntelligence, PhishThresholdLevel | ConvertTo-Json -Compress"
+      },
+      "rollback": {
+        "name": "Restore the previous anti-phishing configuration",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "payload": "Set-AntiPhishPolicy -Identity 'Office365 AntiPhish Default' -Enabled {{Enabled}} -EnableMailboxIntelligence {{EnableMailboxIntelligence}} -EnableSpoofIntelligence {{EnableSpoofIntelligence}} -PhishThresholdLevel {{PhishThresholdLevel}}\nGet-AntiPhishPolicy | Select-Object Name, Enabled, EnableMailboxIntelligence, EnableSpoofIntelligence, PhishThresholdLevel | ConvertTo-Json -Compress"
+      },
+      "emulatorState": {
+        "Get-AntiPhishPolicy": {
+          "Name": "Office365 AntiPhish Default",
+          "Enabled": true,
+          "EnableMailboxIntelligence": false,
+          "EnableSpoofIntelligence": true,
+          "PhishThresholdLevel": 1
+        }
+      }
+    },
+    {
+      "reference": "2.1.10",
+      "domain": "Defender",
+      "title": "Ensure DMARC Records for all Exchange Online domains are published",
+      "description": "Every accepted domain must publish a DMARC record with a quarantine or reject policy and an aggregate report address.",
+      "rationale": "Without DMARC, receivers have no instruction on what to do with spoofed mail claiming to be from the organisation.",
+      "level": "L1",
+      "severity": "High",
+      "userImpact": "No Impact",
+      "cisControl": "CIS Control 9: Email and Web Browser Protections",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.DS-02 Data-in-transit is protected",
+      "auditProcedure": "Resolve-DnsName _dmarc.[domain1.com] txt\n\nEnsure that the record exists and has at minimum the following flags defined as follows:\nv=DMARC1; (p=quarantine OR p=reject), pct=100, rua=mailto:<rua-report@example.com>, ruf=mailto:<ruf-report@example.com>\n\nEnsure the Microsoft MOERA domain is also configured.\nResolve-DnsName _dmarc.[tenant].onmicrosoft.com txt",
+      "remediationProcedure": "1. For each Exchange Online Accepted Domain, add the following record to DNS:\nRecord: _dmarc.domain1.com\nType: TXT\nValue: v=DMARC1; p=none; pct=100; rua=mailto:<rua-report@example.com>; ruf=mailto:<ruf-report@example.com>\n2. This will create a basic DMARC policy that will allow the organization to start monitoring message statistics.\n3. One week is enough for data generated by the reports to be useful in understanding email trends and traffic. The final step requires implementing a policy of p=reject OR p=quarantine and pct=100 with the necessary rua and ruf email addresses defined.",
+      "riskWeight": 8,
+      "effortWeight": 3,
+      "automatedRemediation": false,
+      "audit": {
+        "name": "Resolve the DMARC record for every accepted domain",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "scopes": "Exchange.ManageAsApp",
+        "payload": "$domains = @(Get-AcceptedDomain)\n$results = foreach ($d in $domains) { $record = (Resolve-DnsName -Name \"_dmarc.$($d.DomainName)\" -Type TXT).Strings; [pscustomobject]@{ Domain = $d.DomainName; Record = $record; Compliant = ($record -match 'p=(quarantine|reject)') -and ($record -match 'rua=') } }\n[pscustomobject]@{ Domains = @($results); NonCompliant = @($results | Where-Object { -not $_.Compliant } | ForEach-Object { $_.Domain }) } | ConvertTo-Json -Depth 6 -Compress",
+        "assertions": [
+          {
+            "path": "NonCompliant",
+            "operator": "IsEmpty",
+            "failure": "These domains do not publish an enforcing DMARC record: {actual}.",
+            "hint": "Publish a TXT record at _dmarc.<domain> with v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc@<domain>."
+          }
+        ]
+      },
+      "emulatorState": {
+        "Get-AcceptedDomain": [
+          { "DomainName": "contoso.com", "Default": true },
+          { "DomainName": "contoso.onmicrosoft.com", "Default": false }
+        ],
+        "Get-DnsName": { "Strings": "v=DMARC1; p=none; pct=100" }
+      }
+    },
+    {
+      "reference": "2.1.12",
+      "domain": "Defender",
+      "title": "Ensure the connection filter IP allow list is not used",
+      "description": "The hosted connection filter policy must not carry an IP allow list.",
+      "rationale": "Allow-listed source IPs bypass spam and phishing filtering entirely; a compromised partner relay becomes a direct path to every inbox.",
+      "level": "L1",
+      "severity": "High",
+      "userImpact": "No Impact",
+      "cisControl": "CIS Control 9: Email and Web Browser Protections",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.PS-05 Installation of unauthorized software is prevented",
+      "auditProcedure": "Get-HostedConnectionFilterPolicy -Identity Default | fl IPAllowList",
+      "remediationProcedure": "Set-HostedConnectionFilterPolicy -Identity Default -IPAllowList @{}",
+      "riskWeight": 8,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the connection filter IP allow list",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "scopes": "Exchange.ManageAsApp",
+        "payload": "Get-HostedConnectionFilterPolicy | Select-Object Identity, IPAllowList, EnableSafeList | ConvertTo-Json -Depth 4 -Compress",
+        "assertions": [
+          {
+            "path": "IPAllowList",
+            "operator": "IsEmpty",
+            "failure": "The connection filter allow-lists {actual}; mail from these addresses skips spam and phishing filtering.",
+            "hint": "Clear the IP allow list with Set-HostedConnectionFilterPolicy -Identity Default -IPAllowList @()."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Clear the connection filter IP allow list",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "parameters": {
+          "impactScope": "tenant",
+          "impactPath": "IPAllowList",
+          "impactObjectType": "Allow-listed IP",
+          "proposedValue": "removed",
+          "reversible": "false",
+          "estimatedSeconds": "20"
+        },
+        "payload": "Set-HostedConnectionFilterPolicy -Identity Default -IPAllowList @()\nGet-HostedConnectionFilterPolicy | Select-Object Identity, IPAllowList, EnableSafeList | ConvertTo-Json -Compress"
+      },
+      "emulatorState": {
+        "Get-HostedConnectionFilterPolicy": {
+          "Identity": "Default",
+          "IPAllowList": ["203.0.113.24", "198.51.100.7"],
+          "EnableSafeList": true
+        }
+      }
+    },
+    {
+      "reference": "2.1.13",
+      "domain": "Defender",
+      "title": "Ensure the connection filter safe list is off",
+      "description": "The Microsoft-managed safe list on the hosted connection filter policy must be disabled.",
+      "rationale": "The safe list allows a third-party maintained set of senders to bypass filtering, outside the tenant's control.",
+      "level": "L1",
+      "severity": "Medium",
+      "userImpact": "Impact: Some emails previously trusted may be filtered as spam.",
+      "cisControl": "CIS Control 9: Email and Web Browser Protections",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.PS-05 Installation of unauthorized software is prevented",
+      "auditProcedure": "Get-HostedConnectionFilterPolicy -Identity Default | fl EnableSafeList",
+      "remediationProcedure": "Set-HostedConnectionFilterPolicy -Identity Default -EnableSafeList $false",
+      "riskWeight": 6,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the connection filter safe list flag",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "scopes": "Exchange.ManageAsApp",
+        "payload": "Get-HostedConnectionFilterPolicy | Select-Object Identity, EnableSafeList | ConvertTo-Json -Depth 4 -Compress",
+        "assertions": [
+          {
+            "path": "EnableSafeList",
+            "operator": "IsFalse",
+            "failure": "The connection filter safe list is {actual}; a Microsoft-maintained sender list bypasses your filtering.",
+            "hint": "Run Set-HostedConnectionFilterPolicy -Identity Default -EnableSafeList $false."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Turn the connection filter safe list off",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "EnableSafeList = false",
+          "estimatedSeconds": "20"
+        },
+        "payload": "Set-HostedConnectionFilterPolicy -Identity Default -EnableSafeList $false\nGet-HostedConnectionFilterPolicy | Select-Object Identity, EnableSafeList | ConvertTo-Json -Compress"
+      },
+      "rollback": {
+        "name": "Restore the previous safe list setting",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "payload": "Set-HostedConnectionFilterPolicy -Identity Default -EnableSafeList {{EnableSafeList}}\nGet-HostedConnectionFilterPolicy | Select-Object Identity, EnableSafeList | ConvertTo-Json -Compress"
+      }
+    },
+    {
+      "reference": "2.1.14",
+      "domain": "Defender",
+      "title": "Ensure inbound anti-spam policies do not contain allowed domains",
+      "description": "No domain may be allow-listed in the hosted content filter policy.",
+      "rationale": "An allow-listed domain is trivially spoofable and bypasses all inbound protection for that sender.",
+      "level": "L1",
+      "severity": "High",
+      "userImpact": "Impact: Emails from previously allowed domains may be filtered as spam.",
+      "cisControl": "CIS Control 9: Email and Web Browser Protections",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.PS-05 Installation of unauthorized software is prevented",
+      "auditProcedure": "Get-HostedContentFilterPolicy | fl Identity,AllowedSenderDomains",
+      "remediationProcedure": "Set-HostedContentFilterPolicy -Identity <Policy name> -AllowedSenderDomains @{}\nOr, run this to remove allowed domains from all inbound anti-spam policies:\n$AllowedDomains = Get-HostedContentFilterPolicy | Where-Object { $_.AllowedSenderDomains } \n$AllowedDomains | Set-HostedContentFilterPolicy -AllowedSenderDomains @{}",
+      "riskWeight": 8,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read allowed sender domains",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "scopes": "Exchange.ManageAsApp",
+        "payload": "Get-HostedContentFilterPolicy | Select-Object Identity, AllowedSenderDomains | ConvertTo-Json -Depth 4 -Compress",
+        "assertions": [
+          {
+            "path": "AllowedSenderDomains",
+            "operator": "IsEmpty",
+            "failure": "The inbound anti-spam policy allow-lists {actual}; mail claiming to be from those domains bypasses filtering.",
+            "hint": "Clear AllowedSenderDomains on every hosted content filter policy."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Remove allowed sender domains",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "parameters": {
+          "impactScope": "tenant",
+          "impactPath": "AllowedSenderDomains",
+          "impactObjectType": "Allowed domain",
+          "proposedValue": "removed",
+          "reversible": "false",
+          "estimatedSeconds": "25"
+        },
+        "payload": "Set-HostedContentFilterPolicy -Identity Default -AllowedSenderDomains @()\nGet-HostedContentFilterPolicy | Select-Object Identity, AllowedSenderDomains | ConvertTo-Json -Compress"
+      },
+      "emulatorState": {
+        "Get-HostedContentFilterPolicy": {
+          "Identity": "Default",
+          "AllowedSenderDomains": ["partner-mail.example", "newsletters.example"]
+        }
+      }
+    },
+    {
+      "reference": "2.3.1",
+      "domain": "Defender",
+      "title": "Ensure the Account Provisioning Activity report is reviewed weekly",
+      "description": "An analyst must review account provisioning activity every week.",
+      "rationale": "Unexpected account creation is one of the earliest signals of a persistent intruder.",
+      "level": "L1",
+      "severity": "Low",
+      "userImpact": "No Impact",
+      "cisControl": "CIS Control 8: Audit Log Management",
+      "nistFunction": "Detect",
+      "nistCategory": "DE.CM-09 Computing hardware and software are monitored",
+      "auditProcedure": "To audit using the UI:\n1. Navigate to Microsoft Purview https://compliance.microsoft.com.\n2. Select Audit to open the audit search.\n3. Set Activities to 'Added user' and review the results for the past week.",
+      "remediationProcedure": "Assign the weekly review to a named analyst and record the outcome in the ticketing system. There is no tenant setting to change.",
+      "riskWeight": 3,
+      "effortWeight": 2,
+      "automatedAudit": false,
+      "automatedRemediation": false,
+      "audit": {
+        "name": "Manual review of account provisioning activity",
+        "executor": "Manual",
+        "module": "None",
+        "payload": "1. Navigate to Microsoft Purview at https://compliance.microsoft.com.\n2. Open Audit and search the 'Added user' activity for the last seven days.\n3. Confirm every new account maps to an approved joiner request.\n4. Record the review and its outcome against this control."
+      }
+    },
+    {
+      "reference": "2.4.3",
+      "domain": "Defender",
+      "title": "Ensure Microsoft Defender for Cloud Apps is enabled and configured",
+      "description": "Defender for Cloud Apps must be connected to the tenant with app discovery and session policies in place.",
+      "rationale": "Shadow IT and OAuth application abuse are invisible without a CASB.",
+      "level": "L2",
+      "severity": "Medium",
+      "userImpact": "No Impact",
+      "cisControl": "CIS Control 3: Data Protection",
+      "nistFunction": "Detect",
+      "nistCategory": "DE.CM-09 Computing hardware and software are monitored",
+      "auditProcedure": "Navigate to the Microsoft Defender portal and confirm Cloud Apps > Settings shows an active connection and at least one file policy.",
+      "remediationProcedure": "Enable Microsoft Defender for Cloud Apps. Requires Microsoft 365 E5 or the Defender for Cloud Apps standalone licence.",
+      "requiredLicense": "Microsoft 365 E5 or Defender for Cloud Apps standalone",
+      "riskWeight": 6,
+      "effortWeight": 4,
+      "automatedRemediation": false,
+      "audit": {
+        "name": "Read the Defender for Cloud Apps connection state",
+        "executor": "MicrosoftGraph",
+        "module": "MicrosoftGraph",
+        "scopes": "SecurityEvents.Read.All",
+        "payload": "{ \"method\": \"GET\", \"path\": \"/v1.0/security/cloudAppSecurityProfiles\", \"emulatorKey\": \"graph:cloudAppSecurity\" }",
+        "assertions": [
+          {
+            "path": "enabled",
+            "operator": "IsTrue",
+            "failure": "Defender for Cloud Apps is {actual}; shadow IT and OAuth grants are not being monitored.",
+            "hint": "Licence and enable Microsoft Defender for Cloud Apps, then configure app discovery and a file policy."
+          }
+        ]
+      },
+      "emulatorState": {
+        "graph:cloudAppSecurity": { "enabled": false, "policyCount": 0 }
+      }
+    }
+  ]
+}

@@ -1,0 +1,107 @@
+﻿@using AgOneSafe.Domain.Identity
+@using AgOneSafe.Domain.Tenants
+@{
+    var tenants = ViewBag.Tenants as List<TenantConnection> ?? new List<TenantConnection>();
+    var current = ViewBag.CurrentTenant as TenantConnection;
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
+
+    string Active(string name) => string.Equals(controller, name, StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] · AG ONE Safe</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <div class="ag-shell">
+        <aside class="ag-sidebar">
+            <div class="ag-brand">
+                <div class="ag-brand-mark">AG</div>
+                <div>
+                    <div class="ag-brand-name">AG ONE Safe</div>
+                    <span class="ag-brand-sub">Agentic CIS remediation</span>
+                </div>
+            </div>
+
+            <nav class="ag-nav">
+                <div class="ag-nav-group">Posture</div>
+                <a class="@Active("Dashboard")" asp-controller="Dashboard" asp-action="Index">Dashboard</a>
+                <a class="@Active("Assessments")" asp-controller="Assessments" asp-action="Index">Assessments</a>
+                <a class="@Active("Findings")" asp-controller="Findings" asp-action="Index">Gap analysis</a>
+                <a class="@Active("Roadmap")" asp-controller="Roadmap" asp-action="Index">Action roadmap</a>
+
+                <div class="ag-nav-group">Act</div>
+                <a class="@Active("Remediation")" asp-controller="Remediation" asp-action="Index">Remediation hub</a>
+                <a class="@Active("Approvals")" asp-controller="Approvals" asp-action="Index">Approvals</a>
+                <a class="@Active("Escalations")" asp-controller="Escalations" asp-action="Index">Licence &amp; services</a>
+
+                <div class="ag-nav-group">Configure</div>
+                <a class="@Active("Catalog")" asp-controller="Catalog" asp-action="Index">Control catalog</a>
+                <a class="@Active("Tenants")" asp-controller="Tenants" asp-action="Index">Tenants</a>
+                <a class="@Active("Audit")" asp-controller="Audit" asp-action="Index">Proof centre</a>
+            </nav>
+        </aside>
+
+        <div class="ag-main">
+            <header class="ag-topbar">
+                <div class="ag-topbar-left">
+                    @if (tenants.Count > 0)
+                    {
+                        <form asp-controller="Dashboard" asp-action="SwitchTenant" method="post" class="flex">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                            <select name="tenantId" onchange="this.form.submit()" style="min-width:230px">
+                                @foreach (var tenant in tenants)
+                                {
+                                    <option value="@tenant.Id" selected="@(tenant.Id == current?.Id)">
+                                        @tenant.DisplayName — @tenant.PrimaryDomain
+                                    </option>
+                                }
+                            </select>
+                        </form>
+                        if (current is not null)
+                        {
+                            <span class="badge @(current.Status == TenantConnectionStatus.Connected ? "badge-pass" : current.Status == TenantConnectionStatus.Degraded ? "badge-medium" : "badge-fail")">
+                                @current.Status
+                            </span>
+                            <span class="badge badge-neutral">@current.ExecutionMode mode</span>
+                            <span class="badge @(current.TargetLevel == AgOneSafe.Domain.ProfileLevel.L1 ? "badge-l1" : "badge-l2")">
+                                Target CIS @current.TargetLevel
+                            </span>
+                        }
+                    }
+                </div>
+                <div class="ag-topbar-right">
+                    <div class="ag-user">
+                        <strong>@User.Identity!.Name</strong>
+                        <span>@(User.IsInRole(AgRoles.Ciso) ? "CISO" : User.IsInRole(AgRoles.SecurityAdmin) ? "Cloud Security Engineer" : "Auditor")</span>
+                    </div>
+                    <form asp-controller="Account" asp-action="Logout" method="post">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm">Sign out</button>
+                    </form>
+                </div>
+            </header>
+
+            <main class="ag-content">
+                @if (TempData["Toast"] is string toast && !string.IsNullOrWhiteSpace(toast))
+                {
+                    <div class="ag-toast">@toast</div>
+                }
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+}
+else
+{
+    @RenderBody()
+}
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

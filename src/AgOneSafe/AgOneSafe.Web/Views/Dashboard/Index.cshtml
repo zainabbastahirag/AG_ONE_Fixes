@@ -1,0 +1,238 @@
+@model DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+    var posture = Model.Posture!;
+    var trend = posture.Trend.TakeLast(14).ToList();
+    var maxTrend = trend.Count == 0 ? 100 : Math.Max(1, trend.Max(p => p.Score));
+}
+
+<div class="ag-page-head">
+    <div>
+        <h1>Security posture</h1>
+        <p class="ag-sub">
+            CIS Microsoft 365 and Azure benchmark coverage for @posture.TenantName, mapped to NIST CSF v2.
+            @if (posture.AssessedAt is not null)
+            {
+                <text>Last baseline scan @posture.AssessedAt.Value.ToString("dd MMM yyyy HH:mm") UTC.</text>
+            }
+        </p>
+    </div>
+    <form asp-controller="Assessments" asp-action="Run" method="post" class="flex">
+        @Html.AntiForgeryToken()
+        <a class="btn" asp-controller="Roadmap" asp-action="Index">Action roadmap</a>
+        <button type="submit" class="btn btn-primary" disabled="@Model.ScanRunning">
+            @(Model.ScanRunning ? "Scan running…" : "Run baseline scan")
+        </button>
+    </form>
+</div>
+
+@if (!Model.HasAssessment)
+{
+    <div class="ag-alert ag-alert-warn">
+        No baseline scan has completed yet. Run one to populate the posture score, gap analysis and remediation queue.
+    </div>
+}
+
+<div class="ag-grid cols-4">
+    <div class="ag-card ag-kpi">
+        <div class="ag-score">
+            <div class="ag-gauge" style="--gauge:@posture.PostureScore.ToString("0"); --gauge-color:@ViewHelpers.ScoreColour(posture.PostureScore)">
+                <div class="ag-gauge-inner">
+                    <div>
+                        <b>@posture.PostureScore.ToString("0.#")%</b>
+                        <span>Posture</span>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="label">Weighted score</div>
+                <div class="foot">
+                    @posture.Passed passed · @posture.Failed failed<br />
+                    @if (Math.Abs(posture.ScoreDelta) > 0.05)
+                    {
+                        <span style="color:@(posture.ScoreDelta > 0 ? "var(--ag-pass)" : "var(--ag-fail)")">
+                            @(posture.ScoreDelta > 0 ? "+" : "")@posture.ScoreDelta pts vs previous scan
+                        </span>
+                    }
+                    else
+                    {
+                        <span>No change vs previous scan</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ag-card ag-kpi">
+        <div class="label">Open gaps</div>
+        <div class="value">@posture.OpenFindings</div>
+        <div class="foot">
+            @foreach (var pair in posture.BySeverity.Where(p => p.Value > 0).OrderByDescending(p => p.Key))
+            {
+                <span class="badge @ViewHelpers.SeverityBadge(pair.Key)" style="margin-right:4px">@pair.Key @pair.Value</span>
+            }
+            @if (posture.BySeverity.All(p => p.Value == 0))
+            {
+                <span>Nothing outstanding</span>
+            }
+        </div>
+    </div>
+
+    <div class="ag-card ag-kpi">
+        <div class="label">Awaiting approval</div>
+        <div class="value">@posture.AwaitingApproval</div>
+        <div class="foot">
+            <a asp-controller="Approvals" asp-action="Index">Open the approval queue</a>
+        </div>
+    </div>
+
+    <div class="ag-card ag-kpi">
+        <div class="label">Verified fixes</div>
+        <div class="value">@posture.VerifiedFindings</div>
+        <div class="foot">
+            @Model.AutomatedRemediationCount of @Model.CatalogSize catalog controls carry an agentic fix
+        </div>
+    </div>
+</div>
+
+<div class="ag-grid cols-2 mt-3">
+    <div class="ag-card">
+        <div class="ag-card-head">
+            <h2>Posture by domain</h2>
+            <span class="small muted">passed / total</span>
+        </div>
+        @if (posture.ByDomain.Count == 0)
+        {
+            <div class="ag-empty">Run a scan to see the domain breakdown.</div>
+        }
+        else
+        {
+            foreach (var domain in posture.ByDomain.Values.OrderBy(d => d.Score))
+            {
+                <div class="ag-bar-row">
+                    <div>
+                        <div class="ag-bar-label">
+                            <span>@domain.Name</span>
+                            <span class="muted">@domain.Passed / @domain.Total</span>
+                        </div>
+                        <div class="ag-bar-track">
+                            <div class="ag-bar-fill" style="width:@domain.Score.ToString("0.#")%; background:@ViewHelpers.ScoreColour(domain.Score)"></div>
+                        </div>
+                    </div>
+                    <div class="ag-bar-value">@domain.Score.ToString("0.#")%</div>
+                </div>
+            }
+        }
+    </div>
+
+    <div class="ag-card">
+        <div class="ag-card-head">
+            <h2>NIST CSF v2 coverage</h2>
+            <span class="small muted">core functions</span>
+        </div>
+        @if (posture.ByNistFunction.Count == 0)
+        {
+            <div class="ag-empty">Run a scan to see the NIST CSF mapping.</div>
+        }
+        else
+        {
+            foreach (var function in posture.ByNistFunction.OrderBy(f => f.Key))
+            {
+                <div class="ag-bar-row">
+                    <div>
+                        <div class="ag-bar-label">
+                            <span>@function.Key</span>
+                            <span class="muted">@function.Value.Passed / @function.Value.Total</span>
+                        </div>
+                        <div class="ag-bar-track">
+                            <div class="ag-bar-fill" style="width:@function.Value.Score.ToString("0.#")%; background:@ViewHelpers.ScoreColour(function.Value.Score)"></div>
+                        </div>
+                    </div>
+                    <div class="ag-bar-value">@function.Value.Score.ToString("0.#")%</div>
+                </div>
+            }
+        }
+
+        @if (trend.Count > 1)
+        {
+            <h3 class="mt-3">Score trend</h3>
+            <div class="ag-spark">
+                @foreach (var point in trend)
+                {
+                    <div title="@point.At.ToString("dd MMM HH:mm") — @point.Score%" style="height:@((point.Score / maxTrend * 100).ToString("0"))%"></div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<div class="ag-grid cols-2 mt-3">
+    <div class="ag-card">
+        <div class="ag-card-head">
+            <h2>Waiting on a human</h2>
+            <a class="small" asp-controller="Approvals" asp-action="Index">All approvals</a>
+        </div>
+        @if (Model.AwaitingApproval.Count == 0)
+        {
+            <div class="ag-empty">Nothing is blocked on an approval right now.</div>
+        }
+        else
+        {
+            <div class="ag-table-wrap">
+                <table class="ag-table">
+                    <thead>
+                    <tr><th>Control</th><th>Impact</th><th>Signatures</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var task in Model.AwaitingApproval)
+                    {
+                        <tr>
+                            <td class="wrap">
+                                <strong>@task.ControlDefinition?.VendorReference</strong>
+                                <div class="small muted">@ViewHelpers.Truncate(task.ControlDefinition?.Title, 70)</div>
+                            </td>
+                            <td><span class="badge @ViewHelpers.SeverityBadge(task.ImpactSeverity)">@task.ImpactSeverity</span></td>
+                            <td class="num">@task.RequiredSignatures</td>
+                            <td><a class="btn btn-sm" asp-controller="Remediation" asp-action="Details" asp-route-id="@task.Id">Review</a></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    <div class="ag-card">
+        <div class="ag-card-head">
+            <h2>Agent activity</h2>
+            <a class="small" asp-controller="Audit" asp-action="Index">Proof centre</a>
+        </div>
+        @if (Model.RecentActivity.Count == 0)
+        {
+            <div class="ag-empty">No activity recorded yet.</div>
+        }
+        else
+        {
+            <div class="ag-table-wrap">
+                <table class="ag-table">
+                    <thead>
+                    <tr><th>When</th><th>Actor</th><th>Event</th></tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var entry in Model.RecentActivity)
+                    {
+                        <tr>
+                            <td class="nowrap small muted">@entry.OccurredAt.ToString("dd MMM HH:mm:ss")</td>
+                            <td class="nowrap small">@entry.Actor</td>
+                            <td class="wrap">
+                                <span class="badge badge-neutral">@entry.EventType</span>
+                                <div class="small">@entry.Summary</div>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

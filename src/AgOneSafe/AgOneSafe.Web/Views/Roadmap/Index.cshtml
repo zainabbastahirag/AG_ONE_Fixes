@@ -1,0 +1,117 @@
+@model RemediationRoadmap
+@{
+    ViewData["Title"] = "Action roadmap";
+    var selected = (ProfileLevel)ViewBag.SelectedLevel;
+    var canApprove = User.IsInRole(AgRoles.Ciso) || User.IsInRole(AgRoles.SecurityAdmin);
+}
+
+<div class="ag-page-head">
+    <div>
+        <h1>Target maturity and action roadmap</h1>
+        <p class="ag-sub">
+            Pick the security state you are aiming for, then work the queue top down. Items are ordered by
+            risk reduction per unit of effort, so wave one is what the agent can safely close today.
+        </p>
+    </div>
+    <form asp-action="SetTarget" method="post" class="flex">
+        @Html.AntiForgeryToken()
+        <select name="targetLevel">
+            <option value="@ProfileLevel.L1" selected="@(selected == ProfileLevel.L1)">Level 1 — Foundational</option>
+            <option value="@ProfileLevel.L2" selected="@(selected == ProfileLevel.L2)">Level 2 — Advanced</option>
+        </select>
+        <button type="submit" class="btn btn-primary" disabled="@(!canApprove)">Set as tenant target</button>
+    </form>
+</div>
+
+<div class="ag-grid cols-4">
+    <div class="ag-card ag-kpi">
+        <div class="label">Current posture</div>
+        <div class="value" style="color:@ViewHelpers.ScoreColour(Model.CurrentScore)">@Model.CurrentScore.ToString("0.#")%</div>
+        <div class="foot">latest full baseline scan</div>
+    </div>
+    <div class="ag-card ag-kpi">
+        <div class="label">If wave 1 and 2 execute</div>
+        <div class="value" style="color:@ViewHelpers.ScoreColour(Model.ProjectedScore)">@Model.ProjectedScore.ToString("0.#")%</div>
+        <div class="foot">+@((Model.ProjectedScore - Model.CurrentScore).ToString("0.#")) points from agentic fixes alone</div>
+    </div>
+    <div class="ag-card ag-kpi">
+        <div class="label">Agent can fix</div>
+        <div class="value">@Model.AutoRemediableCount</div>
+        <div class="foot">@Model.ManualCount need a human, @Model.LicenseBlockedCount need a licence</div>
+    </div>
+    <div class="ag-card ag-kpi">
+        <div class="label">Target</div>
+        <div class="value">CIS @selected</div>
+        <div class="foot">@Model.Items.Count in-scope gaps</div>
+    </div>
+</div>
+
+@if (Model.Items.Count == 0)
+{
+    <div class="ag-card mt-3"><div class="ag-empty">No open gaps at this maturity target.</div></div>
+}
+else
+{
+    foreach (var wave in Model.Waves)
+    {
+        <div class="ag-card mt-3">
+            <div class="ag-card-head">
+                <h2>@wave.First().WaveName</h2>
+                <span class="badge badge-neutral">@wave.Count() item(s)</span>
+            </div>
+            <div class="ag-table-wrap">
+                <table class="ag-table">
+                    <thead>
+                    <tr>
+                        <th>Priority</th>
+                        <th>Control</th>
+                        <th>Level</th>
+                        <th>Severity</th>
+                        <th>Risk</th>
+                        <th>Recommended action</th>
+                        <th>How it gets fixed</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @{ var rank = 1; }
+                    @foreach (var item in wave)
+                    {
+                        <tr>
+                            <td class="num">@rank<text></text>@{ rank++; }</td>
+                            <td class="nowrap">
+                                <strong>@item.ControlReference</strong>
+                                <div class="small muted">@item.Domain</div>
+                            </td>
+                            <td><span class="badge @ViewHelpers.LevelBadge(item.Level)">@item.Level</span></td>
+                            <td><span class="badge @ViewHelpers.SeverityBadge(item.Severity)">@item.Severity</span></td>
+                            <td class="num">@item.RiskScore.ToString("0")</td>
+                            <td class="wrap">
+                                <div>@ViewHelpers.Truncate(item.Title, 70)</div>
+                                <div class="small muted">@ViewHelpers.Truncate(item.RecommendedAction, 150)</div>
+                            </td>
+                            <td class="nowrap">
+                                @if (item.RequiresLicenseUpgrade)
+                                {
+                                    <span class="badge badge-medium">Requires @item.RequiredLicense</span>
+                                }
+                                else if (item.CanAutoRemediate)
+                                {
+                                    <span class="badge badge-pass">Agentic</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-info">Analyst</span>
+                                }
+                            </td>
+                            <td class="nowrap">
+                                <a class="btn btn-sm" asp-controller="Findings" asp-action="Details" asp-route-id="@item.Finding.Id">Open</a>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+}

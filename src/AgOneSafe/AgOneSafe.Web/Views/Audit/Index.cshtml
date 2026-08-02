@@ -1,0 +1,142 @@
+@model AuditIndexViewModel
+@{
+    ViewData["Title"] = "Proof centre";
+}
+
+<div class="ag-page-head">
+    <div>
+        <h1>Remediation proof centre</h1>
+        <p class="ag-sub">
+            Every agent and human action is appended to a hash-chained log. Each entry carries the hash of the
+            one before it, so a deleted or edited record breaks the chain and is reported here.
+        </p>
+    </div>
+    <a class="btn btn-primary" asp-action="Export">Export audit CSV</a>
+</div>
+
+<div class="ag-alert @(Model.ChainIntact ? "ag-alert-ok" : "ag-alert-danger")">
+    @if (Model.ChainIntact)
+    {
+        <text><strong>Chain verified.</strong> Every audit entry hashes correctly against its predecessor.</text>
+    }
+    else
+    {
+        <text><strong>Chain broken at entry @Model.ChainBrokenAt.</strong> The log has been altered outside the application.</text>
+    }
+</div>
+
+<div class="ag-card">
+    <div class="ag-card-head">
+        <h2>Change log</h2>
+        <span class="small muted">Executed remediation with approvals and verification status</span>
+    </div>
+    @if (Model.ChangeLog.Count == 0)
+    {
+        <div class="ag-empty">No remediation has been executed yet.</div>
+    }
+    else
+    {
+        <div class="ag-table-wrap">
+            <table class="ag-table">
+                <thead>
+                <tr><th>Control</th><th>Executed</th><th>Status</th><th>Approved by</th><th>Verification</th><th>Rollback</th></tr>
+                </thead>
+                <tbody>
+                @foreach (var task in Model.ChangeLog)
+                {
+                    var approvers = task.ApprovalRequests
+                        .SelectMany(r => r.Signatures)
+                        .Where(s => s.Decision == ApprovalDecision.Approved)
+                        .ToList();
+                    <tr>
+                        <td class="wrap">
+                            <strong>@task.ControlDefinition?.VendorReference</strong>
+                            <div class="small muted">@ViewHelpers.Truncate(task.ControlDefinition?.Title, 60)</div>
+                        </td>
+                        <td class="small nowrap">@(task.CompletedAt?.ToString("dd MMM yyyy HH:mm") ?? "—")</td>
+                        <td><span class="badge @ViewHelpers.RemediationBadge(task.Status)">@task.Status</span></td>
+                        <td class="small">
+                            @if (approvers.Count == 0)
+                            {
+                                <span class="muted">policy-approved</span>
+                            }
+                            else
+                            {
+                                @foreach (var signature in approvers)
+                                {
+                                    <div>@signature.Approver <span class="muted">(@signature.ApproverRole)</span></div>
+                                }
+                            }
+                        </td>
+                        <td>
+                            @if (task.VerificationOutcome is { } outcome)
+                            {
+                                <span class="badge @ViewHelpers.OutcomeBadge(outcome)">@outcome</span>
+                            }
+                            else
+                            {
+                                <span class="muted small">—</span>
+                            }
+                        </td>
+                        <td>
+                            @if (task.RolledBackAt is not null)
+                            {
+                                <span class="badge badge-medium">Rolled back @task.RolledBackAt.Value.ToString("dd MMM HH:mm")</span>
+                            }
+                            else if (task.CanRollback)
+                            {
+                                <a class="btn btn-sm" asp-controller="Remediation" asp-action="Details" asp-route-id="@task.Id">Rollback available</a>
+                            }
+                            else
+                            {
+                                <span class="muted small">—</span>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<div class="ag-card mt-3">
+    <div class="ag-card-head">
+        <h2>Audit log</h2>
+        <form method="get" class="flex">
+            <select name="eventType" onchange="this.form.submit()">
+                <option value="">All events</option>
+                @foreach (var value in Enum.GetValues<AuditEventType>())
+                {
+                    <option value="@value" selected="@(Model.EventFilter == value)">@value</option>
+                }
+            </select>
+        </form>
+    </div>
+
+    <div class="ag-table-wrap">
+        <table class="ag-table">
+            <thead>
+            <tr><th>#</th><th>When (UTC)</th><th>Actor</th><th>Event</th><th>Control</th><th>Summary</th><th>Hash</th></tr>
+            </thead>
+            <tbody>
+            @foreach (var entry in Model.Entries)
+            {
+                <tr>
+                    <td class="num small">@entry.Id</td>
+                    <td class="small nowrap">@entry.OccurredAt.ToString("dd MMM HH:mm:ss")</td>
+                    <td class="small nowrap">@entry.Actor<div class="muted">@entry.ActorRole</div></td>
+                    <td><span class="badge badge-neutral">@entry.EventType</span></td>
+                    <td class="small nowrap">@entry.ControlReference</td>
+                    <td class="wrap small">@entry.Summary</td>
+                    <td class="mono small muted nowrap" title="@entry.EntryHash">@entry.EntryHash[..12]</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    @if (Model.Entries.Count == 0)
+    {
+        <div class="ag-empty">No audit entries match this filter.</div>
+    }
+</div>

@@ -1,0 +1,90 @@
+@model IReadOnlyList<RemediationTask>
+@{
+    ViewData["Title"] = "Approvals";
+    var canApprove = User.IsInRole(AgRoles.Ciso) || User.IsInRole(AgRoles.SecurityAdmin);
+    var me = User.Identity?.Name ?? string.Empty;
+}
+
+<div class="ag-page-head">
+    <div>
+        <h1>Human-in-the-loop approvals</h1>
+        <p class="ag-sub">
+            Medium and above needs one signature. Critical-tier and destructive change needs two distinct
+            approvers — the same person cannot sign twice.
+        </p>
+    </div>
+</div>
+
+@if (!canApprove)
+{
+    <div class="ag-alert ag-alert-warn">You are signed in as an auditor, so this queue is read-only.</div>
+}
+
+@if (Model.Count == 0)
+{
+    <div class="ag-card"><div class="ag-empty">Nothing is waiting for a decision.</div></div>
+}
+else
+{
+    foreach (var task in Model)
+    {
+        var approval = task.ApprovalRequests.OrderByDescending(r => r.Id).FirstOrDefault();
+        var alreadySigned = approval?.Signatures.Any(s => string.Equals(s.Approver, me, StringComparison.OrdinalIgnoreCase)) == true;
+
+        <div class="ag-card">
+            <div class="ag-card-head">
+                <div>
+                    <h2 style="margin-bottom:4px">@task.ControlDefinition?.VendorReference — @task.ControlDefinition?.Title</h2>
+                    <div class="flex">
+                        <span class="badge @ViewHelpers.RemediationBadge(task.Status)">@task.Status</span>
+                        <span class="badge @ViewHelpers.SeverityBadge(task.ImpactSeverity)">Impact @task.ImpactSeverity</span>
+                        <span class="badge badge-neutral">
+                            @(approval?.ApprovedCount ?? 0) of @task.RequiredSignatures signature(s)
+                        </span>
+                        @if (task.ScheduledFor is not null)
+                        {
+                            <span class="badge badge-info">Window @task.ScheduledFor.Value.ToString("dd MMM HH:mm")</span>
+                        }
+                    </div>
+                </div>
+                <a class="btn" asp-controller="Remediation" asp-action="Details" asp-route-id="@task.Id">Full preview</a>
+            </div>
+
+            <p class="small muted" style="margin-top:0">@task.PlanSummary</p>
+            <pre class="ag-code">@ViewHelpers.Truncate(task.ScriptPreview, 400)</pre>
+
+            @if (approval is not null && approval.Signatures.Count > 0)
+            {
+                <div class="small muted mt-3">
+                    Signed by
+                    @string.Join(", ", approval.Signatures.Select(s => $"{s.Approver} ({s.Decision})"))
+                </div>
+            }
+
+            @if (canApprove && task.Status == RemediationStatus.PendingApproval)
+            {
+                <form asp-action="Decide" method="post" class="mt-3">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@task.Id" />
+                    <div class="field">
+                        <label for="comment-@task.Id">Comment</label>
+                        <input type="text" id="comment-@task.Id" name="comment" placeholder="Optional note recorded with your signature" />
+                    </div>
+                    @if (alreadySigned)
+                    {
+                        <div class="ag-alert ag-alert-warn">
+                            You have already signed this request. A second, different approver is required.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="flex">
+                            <button type="submit" class="btn btn-success" name="decision" value="@ApprovalDecision.Approved">Approve</button>
+                            <button type="submit" class="btn btn-danger" name="decision" value="@ApprovalDecision.Rejected">Reject</button>
+                        </div>
+                    }
+                </form>
+            }
+        </div>
+    }
+}

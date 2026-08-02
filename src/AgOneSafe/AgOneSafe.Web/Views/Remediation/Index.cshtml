@@ -1,0 +1,159 @@
+@model RemediationHubViewModel
+@{
+    ViewData["Title"] = "Remediation hub";
+    var canExecute = User.IsInRole(AgRoles.Ciso) || User.IsInRole(AgRoles.SecurityAdmin);
+}
+
+<div class="ag-page-head">
+    <div>
+        <h1>Remediation hub</h1>
+        <p class="ag-sub">
+            Gaps the agent can close on its own. Select several to build a wave, or open one to preview the
+            script and blast radius before anything reaches the tenant.
+        </p>
+    </div>
+</div>
+
+@if (Model.AutoRemediable.Count == 0)
+{
+    <div class="ag-card"><div class="ag-empty">No open gaps currently carry an agentic fix.</div></div>
+}
+else
+{
+    <form asp-action="CreateBatch" method="post">
+        @Html.AntiForgeryToken()
+        <div class="ag-card">
+            <div class="ag-card-head">
+                <h2>Open gaps with a published fix (@Model.AutoRemediable.Count)</h2>
+                <div class="flex">
+                    <input type="text" name="name" placeholder="Wave name" style="width:190px" />
+                    <input type="datetime-local" name="scheduledFor" style="width:210px" title="Optional off-peak maintenance window" />
+                    <button type="submit" class="btn btn-primary" disabled="@(!canExecute)">Plan selected as a wave</button>
+                </div>
+            </div>
+
+            <div class="ag-table-wrap">
+                <table class="ag-table">
+                    <thead>
+                    <tr>
+                        <th style="width:34px"></th>
+                        <th>Control</th>
+                        <th>Severity</th>
+                        <th>Risk</th>
+                        <th>Why it failed</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var finding in Model.AutoRemediable)
+                    {
+                        <tr>
+                            <td><input type="checkbox" name="findingIds" value="@finding.Id" style="width:auto" /></td>
+                            <td class="nowrap">
+                                <strong>@finding.ControlDefinition?.VendorReference</strong>
+                                <div class="small muted">@finding.ControlDefinition?.Domain</div>
+                            </td>
+                            <td><span class="badge @ViewHelpers.SeverityBadge(finding.Severity)">@finding.Severity</span></td>
+                            <td class="num">@finding.RiskScore.ToString("0")</td>
+                            <td class="wrap">
+                                <div>@ViewHelpers.Truncate(finding.ControlDefinition?.Title, 70)</div>
+                                <div class="small" style="color:var(--ag-fail)">@ViewHelpers.Truncate(finding.FailureReason, 130)</div>
+                            </td>
+                            <td><span class="badge @ViewHelpers.FindingBadge(finding.Status)">@finding.Status</span></td>
+                            <td class="nowrap">
+                                <a class="btn btn-sm" asp-controller="Findings" asp-action="Details" asp-route-id="@finding.Id">Inspect</a>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </form>
+}
+
+@if (Model.Batches.Count > 0)
+{
+    <div class="ag-card mt-3">
+        <h2>Remediation waves</h2>
+        <div class="ag-table-wrap">
+            <table class="ag-table">
+                <thead>
+                <tr><th>Wave</th><th>Tasks</th><th>Scheduled</th><th>Status</th><th></th></tr>
+                </thead>
+                <tbody>
+                @foreach (var batch in Model.Batches)
+                {
+                    <tr>
+                        <td>
+                            <strong>@batch.Name</strong>
+                            <div class="small muted">created by @batch.CreatedBy @batch.CreatedAt.ToString("dd MMM HH:mm")</div>
+                        </td>
+                        <td class="num">@batch.Tasks.Count</td>
+                        <td class="nowrap small">@(batch.ScheduledFor?.ToString("dd MMM yyyy HH:mm") ?? "Immediate")</td>
+                        <td><span class="badge @ViewHelpers.RemediationBadge(batch.Status)">@batch.Status</span></td>
+                        <td>
+                            <form asp-action="ExecuteBatch" method="post" class="inline-form">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@batch.Id" />
+                                <button type="submit" class="btn btn-sm" disabled="@(!canExecute)">Execute approved tasks</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+<div class="ag-card mt-3">
+    <h2>Remediation tasks</h2>
+    @if (Model.Tasks.Count == 0)
+    {
+        <div class="ag-empty">No remediation has been planned yet.</div>
+    }
+    else
+    {
+        <div class="ag-table-wrap">
+            <table class="ag-table">
+                <thead>
+                <tr><th>#</th><th>Control</th><th>Impact</th><th>Status</th><th>Runs</th><th>Verification</th><th></th></tr>
+                </thead>
+                <tbody>
+                @foreach (var task in Model.Tasks)
+                {
+                    <tr>
+                        <td class="num">@task.Id</td>
+                        <td class="wrap">
+                            <strong>@task.ControlDefinition?.VendorReference</strong>
+                            <div class="small muted">@ViewHelpers.Truncate(task.ControlDefinition?.Title, 60)</div>
+                        </td>
+                        <td><span class="badge @ViewHelpers.SeverityBadge(task.ImpactSeverity)">@task.ImpactSeverity</span></td>
+                        <td>
+                            <span class="badge @ViewHelpers.RemediationBadge(task.Status)">@task.Status</span>
+                            @if (task.RequiredSignatures > 1)
+                            {
+                                <div class="small muted" style="margin-top:3px">@task.RequiredSignatures signatures</div>
+                            }
+                        </td>
+                        <td class="num small">@task.Executions.Count</td>
+                        <td class="small">
+                            @if (task.VerificationOutcome is { } outcome)
+                            {
+                                <span class="badge @ViewHelpers.OutcomeBadge(outcome)">@outcome</span>
+                            }
+                            else
+                            {
+                                <span class="muted">—</span>
+                            }
+                        </td>
+                        <td><a class="btn btn-sm" asp-action="Details" asp-route-id="@task.Id">Open</a></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

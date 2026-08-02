@@ -1,0 +1,163 @@
+{
+  "benchmark": "Microsoft365",
+  "version": "CIS Microsoft 365 Foundations Benchmark v4.0.0",
+  "controls": [
+    {
+      "reference": "3.1.1",
+      "domain": "Purview",
+      "title": "Ensure Microsoft 365 audit log search is Enabled",
+      "description": "Unified audit log search must be turned on for the tenant.",
+      "rationale": "Without the unified audit log there is no forensic record of administrative or user activity, and no incident can be reconstructed.",
+      "level": "L1",
+      "severity": "Critical",
+      "userImpact": "No Impact",
+      "cisControl": "CIS Control 8: Audit Log Management",
+      "nistFunction": "Detect",
+      "nistCategory": "DE.AE-03 Information is correlated from multiple sources",
+      "auditProcedure": "Get-AdminAuditLogConfig | Select-Object UnifiedAuditLogIngestionEnabled",
+      "remediationProcedure": "Set-AdminAuditLogConfig -UnifiedAuditLogIngestionEnabled $true",
+      "riskWeight": 10,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the unified audit log ingestion flag",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "scopes": "Exchange.ManageAsApp",
+        "payload": "Get-AdminAuditLogConfig | Select-Object UnifiedAuditLogIngestionEnabled | ConvertTo-Json -Compress",
+        "assertions": [
+          {
+            "path": "UnifiedAuditLogIngestionEnabled",
+            "operator": "IsTrue",
+            "failure": "Unified audit log ingestion is {actual}; tenant activity is not being recorded for investigation.",
+            "hint": "Run Set-AdminAuditLogConfig -UnifiedAuditLogIngestionEnabled $true."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Enable unified audit log search",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "UnifiedAuditLogIngestionEnabled = true",
+          "estimatedSeconds": "25"
+        },
+        "payload": "Set-AdminAuditLogConfig -UnifiedAuditLogIngestionEnabled $true\nGet-AdminAuditLogConfig | Select-Object UnifiedAuditLogIngestionEnabled | ConvertTo-Json -Compress"
+      },
+      "rollback": {
+        "name": "Restore the previous audit log ingestion setting",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "payload": "Set-AdminAuditLogConfig -UnifiedAuditLogIngestionEnabled {{UnifiedAuditLogIngestionEnabled}}\nGet-AdminAuditLogConfig | Select-Object UnifiedAuditLogIngestionEnabled | ConvertTo-Json -Compress"
+      },
+      "emulatorState": {
+        "Get-AdminAuditLogConfig": { "UnifiedAuditLogIngestionEnabled": false }
+      }
+    },
+    {
+      "reference": "3.2.1",
+      "domain": "Purview",
+      "title": "Ensure DLP policies are enabled",
+      "description": "At least one data loss prevention policy must be enabled across Exchange, SharePoint and OneDrive.",
+      "rationale": "DLP is the control that stops regulated data leaving the tenant through everyday collaboration.",
+      "level": "L1",
+      "severity": "High",
+      "userImpact": "Impact: Users may be blocked or warned when sharing content that matches a sensitive information type.",
+      "cisControl": "CIS Control 3: Data Protection",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.DS-01 Data-at-rest is protected",
+      "auditProcedure": "Get-DlpCompliancePolicy | Select-Object Name, Mode, Enabled, Workload",
+      "remediationProcedure": "Create a DLP policy in Microsoft Purview covering Exchange, SharePoint, OneDrive and Teams, then set its mode to Enable.",
+      "riskWeight": 7,
+      "effortWeight": 4,
+      "automatedRemediation": false,
+      "audit": {
+        "name": "Count enabled DLP policies",
+        "executor": "PowerShell",
+        "module": "SecurityCompliance",
+        "scopes": "InformationProtectionPolicy.Read.All",
+        "payload": "$policies = @(Get-DlpCompliancePolicy)\n[pscustomobject]@{ PolicyCount = $policies.Count; EnabledPolicies = @($policies | Where-Object { $_.Enabled -eq $true } | ForEach-Object { $_.Name }) } | ConvertTo-Json -Depth 5 -Compress",
+        "assertions": [
+          {
+            "path": "EnabledPolicies",
+            "operator": "IsNotEmpty",
+            "failure": "No data loss prevention policy is enabled in this tenant ({actual}).",
+            "hint": "Create and enable a Purview DLP policy scoped to Exchange, SharePoint, OneDrive and Teams."
+          }
+        ]
+      },
+      "emulatorState": {
+        "Get-DlpCompliancePolicy": []
+      }
+    },
+    {
+      "reference": "3.2.2",
+      "domain": "Purview",
+      "title": "Ensure DLP policies are enabled for Microsoft Teams",
+      "description": "A DLP policy must include the Teams workload.",
+      "rationale": "Teams chat and channel messages are a common exfiltration path that Exchange-only DLP misses.",
+      "level": "L1",
+      "severity": "Medium",
+      "userImpact": "Impact: Messages containing sensitive information types may be blocked.",
+      "cisControl": "CIS Control 3: Data Protection",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.DS-01 Data-at-rest is protected",
+      "auditProcedure": "Get-DlpCompliancePolicy | Where-Object { $_.TeamsLocation -ne $null }",
+      "remediationProcedure": "Edit an existing DLP policy in Microsoft Purview and add the Teams chat and channel messages location.",
+      "riskWeight": 6,
+      "effortWeight": 3,
+      "automatedRemediation": false,
+      "audit": {
+        "name": "Check DLP coverage of Teams",
+        "executor": "PowerShell",
+        "module": "SecurityCompliance",
+        "scopes": "InformationProtectionPolicy.Read.All",
+        "payload": "$policies = @(Get-DlpCompliancePolicy)\n[pscustomobject]@{ TeamsPolicies = @($policies | Where-Object { $_.Workload -match 'Teams' } | ForEach-Object { $_.Name }) } | ConvertTo-Json -Depth 5 -Compress",
+        "assertions": [
+          {
+            "path": "TeamsPolicies",
+            "operator": "IsNotEmpty",
+            "failure": "No DLP policy covers the Teams workload ({actual}).",
+            "hint": "Add the Teams chat and channel messages location to an existing DLP policy."
+          }
+        ]
+      }
+    },
+    {
+      "reference": "3.3.1",
+      "domain": "Purview",
+      "title": "Ensure SharePoint Online Information Protection policies are set up and used",
+      "description": "Sensitivity labels must be published and applied to SharePoint content.",
+      "rationale": "Labels drive encryption and access restrictions that survive the file leaving the tenant.",
+      "level": "L1",
+      "severity": "Medium",
+      "userImpact": "No Impact",
+      "cisControl": "CIS Control 3: Data Protection",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.DS-01 Data-at-rest is protected",
+      "auditProcedure": "Get-Label | Select-Object Name, Disabled",
+      "remediationProcedure": "Create and publish sensitivity labels in Microsoft Purview, then enable them for files in SharePoint and OneDrive.",
+      "riskWeight": 5,
+      "effortWeight": 4,
+      "automatedRemediation": false,
+      "audit": {
+        "name": "Count published sensitivity labels",
+        "executor": "PowerShell",
+        "module": "SecurityCompliance",
+        "scopes": "InformationProtectionPolicy.Read.All",
+        "payload": "$labels = @(Get-Label)\n[pscustomobject]@{ ActiveLabels = @($labels | Where-Object { $_.Disabled -ne $true } | ForEach-Object { $_.Name }) } | ConvertTo-Json -Depth 5 -Compress",
+        "assertions": [
+          {
+            "path": "ActiveLabels",
+            "operator": "IsNotEmpty",
+            "failure": "No sensitivity labels are published ({actual}), so content in SharePoint cannot be classified or protected.",
+            "hint": "Publish at least a Confidential and a Highly Confidential label and enable them for files."
+          }
+        ]
+      },
+      "emulatorState": {
+        "Get-Label": []
+      }
+    }
+  ]
+}

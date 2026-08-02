@@ -1,0 +1,233 @@
+@model RemediationTaskViewModel
+@{
+    var task = Model.Task;
+    var control = task.ControlDefinition!;
+    ViewData["Title"] = $"Remediation #{task.Id}";
+    var radius = Model.BlastRadius;
+    var canExecute = User.IsInRole(AgRoles.Ciso) || User.IsInRole(AgRoles.SecurityAdmin);
+    var approval = task.ApprovalRequests.OrderByDescending(r => r.Id).FirstOrDefault();
+    var awaitingApproval = task.RequiresApproval &&
+                           task.Status is not (RemediationStatus.Approved or RemediationStatus.Scheduled
+                               or RemediationStatus.Succeeded or RemediationStatus.RolledBack);
+}
+
+<div class="ag-page-head">
+    <div>
+        <h1>Remediation #@task.Id — @control.VendorReference</h1>
+        <p class="ag-sub">@task.PlanSummary</p>
+        <div class="flex" style="margin-top:6px">
+            <span class="badge @ViewHelpers.RemediationBadge(task.Status)">@task.Status</span>
+            <span class="badge @ViewHelpers.SeverityBadge(task.ImpactSeverity)">Impact @task.ImpactSeverity</span>
+            <span class="badge badge-neutral">@task.RequiredSignatures signature(s)</span>
+            @if (task.ScheduledFor is not null)
+            {
+                <span class="badge badge-info">Window @task.ScheduledFor.Value.ToString("dd MMM HH:mm")</span>
+            }
+        </div>
+    </div>
+    <div class="flex">
+        <a class="btn" asp-controller="Findings" asp-action="Details" asp-route-id="@task.FindingId">The gap</a>
+
+        <form asp-action="DryRun" method="post" class="inline-form">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@task.Id" />
+            <button type="submit" class="btn" disabled="@(!canExecute)">Dry run</button>
+        </form>
+
+        @if (awaitingApproval && task.Status != RemediationStatus.PendingApproval)
+        {
+            <form asp-action="RequestApproval" method="post" class="inline-form">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@task.Id" />
+                <input type="hidden" name="justification" value="Requested from the remediation hub." />
+                <button type="submit" class="btn btn-primary" disabled="@(!canExecute)">Request approval</button>
+            </form>
+        }
+
+        <form asp-action="Execute" method="post" class="inline-form">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@task.Id" />
+            <button type="submit" class="btn btn-primary" disabled="@(!canExecute || awaitingApproval)">
+                Execute in tenant
+            </button>
+        </form>
+
+        @if (task.CanRollback)
+        {
+            <form asp-action="Rollback" method="post" class="inline-form">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@task.Id" />
+                <button type="submit" class="btn btn-danger" disabled="@(!canExecute)">Rollback execution</button>
+            </form>
+        }
+    </div>
+</div>
+
+@if (awaitingApproval)
+{
+    <div class="ag-alert ag-alert-warn">
+        Execution is blocked until @task.RequiredSignatures human approval@(task.RequiredSignatures > 1 ? "s are" : " is") recorded.
+        @if (task.RequiredSignatures > 1)
+        {
+            <text>Two distinct approvers are required because this change is @task.ImpactSeverity tier.</text>
+        }
+    </div>
+}
+
+@if (task.VerificationOutcome is { } verification)
+{
+    <div class="ag-alert @(verification == ControlOutcome.Pass ? "ag-alert-ok" : "ag-alert-danger")">
+        <strong>Verification re-scan:</strong> @task.VerificationMessage
+    </div>
+}
+
+<div class="ag-grid cols-2">
+    <div class="ag-card">
+        <div class="ag-card-head">
+            <h2>Blast radius</h2>
+            <span class="badge @(radius.IsReversible ? "badge-pass" : "badge-medium")">
+                @(radius.IsReversible ? "Reversible" : "Not reversible")
+            </span>
+        </div>
+
+        <div class="ag-grid cols-3">
+            <div class="ag-kpi"><div class="label">Users</div><div class="value">@radius.ImpactedUsers</div></div>
+            <div class="ag-kpi"><div class="label">Resources</div><div class="value">@radius.ImpactedResources</div></div>
+            <div class="ag-kpi"><div class="label">Policies</div><div class="value">@radius.ImpactedPolicies</div></div>
+        </div>
+
+        <dl class="ag-dl mt-3">
+            <dt>Expected user impact</dt><dd>@radius.ExpectedUserImpact</dd>
+            <dt>Estimated duration</dt><dd>@radius.EstimatedDurationSeconds seconds in tenant</dd>
+        </dl>
+
+        @if (radius.Warnings.Count > 0)
+        {
+            @foreach (var warning in radius.Warnings)
+            {
+                <div class="ag-alert ag-alert-warn" style="margin-top:10px">@warning</div>
+            }
+        }
+
+        @if (radius.Objects.Count > 0)
+        {
+            <h3 class="mt-3">Objects that change</h3>
+            <div class="ag-table-wrap">
+                <table class="ag-table">
+                    <thead>
+                    <tr><th>Type</th><th>Name</th><th>Current</th><th>Proposed</th></tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in radius.Objects)
+                    {
+                        <tr>
+                            <td class="small">@item.Type</td>
+                            <td class="mono small">@item.Name</td>
+                            <td class="mono small">@item.CurrentValue</td>
+                            <td class="mono small" style="color:var(--ag-pass)">@item.ProposedValue</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    <div class="ag-card">
+        <h2>Exactly what will run</h2>
+        <p class="small muted">
+            This is the rendered payload, parameters already substituted. The approver reads the same text the
+            agent sends to the tenant.
+        </p>
+        <pre class="ag-code">@task.ScriptPreview</pre>
+
+        @if (task.ConfigurationSnapshot is { } snapshot)
+        {
+            <h3 class="mt-3">Pre-execution snapshot</h3>
+            <p class="small muted">
+                Captured @snapshot.CapturedAt.ToString("dd MMM yyyy HH:mm:ss") UTC ·
+                SHA-256 <span class="mono">@snapshot.StateHash[..16]</span>
+            </p>
+            <pre class="ag-code">@snapshot.StateJson</pre>
+        }
+    </div>
+</div>
+
+@if (approval is not null)
+{
+    <div class="ag-card mt-3">
+        <div class="ag-card-head">
+            <h2>Approval trail</h2>
+            <span class="badge @(approval.Decision == ApprovalDecision.Approved ? "badge-pass" : approval.Decision == ApprovalDecision.Rejected ? "badge-fail" : "badge-high")">
+                @approval.Decision — @approval.ApprovedCount of @approval.RequiredSignatures
+            </span>
+        </div>
+        <p class="small muted">Requested by @approval.RequestedBy at @approval.RequestedAt.ToString("dd MMM yyyy HH:mm") UTC. @approval.Justification</p>
+
+        @if (approval.Signatures.Count > 0)
+        {
+            <div class="ag-table-wrap">
+                <table class="ag-table">
+                    <thead><tr><th>Approver</th><th>Role</th><th>Decision</th><th>When</th><th>Comment</th></tr></thead>
+                    <tbody>
+                    @foreach (var signature in approval.Signatures.OrderBy(s => s.DecidedAt))
+                    {
+                        <tr>
+                            <td>@signature.Approver</td>
+                            <td class="small muted">@signature.ApproverRole</td>
+                            <td><span class="badge @(signature.Decision == ApprovalDecision.Approved ? "badge-pass" : "badge-fail")">@signature.Decision</span></td>
+                            <td class="small nowrap">@signature.DecidedAt.ToString("dd MMM HH:mm")</td>
+                            <td class="wrap small">@signature.Comment</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="ag-empty">No signature has been recorded yet. The approval queue is where CISOs and admins sign.</div>
+        }
+    </div>
+}
+
+<div class="ag-card mt-3">
+    <h2>Execution log</h2>
+    @if (Model.Executions.Count == 0)
+    {
+        <div class="ag-empty">Nothing has been executed for this task yet.</div>
+    }
+    else
+    {
+        @foreach (var execution in Model.Executions)
+        {
+            <div class="ag-card" style="background:var(--ag-surface-2); margin-bottom:12px">
+                <div class="ag-card-head">
+                    <div class="flex">
+                        <span class="badge @(execution.Succeeded ? "badge-pass" : "badge-fail")">
+                            @(execution.Succeeded ? "Succeeded" : "Failed")
+                        </span>
+                        <span class="badge badge-neutral">@(execution.IsRollback ? "Rollback" : execution.Mode.ToString())</span>
+                        <span class="badge badge-info">@execution.ExecutorType</span>
+                    </div>
+                    <span class="small muted">
+                        @execution.ExecutedBy · @execution.StartedAt.ToString("dd MMM HH:mm:ss") · @execution.DurationMs ms
+                    </span>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(execution.ExecutedCommand))
+                {
+                    <pre class="ag-code">@execution.ExecutedCommand</pre>
+                }
+                @if (!string.IsNullOrWhiteSpace(execution.Output))
+                {
+                    <h3 class="mt-3">Output</h3>
+                    <pre class="ag-code">@execution.Output</pre>
+                }
+                @if (!string.IsNullOrWhiteSpace(execution.Error))
+                {
+                    <div class="ag-alert ag-alert-danger" style="margin-top:10px">@execution.Error</div>
+                }
+            </div>
+        }
+    }
+</div>

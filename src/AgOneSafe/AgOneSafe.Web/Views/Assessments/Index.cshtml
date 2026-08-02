@@ -1,0 +1,109 @@
+@model IReadOnlyList<Assessment>
+@{
+    ViewData["Title"] = "Assessments";
+    var running = (bool)(ViewBag.ScanRunning ?? false);
+    var canExecute = User.IsInRole(AgRoles.Ciso) || User.IsInRole(AgRoles.SecurityAdmin);
+}
+
+<div class="ag-page-head">
+    <div>
+        <h1>Baseline assessments</h1>
+        <p class="ag-sub">
+            Each scan runs every enabled control's audit action against the tenant, judges the result with the
+            control's own assertion rules, and rescores posture. Verification re-scans triggered by a fix are
+            listed here too, scoped to the single control that changed.
+        </p>
+    </div>
+    <form asp-action="Run" method="post" class="flex">
+        @Html.AntiForgeryToken()
+        <select name="targetLevel">
+            <option value="">Tenant target level</option>
+            <option value="@ProfileLevel.L1">Scan at Level 1</option>
+            <option value="@ProfileLevel.L2">Scan at Level 2</option>
+        </select>
+        <button type="submit" class="btn btn-primary" disabled="@(running || !canExecute)">
+            @(running ? "Scan running…" : "Run baseline scan")
+        </button>
+    </form>
+</div>
+
+<div id="scan-banner" class="ag-alert ag-alert-warn" style="@(running ? "" : "display:none")">
+    A baseline scan is running. This page refreshes automatically as controls complete.
+</div>
+
+<div class="ag-card">
+    @if (Model.Count == 0)
+    {
+        <div class="ag-empty">No scans have run for this tenant yet.</div>
+    }
+    else
+    {
+        <div class="ag-table-wrap">
+            <table class="ag-table">
+                <thead>
+                <tr>
+                    <th>#</th><th>Started</th><th>Trigger</th><th>Scope</th><th>Status</th>
+                    <th class="num">Passed</th><th class="num">Failed</th><th class="num">Error</th><th class="num">Manual</th>
+                    <th class="num">Score</th><th class="num">Duration</th><th></th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var assessment in Model)
+                {
+                    <tr>
+                        <td class="num">@assessment.Id</td>
+                        <td class="nowrap small">@assessment.StartedAt.ToString("dd MMM HH:mm:ss")</td>
+                        <td><span class="badge badge-neutral">@assessment.Trigger</span></td>
+                        <td class="small">
+                            @if (assessment.ScopedControlReferences is null)
+                            {
+                                <text>Full baseline · CIS @assessment.TargetLevel</text>
+                            }
+                            else
+                            {
+                                <span class="mono">@assessment.ScopedControlReferences</span>
+                            }
+                        </td>
+                        <td><span class="badge @(assessment.Status == AssessmentStatus.Completed ? "badge-pass" : assessment.Status == AssessmentStatus.Failed ? "badge-fail" : "badge-info")">@assessment.Status</span></td>
+                        <td class="num" style="color:var(--ag-pass)">@assessment.PassedCount</td>
+                        <td class="num" style="color:var(--ag-fail)">@assessment.FailedCount</td>
+                        <td class="num">@assessment.ErrorCount</td>
+                        <td class="num">@assessment.ManualCount</td>
+                        <td class="num"><strong style="color:@ViewHelpers.ScoreColour(assessment.PostureScore)">@assessment.PostureScore.ToString("0.#")%</strong></td>
+                        <td class="num small">@(assessment.Duration is null ? "—" : $"{assessment.Duration.Value.TotalSeconds:0.0}s")</td>
+                        <td><a class="btn btn-sm" asp-action="Details" asp-route-id="@assessment.Id">Results</a></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const banner = document.getElementById('scan-banner');
+            let wasRunning = @(running ? "true" : "false");
+
+            async function poll() {
+                try {
+                    const response = await fetch('@Url.Action("Status", "Assessments")');
+                    const data = await response.json();
+                    banner.style.display = data.running ? '' : 'none';
+
+                    if (wasRunning && !data.running) {
+                        window.location.reload();
+                        return;
+                    }
+
+                    wasRunning = data.running;
+                } catch {
+                    // A transient poll failure is not worth surfacing; the next tick retries.
+                }
+            }
+
+            setInterval(poll, 2500);
+        })();
+    </script>
+}

@@ -1,0 +1,475 @@
+{
+  "benchmark": "Microsoft365",
+  "version": "CIS Microsoft 365 Foundations Benchmark v4.0.0",
+  "controls": [
+    {
+      "reference": "5.1.2.2",
+      "domain": "Identity",
+      "title": "Ensure third party integrated applications are not allowed",
+      "description": "Users must not be able to register or consent to third-party applications on their own.",
+      "rationale": "Illicit consent grants are a standard persistence technique: the attacker never needs the user's password again.",
+      "level": "L1",
+      "severity": "Critical",
+      "userImpact": "Impact: Users will need to request administrator approval before an application can access their data.",
+      "cisControl": "CIS Control 6: Access Control Management",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.AA-05 Access permissions and authorizations",
+      "auditProcedure": "GET https://graph.microsoft.com/v1.0/policies/authorizationPolicy\nConfirm defaultUserRolePermissions.allowedToCreateApps is false.",
+      "remediationProcedure": "PATCH https://graph.microsoft.com/v1.0/policies/authorizationPolicy\n{ \"defaultUserRolePermissions\": { \"allowedToCreateApps\": false } }",
+      "riskWeight": 10,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the tenant authorization policy",
+        "executor": "MicrosoftGraph",
+        "module": "MicrosoftGraph",
+        "scopes": "Policy.Read.All",
+        "payload": "{ \"method\": \"GET\", \"path\": \"/v1.0/policies/authorizationPolicy\", \"emulatorKey\": \"graph:authorizationPolicy\" }",
+        "assertions": [
+          {
+            "path": "defaultUserRolePermissions.allowedToCreateApps",
+            "operator": "IsFalse",
+            "failure": "Standard users can register third-party applications (allowedToCreateApps is {actual}).",
+            "hint": "PATCH the authorization policy so defaultUserRolePermissions.allowedToCreateApps is false."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Block user application registration",
+        "executor": "MicrosoftGraph",
+        "module": "MicrosoftGraph",
+        "scopes": "Policy.ReadWrite.Authorization",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "allowedToCreateApps = false",
+          "estimatedSeconds": "15"
+        },
+        "payload": "{ \"method\": \"PATCH\", \"path\": \"/v1.0/policies/authorizationPolicy\", \"emulatorKey\": \"graph:authorizationPolicy\", \"body\": { \"defaultUserRolePermissions\": { \"allowedToCreateApps\": false, \"allowedToCreateSecurityGroups\": false } } }"
+      },
+      "rollback": {
+        "name": "Restore the previous authorization policy",
+        "executor": "MicrosoftGraph",
+        "module": "MicrosoftGraph",
+        "payload": "{ \"method\": \"PATCH\", \"path\": \"/v1.0/policies/authorizationPolicy\", \"emulatorKey\": \"graph:authorizationPolicy\", \"body\": { \"defaultUserRolePermissions\": { \"allowedToCreateApps\": true } } }"
+      },
+      "emulatorState": {
+        "graph:authorizationPolicy": {
+          "displayName": "Authorization Policy",
+          "allowInvitesFrom": "everyone",
+          "allowedToSignUpEmailBasedSubscriptions": true,
+          "defaultUserRolePermissions": {
+            "allowedToCreateApps": true,
+            "allowedToCreateSecurityGroups": true,
+            "allowedToReadOtherUsers": true
+          },
+          "guestUserRoleId": "a0b1b346-4d3e-4e8b-98f8-753987be4970"
+        }
+      }
+    },
+    {
+      "reference": "5.1.5.1",
+      "domain": "Identity",
+      "title": "Ensure user consent to apps accessing company data on their behalf is not allowed",
+      "description": "User consent must be restricted to applications from verified publishers requesting low-impact permissions, or blocked entirely.",
+      "rationale": "This is the single control that stops an OAuth phishing campaign from succeeding tenant-wide.",
+      "level": "L1",
+      "severity": "Critical",
+      "userImpact": "Impact: Users will need administrator approval for new applications.",
+      "cisControl": "CIS Control 6: Access Control Management",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.AA-05 Access permissions and authorizations",
+      "auditProcedure": "GET https://graph.microsoft.com/v1.0/policies/authorizationPolicy\nConfirm permissionGrantPolicyIdsAssignedToDefaultUserRole does not contain ManagePermissionGrantsForSelf.microsoft-user-default-legacy.",
+      "remediationProcedure": "PATCH the authorization policy so permissionGrantPolicyIdsAssignedToDefaultUserRole is empty, or contains only the low-impact verified-publisher policy.",
+      "riskWeight": 10,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the user consent permission grant policy",
+        "executor": "MicrosoftGraph",
+        "module": "MicrosoftGraph",
+        "scopes": "Policy.Read.All",
+        "payload": "{ \"method\": \"GET\", \"path\": \"/v1.0/policies/authorizationPolicy\", \"emulatorKey\": \"graph:authorizationPolicy\" }",
+        "assertions": [
+          {
+            "path": "permissionGrantPolicyIdsAssignedToDefaultUserRole",
+            "operator": "NotContains",
+            "expected": "ManagePermissionGrantsForSelf.microsoft-user-default-legacy",
+            "failure": "Users can consent to any application on their own behalf ({actual}).",
+            "hint": "Remove the legacy self-consent grant policy so consent is restricted to verified publishers or blocked."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Restrict user consent to verified publishers",
+        "executor": "MicrosoftGraph",
+        "module": "MicrosoftGraph",
+        "scopes": "Policy.ReadWrite.Authorization",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "verified publishers, low impact only",
+          "estimatedSeconds": "15"
+        },
+        "payload": "{ \"method\": \"PATCH\", \"path\": \"/v1.0/policies/authorizationPolicy\", \"emulatorKey\": \"graph:authorizationPolicy\", \"body\": { \"permissionGrantPolicyIdsAssignedToDefaultUserRole\": [\"ManagePermissionGrantsForSelf.microsoft-user-default-low\"] } }"
+      },
+      "rollback": {
+        "name": "Restore the previous consent policy",
+        "executor": "MicrosoftGraph",
+        "module": "MicrosoftGraph",
+        "payload": "{ \"method\": \"PATCH\", \"path\": \"/v1.0/policies/authorizationPolicy\", \"emulatorKey\": \"graph:authorizationPolicy\", \"body\": { \"permissionGrantPolicyIdsAssignedToDefaultUserRole\": [\"ManagePermissionGrantsForSelf.microsoft-user-default-legacy\"] } }"
+      },
+      "emulatorState": {
+        "graph:authorizationPolicy": {
+          "permissionGrantPolicyIdsAssignedToDefaultUserRole": ["ManagePermissionGrantsForSelf.microsoft-user-default-legacy"]
+        }
+      }
+    },
+    {
+      "reference": "5.1.6.2",
+      "domain": "Identity",
+      "title": "Ensure that guest user access is restricted",
+      "description": "Guests must hold the most restrictive directory role, unable to enumerate other objects.",
+      "rationale": "A default guest can read the directory, which hands an attacker a full org chart and target list.",
+      "level": "L1",
+      "severity": "High",
+      "userImpact": "Impact: Guests will no longer be able to browse the directory or see other guests.",
+      "cisControl": "CIS Control 6: Access Control Management",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.AA-05 Access permissions and authorizations",
+      "auditProcedure": "GET https://graph.microsoft.com/v1.0/policies/authorizationPolicy\nConfirm guestUserRoleId is 2af84b1e-32c8-42b7-82bc-daa82404023b (restricted guest).",
+      "remediationProcedure": "PATCH the authorization policy setting guestUserRoleId to 2af84b1e-32c8-42b7-82bc-daa82404023b.",
+      "riskWeight": 8,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the guest user role assignment",
+        "executor": "MicrosoftGraph",
+        "module": "MicrosoftGraph",
+        "scopes": "Policy.Read.All",
+        "payload": "{ \"method\": \"GET\", \"path\": \"/v1.0/policies/authorizationPolicy\", \"emulatorKey\": \"graph:authorizationPolicy\" }",
+        "assertions": [
+          {
+            "path": "guestUserRoleId",
+            "operator": "Equals",
+            "expected": "2af84b1e-32c8-42b7-82bc-daa82404023b",
+            "failure": "Guests hold role {actual}; CIS requires the restricted guest role {expected}.",
+            "hint": "Set guestUserRoleId to 2af84b1e-32c8-42b7-82bc-daa82404023b so guests cannot read directory objects."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Apply the restricted guest role",
+        "executor": "MicrosoftGraph",
+        "module": "MicrosoftGraph",
+        "scopes": "Policy.ReadWrite.Authorization",
+        "parameters": {
+          "impactScope": "users",
+          "proposedValue": "restricted guest role",
+          "estimatedSeconds": "15"
+        },
+        "payload": "{ \"method\": \"PATCH\", \"path\": \"/v1.0/policies/authorizationPolicy\", \"emulatorKey\": \"graph:authorizationPolicy\", \"body\": { \"guestUserRoleId\": \"2af84b1e-32c8-42b7-82bc-daa82404023b\" } }"
+      },
+      "rollback": {
+        "name": "Restore the previous guest role",
+        "executor": "MicrosoftGraph",
+        "module": "MicrosoftGraph",
+        "payload": "{ \"method\": \"PATCH\", \"path\": \"/v1.0/policies/authorizationPolicy\", \"emulatorKey\": \"graph:authorizationPolicy\", \"body\": { \"guestUserRoleId\": \"{{guestUserRoleId}}\" } }"
+      }
+    },
+    {
+      "reference": "5.1.6.3",
+      "domain": "Identity",
+      "title": "Ensure guest user invitations are limited to the Guest Inviter role",
+      "description": "Only members of the Guest Inviter role may invite external users.",
+      "rationale": "Uncontrolled invitation lets any user extend tenant access to an outsider without review.",
+      "level": "L1",
+      "severity": "Medium",
+      "userImpact": "Impact: Standard users will no longer be able to invite guests.",
+      "cisControl": "CIS Control 6: Access Control Management",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.AA-05 Access permissions and authorizations",
+      "auditProcedure": "GET https://graph.microsoft.com/v1.0/policies/authorizationPolicy\nConfirm allowInvitesFrom is adminsAndGuestInviters.",
+      "remediationProcedure": "PATCH the authorization policy setting allowInvitesFrom to adminsAndGuestInviters.",
+      "riskWeight": 6,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the guest invitation setting",
+        "executor": "MicrosoftGraph",
+        "module": "MicrosoftGraph",
+        "scopes": "Policy.Read.All",
+        "payload": "{ \"method\": \"GET\", \"path\": \"/v1.0/policies/authorizationPolicy\", \"emulatorKey\": \"graph:authorizationPolicy\" }",
+        "assertions": [
+          {
+            "path": "allowInvitesFrom",
+            "operator": "Equals",
+            "expected": "adminsAndGuestInviters",
+            "failure": "Guest invitations are allowed from {actual}; CIS requires {expected}.",
+            "hint": "Set allowInvitesFrom to adminsAndGuestInviters on the authorization policy."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Limit invitations to the Guest Inviter role",
+        "executor": "MicrosoftGraph",
+        "module": "MicrosoftGraph",
+        "scopes": "Policy.ReadWrite.Authorization",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "allowInvitesFrom = adminsAndGuestInviters",
+          "estimatedSeconds": "15"
+        },
+        "payload": "{ \"method\": \"PATCH\", \"path\": \"/v1.0/policies/authorizationPolicy\", \"emulatorKey\": \"graph:authorizationPolicy\", \"body\": { \"allowInvitesFrom\": \"adminsAndGuestInviters\" } }"
+      },
+      "rollback": {
+        "name": "Restore the previous invitation setting",
+        "executor": "MicrosoftGraph",
+        "module": "MicrosoftGraph",
+        "payload": "{ \"method\": \"PATCH\", \"path\": \"/v1.0/policies/authorizationPolicy\", \"emulatorKey\": \"graph:authorizationPolicy\", \"body\": { \"allowInvitesFrom\": \"{{allowInvitesFrom}}\" } }"
+      }
+    },
+    {
+      "reference": "5.2.2.1",
+      "domain": "Identity",
+      "title": "Ensure multifactor authentication is enabled for all users in administrative roles",
+      "description": "A Conditional Access policy must require MFA for every privileged directory role.",
+      "rationale": "Administrative credentials without MFA are the highest-value target in the tenant.",
+      "level": "L1",
+      "severity": "Critical",
+      "userImpact": "Impact: Administrators will be prompted for MFA at sign-in.",
+      "cisControl": "CIS Control 6: Access Control Management",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.AA-03 Users and devices are authenticated",
+      "auditProcedure": "GET https://graph.microsoft.com/v1.0/identity/conditionalAccess/policies\nConfirm an enabled policy targets the privileged directory roles and grants control mfa.",
+      "remediationProcedure": "Create a Conditional Access policy named 'CA001 - Require MFA for admins' targeting the privileged directory roles with the Require multifactor authentication grant, and set its state to enabled.",
+      "riskWeight": 10,
+      "effortWeight": 2,
+      "audit": {
+        "name": "Look for an enabled admin MFA policy",
+        "executor": "MicrosoftGraph",
+        "module": "MicrosoftGraph",
+        "scopes": "Policy.Read.All",
+        "payload": "{ \"method\": \"GET\", \"path\": \"/v1.0/identity/conditionalAccess/policies\", \"emulatorKey\": \"graph:conditionalAccessPolicies\", \"select\": \"value\" }",
+        "assertions": [
+          {
+            "path": "[*].adminMfa",
+            "operator": "AnyEqual",
+            "expected": "true",
+            "failure": "No enabled Conditional Access policy requires MFA for administrative roles ({actual}).",
+            "hint": "Create and enable a Conditional Access policy requiring MFA for all privileged directory roles."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Deploy the admin MFA Conditional Access policy",
+        "executor": "MicrosoftGraph",
+        "module": "MicrosoftGraph",
+        "scopes": "Policy.ReadWrite.ConditionalAccess",
+        "parameters": {
+          "impactScope": "users",
+          "proposedValue": "MFA required for privileged roles",
+          "estimatedSeconds": "45"
+        },
+        "payload": "{ \"method\": \"PATCH\", \"path\": \"/v1.0/identity/conditionalAccess/policies\", \"emulatorKey\": \"graph:conditionalAccessPolicies\", \"body\": { \"value\": [ { \"displayName\": \"CA001 - Require MFA for admins\", \"state\": \"enabled\", \"adminMfa\": true, \"blockLegacyAuth\": false }, { \"displayName\": \"CA002 - Block legacy authentication\", \"state\": \"disabled\", \"adminMfa\": false, \"blockLegacyAuth\": false } ] } }"
+      },
+      "rollback": {
+        "name": "Remove the admin MFA policy",
+        "executor": "MicrosoftGraph",
+        "module": "MicrosoftGraph",
+        "payload": "{ \"method\": \"PATCH\", \"path\": \"/v1.0/identity/conditionalAccess/policies\", \"emulatorKey\": \"graph:conditionalAccessPolicies\", \"body\": { \"value\": [ { \"displayName\": \"CA001 - Require MFA for admins\", \"state\": \"disabled\", \"adminMfa\": false, \"blockLegacyAuth\": false }, { \"displayName\": \"CA002 - Block legacy authentication\", \"state\": \"disabled\", \"adminMfa\": false, \"blockLegacyAuth\": false } ] } }"
+      },
+      "emulatorState": {
+        "graph:conditionalAccessPolicies": {
+          "value": [
+            { "displayName": "CA001 - Require MFA for admins", "state": "disabled", "adminMfa": false, "blockLegacyAuth": false },
+            { "displayName": "CA002 - Block legacy authentication", "state": "disabled", "adminMfa": false, "blockLegacyAuth": false }
+          ]
+        }
+      }
+    },
+    {
+      "reference": "5.2.2.3",
+      "domain": "Identity",
+      "title": "Enable Conditional Access policies to block legacy authentication",
+      "description": "A Conditional Access policy must block legacy authentication clients tenant-wide.",
+      "rationale": "Legacy protocols cannot present an MFA challenge, so they are the preferred path for password spraying.",
+      "level": "L1",
+      "severity": "Critical",
+      "userImpact": "Impact: Clients that cannot use modern authentication will stop connecting.",
+      "cisControl": "CIS Control 6: Access Control Management",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.AA-03 Users and devices are authenticated",
+      "auditProcedure": "GET https://graph.microsoft.com/v1.0/identity/conditionalAccess/policies\nConfirm an enabled policy blocks the exchangeActiveSync and other legacy client app types.",
+      "remediationProcedure": "Create a Conditional Access policy named 'CA002 - Block legacy authentication' with client apps set to Exchange ActiveSync clients and Other clients, grant control Block, and set its state to enabled.",
+      "riskWeight": 10,
+      "effortWeight": 2,
+      "audit": {
+        "name": "Look for an enabled legacy authentication block",
+        "executor": "MicrosoftGraph",
+        "module": "MicrosoftGraph",
+        "scopes": "Policy.Read.All",
+        "payload": "{ \"method\": \"GET\", \"path\": \"/v1.0/identity/conditionalAccess/policies\", \"emulatorKey\": \"graph:conditionalAccessPolicies\", \"select\": \"value\" }",
+        "assertions": [
+          {
+            "path": "[*].blockLegacyAuth",
+            "operator": "AnyEqual",
+            "expected": "true",
+            "failure": "No enabled Conditional Access policy blocks legacy authentication ({actual}).",
+            "hint": "Create and enable a Conditional Access policy that blocks Exchange ActiveSync and other legacy clients."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Deploy the legacy authentication block policy",
+        "executor": "MicrosoftGraph",
+        "module": "MicrosoftGraph",
+        "scopes": "Policy.ReadWrite.ConditionalAccess",
+        "parameters": {
+          "impactScope": "users",
+          "proposedValue": "legacy authentication blocked",
+          "estimatedSeconds": "45"
+        },
+        "payload": "{ \"method\": \"PATCH\", \"path\": \"/v1.0/identity/conditionalAccess/policies\", \"emulatorKey\": \"graph:conditionalAccessPolicies\", \"body\": { \"value\": [ { \"displayName\": \"CA001 - Require MFA for admins\", \"state\": \"enabled\", \"adminMfa\": true, \"blockLegacyAuth\": false }, { \"displayName\": \"CA002 - Block legacy authentication\", \"state\": \"enabled\", \"adminMfa\": false, \"blockLegacyAuth\": true } ] } }",
+        "destructive": true
+      },
+      "rollback": {
+        "name": "Disable the legacy authentication block",
+        "executor": "MicrosoftGraph",
+        "module": "MicrosoftGraph",
+        "payload": "{ \"method\": \"PATCH\", \"path\": \"/v1.0/identity/conditionalAccess/policies\", \"emulatorKey\": \"graph:conditionalAccessPolicies\", \"body\": { \"value\": [ { \"displayName\": \"CA001 - Require MFA for admins\", \"state\": \"enabled\", \"adminMfa\": true, \"blockLegacyAuth\": false }, { \"displayName\": \"CA002 - Block legacy authentication\", \"state\": \"disabled\", \"adminMfa\": false, \"blockLegacyAuth\": false } ] } }"
+      }
+    },
+    {
+      "reference": "5.2.2.5",
+      "domain": "Identity",
+      "title": "Ensure the 'Microsoft Entra ID Protection Sign-in risk' policy is Enabled",
+      "description": "A risk-based Conditional Access policy must challenge or block medium and high sign-in risk.",
+      "rationale": "Risk-based access is what catches a valid credential being used from an impossible location or a known malicious IP.",
+      "level": "L2",
+      "severity": "High",
+      "userImpact": "Impact: Risky sign-ins will be challenged for MFA.",
+      "cisControl": "CIS Control 6: Access Control Management",
+      "nistFunction": "Detect",
+      "nistCategory": "DE.CM-03 Personnel activity is monitored",
+      "auditProcedure": "GET https://graph.microsoft.com/v1.0/identity/conditionalAccess/policies\nConfirm a policy has signInRiskLevels of medium and high with grant control mfa.",
+      "remediationProcedure": "Create a sign-in risk Conditional Access policy. Requires Microsoft Entra ID P2.",
+      "requiredLicense": "Microsoft Entra ID P2",
+      "riskWeight": 8,
+      "effortWeight": 3,
+      "automatedRemediation": false,
+      "audit": {
+        "name": "Look for a sign-in risk policy",
+        "executor": "MicrosoftGraph",
+        "module": "MicrosoftGraph",
+        "scopes": "Policy.Read.All",
+        "payload": "{ \"method\": \"GET\", \"path\": \"/v1.0/identity/conditionalAccess/policies\", \"emulatorKey\": \"graph:conditionalAccessPolicies\", \"select\": \"value\" }",
+        "assertions": [
+          {
+            "path": "[*].signInRisk",
+            "operator": "AnyEqual",
+            "expected": "true",
+            "failure": "No sign-in risk Conditional Access policy is enabled ({actual}).",
+            "hint": "Licence Microsoft Entra ID P2, then enable the sign-in risk policy for medium and high risk."
+          }
+        ]
+      }
+    },
+    {
+      "reference": "5.2.3.2",
+      "domain": "Identity",
+      "title": "Ensure custom banned passwords lists are used",
+      "description": "The tenant must maintain a custom banned password list on top of the Microsoft global list.",
+      "rationale": "Organisation-specific terms - brand names, local sports teams, office locations - are the first thing an attacker tries.",
+      "level": "L1",
+      "severity": "Medium",
+      "userImpact": "Impact: Users will be prevented from choosing passwords containing banned terms.",
+      "cisControl": "CIS Control 5: Account Management",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.AA-01 Identities and credentials are managed",
+      "auditProcedure": "Navigate to Microsoft Entra admin center > Protection > Authentication methods > Password protection and confirm 'Enforce custom list' is set to Yes with entries present.",
+      "remediationProcedure": "Set Enforce custom list to Yes and add organisation-specific banned terms.",
+      "riskWeight": 5,
+      "effortWeight": 2,
+      "audit": {
+        "name": "Read the password protection settings",
+        "executor": "MicrosoftGraph",
+        "module": "MicrosoftGraph",
+        "scopes": "Directory.Read.All",
+        "payload": "{ \"method\": \"GET\", \"path\": \"/beta/settings/passwordProtection\", \"emulatorKey\": \"graph:passwordProtection\" }",
+        "assertions": [
+          {
+            "path": "enforceCustomBannedPasswords",
+            "operator": "IsTrue",
+            "failure": "The custom banned password list is {actual}, so only Microsoft's global list is enforced.",
+            "hint": "Enable the custom banned password list and populate it with organisation-specific terms."
+          },
+          {
+            "path": "bannedPasswordList",
+            "operator": "CountGreaterThanOrEqual",
+            "expected": "1",
+            "failure": "The custom banned password list is empty ({count} entries).",
+            "hint": "Add organisation-specific banned terms such as the company name, product names and local landmarks."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Enable and populate the custom banned password list",
+        "executor": "MicrosoftGraph",
+        "module": "MicrosoftGraph",
+        "scopes": "Directory.ReadWrite.All",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "custom banned list enforced",
+          "estimatedSeconds": "20"
+        },
+        "payload": "{ \"method\": \"PATCH\", \"path\": \"/beta/settings/passwordProtection\", \"emulatorKey\": \"graph:passwordProtection\", \"body\": { \"enforceCustomBannedPasswords\": true, \"bannedPasswordList\": [\"contoso\", \"contoso123\", \"welcome\", \"password\"] } }"
+      },
+      "rollback": {
+        "name": "Restore the previous password protection settings",
+        "executor": "MicrosoftGraph",
+        "module": "MicrosoftGraph",
+        "payload": "{ \"method\": \"PATCH\", \"path\": \"/beta/settings/passwordProtection\", \"emulatorKey\": \"graph:passwordProtection\", \"body\": { \"enforceCustomBannedPasswords\": false, \"bannedPasswordList\": [] } }"
+      },
+      "emulatorState": {
+        "graph:passwordProtection": {
+          "enforceCustomBannedPasswords": false,
+          "lockoutThreshold": 10,
+          "bannedPasswordList": []
+        }
+      }
+    },
+    {
+      "reference": "5.3.1",
+      "domain": "Identity",
+      "title": "Ensure 'Privileged Identity Management' is used to manage roles",
+      "description": "Privileged directory roles must be assigned as eligible through PIM rather than permanently active.",
+      "rationale": "Standing privilege means a single credential compromise is immediately a tenant compromise.",
+      "level": "L1",
+      "severity": "High",
+      "userImpact": "Impact: Administrators will need to activate their role before performing privileged work.",
+      "cisControl": "CIS Control 6: Access Control Management",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.AA-05 Access permissions and authorizations",
+      "auditProcedure": "GET https://graph.microsoft.com/v1.0/roleManagement/directory/roleEligibilitySchedules\nConfirm privileged roles are assigned as eligible rather than active.",
+      "remediationProcedure": "Convert active privileged role assignments to eligible assignments in Privileged Identity Management. Requires Microsoft Entra ID P2.",
+      "requiredLicense": "Microsoft Entra ID P2",
+      "riskWeight": 9,
+      "effortWeight": 4,
+      "automatedRemediation": false,
+      "audit": {
+        "name": "Count eligible privileged role assignments",
+        "executor": "MicrosoftGraph",
+        "module": "MicrosoftGraph",
+        "scopes": "RoleEligibilitySchedule.Read.Directory",
+        "payload": "{ \"method\": \"GET\", \"path\": \"/v1.0/roleManagement/directory/roleEligibilitySchedules\", \"emulatorKey\": \"graph:roleEligibilitySchedules\" }",
+        "assertions": [
+          {
+            "path": "value",
+            "operator": "CountGreaterThanOrEqual",
+            "expected": "1",
+            "failure": "No privileged roles are managed through PIM ({count} eligible assignments found); every admin role is permanently active.",
+            "hint": "Licence Microsoft Entra ID P2 and convert standing admin assignments into PIM-eligible assignments with approval and justification."
+          }
+        ]
+      },
+      "emulatorState": {
+        "graph:roleEligibilitySchedules": { "value": [] }
+      }
+    }
+  ]
+}

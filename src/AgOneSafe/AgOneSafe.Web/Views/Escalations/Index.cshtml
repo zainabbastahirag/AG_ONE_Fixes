@@ -1,0 +1,107 @@
+@model EscalationsIndexViewModel
+@{
+    ViewData["Title"] = "Licence and services";
+    var canExecute = User.IsInRole(AgRoles.Ciso) || User.IsInRole(AgRoles.SecurityAdmin);
+}
+
+<div class="ag-page-head">
+    <div>
+        <h1>Licence and services escalation</h1>
+        <p class="ag-sub">
+            Some gaps cannot be closed with a policy toggle. Where a fix needs a higher SKU or a delivery
+            engagement, the platform stops, says so, and raises the procurement request instead of failing quietly.
+        </p>
+    </div>
+</div>
+
+<div class="ag-card">
+    <h2>Gaps blocked by licensing (@Model.LicenseBlocked.Count)</h2>
+    @if (Model.LicenseBlocked.Count == 0)
+    {
+        <div class="ag-empty">No open gap is currently blocked by a licence.</div>
+    }
+    else
+    {
+        <div class="ag-table-wrap">
+            <table class="ag-table">
+                <thead>
+                <tr><th>Control</th><th>Severity</th><th>Blocked by</th><th>Why it matters</th><th></th></tr>
+                </thead>
+                <tbody>
+                @foreach (var finding in Model.LicenseBlocked)
+                {
+                    <tr>
+                        <td class="nowrap">
+                            <strong>@finding.ControlDefinition?.VendorReference</strong>
+                            <div class="small muted">@finding.ControlDefinition?.Domain</div>
+                        </td>
+                        <td><span class="badge @ViewHelpers.SeverityBadge(finding.Severity)">@finding.Severity</span></td>
+                        <td><span class="badge badge-medium">@finding.ControlDefinition?.RequiredLicense</span></td>
+                        <td class="wrap small">
+                            <div>@ViewHelpers.Truncate(finding.ControlDefinition?.Title, 70)</div>
+                            <div class="muted">@ViewHelpers.Truncate(finding.ControlDefinition?.Rationale, 130)</div>
+                        </td>
+                        <td class="nowrap">
+                            @if (canExecute)
+                            {
+                                <form asp-action="Raise" method="post" class="inline-form">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="findingId" value="@finding.Id" />
+                                    <input type="hidden" name="type" value="@EscalationType.LicenseUpgrade" />
+                                    <input type="hidden" name="requestedSku" value="@finding.ControlDefinition?.RequiredLicense" />
+                                    <input type="hidden" name="seatCount" value="250" />
+                                    <input type="hidden" name="justification" value="Required to remediate CIS @finding.ControlDefinition?.VendorReference." />
+                                    <button type="submit" class="btn btn-sm btn-primary">Request licence upgrade</button>
+                                </form>
+                                <form asp-action="Raise" method="post" class="inline-form">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="findingId" value="@finding.Id" />
+                                    <input type="hidden" name="type" value="@EscalationType.ProfessionalServices" />
+                                    <input type="hidden" name="seatCount" value="1" />
+                                    <input type="hidden" name="justification" value="Aventra services support for CIS @finding.ControlDefinition?.VendorReference." />
+                                    <button type="submit" class="btn btn-sm">Attach services</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<div class="ag-card mt-3">
+    <div class="ag-card-head">
+        <h2>Requests raised</h2>
+        <span class="small muted">Routed to Pax8 when the distributor connector is enabled</span>
+    </div>
+    @if (Model.Escalations.Count == 0)
+    {
+        <div class="ag-empty">No escalation has been raised yet.</div>
+    }
+    else
+    {
+        <div class="ag-table-wrap">
+            <table class="ag-table">
+                <thead>
+                <tr><th>Reference</th><th>Type</th><th>SKU</th><th class="num">Seats</th><th>Control</th><th>Status</th><th>Provider response</th></tr>
+                </thead>
+                <tbody>
+                @foreach (var escalation in Model.Escalations)
+                {
+                    <tr>
+                        <td class="mono small">@(escalation.Pax8QuoteReference ?? "—")</td>
+                        <td><span class="badge badge-info">@escalation.Type</span></td>
+                        <td class="small">@(escalation.RequestedSku ?? "—")</td>
+                        <td class="num">@escalation.SeatCount</td>
+                        <td class="small">@escalation.Finding?.ControlDefinition?.VendorReference</td>
+                        <td><span class="badge @(escalation.Status == EscalationStatus.Submitted ? "badge-pass" : escalation.Status == EscalationStatus.Rejected ? "badge-fail" : "badge-neutral")">@escalation.Status</span></td>
+                        <td class="wrap small muted">@escalation.ProviderMessage</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

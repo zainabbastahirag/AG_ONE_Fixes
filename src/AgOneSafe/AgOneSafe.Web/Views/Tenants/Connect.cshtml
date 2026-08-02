@@ -1,0 +1,117 @@
+@model TenantOnboardingForm
+@{
+    ViewData["Title"] = "Connect a tenant";
+}
+
+<div class="ag-page-head">
+    <div>
+        <h1>Connect a customer tenant</h1>
+        <p class="ag-sub">
+            Run the generated onboarding script in the customer tenant first. It creates the multi-tenant
+            service principal and grants only the scopes the enabled control catalog needs, then prints the
+            values to paste in below.
+        </p>
+    </div>
+    <a class="btn" asp-action="Index">Back to tenants</a>
+</div>
+
+<div class="ag-grid cols-2">
+    <div class="ag-card">
+        <h2>Connection details</h2>
+        <form method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="All" class="validation-summary-errors"></div>
+
+            <div class="form-row">
+                <div class="field">
+                    <label asp-for="DisplayName">Customer name</label>
+                    <input asp-for="DisplayName" placeholder="Contoso Group" />
+                </div>
+                <div class="field">
+                    <label asp-for="PrimaryDomain">Primary domain</label>
+                    <input asp-for="PrimaryDomain" placeholder="contoso.com" />
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="field">
+                    <label asp-for="TenantId">Entra tenant id</label>
+                    <input asp-for="TenantId" placeholder="00000000-0000-0000-0000-000000000000" />
+                </div>
+                <div class="field">
+                    <label asp-for="ClientId">Application (client) id</label>
+                    <input asp-for="ClientId" placeholder="00000000-0000-0000-0000-000000000000" />
+                </div>
+            </div>
+
+            <div class="field">
+                <label asp-for="SecretReference">Key Vault secret reference</label>
+                <input asp-for="SecretReference" placeholder="kv-agone-prod/secrets/contoso-app-secret" />
+            </div>
+
+            <div class="form-row">
+                <div class="field">
+                    <label asp-for="AzureSubscriptionIds">Azure subscriptions (comma separated)</label>
+                    <input asp-for="AzureSubscriptionIds" />
+                </div>
+                <div class="field">
+                    <label asp-for="LicenseSkus">Licence SKUs held</label>
+                    <input asp-for="LicenseSkus" placeholder="Microsoft 365 E3, Microsoft Entra ID P1" />
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="field">
+                    <label asp-for="TargetLevel">Target maturity</label>
+                    <select asp-for="TargetLevel">
+                        <option value="@ProfileLevel.L1">Level 1 — Foundational</option>
+                        <option value="@ProfileLevel.L2">Level 2 — Advanced</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label asp-for="ExecutionMode">Execution mode</label>
+                    <select asp-for="ExecutionMode">
+                        <option value="@ExecutionMode.Simulation">Simulation — emulated tenant</option>
+                        <option value="@ExecutionMode.Live">Live — real tenant</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="field checkbox">
+                <input asp-for="LighthouseEnabled" type="checkbox" />
+                <label asp-for="LighthouseEnabled" style="margin:0">Azure Lighthouse delegation is in place</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Connect and run health checks</button>
+        </form>
+    </div>
+
+    <div class="ag-card">
+        <h2>Least privilege, derived from the catalog</h2>
+        <p class="small muted">
+            The platform never asks for a blanket grant. The onboarding script builds its consent list from the
+            <span class="mono">RequiredScopes</span> of the actions attached to enabled controls, so disabling a
+            control section shrinks the permission ask on the next issue.
+        </p>
+
+        <h3 class="mt-3">Read for assessment</h3>
+        <ul class="small" style="padding-left:18px; color:var(--ag-muted)">
+            <li><span class="mono">Directory.Read.All</span>, <span class="mono">Policy.Read.All</span> for Entra baseline controls</li>
+            <li><span class="mono">Exchange.ManageAsApp</span> for Exchange Online and Defender policies</li>
+            <li><span class="mono">Sites.FullControl.All</span> for SharePoint tenant settings</li>
+            <li>Azure Reader on each in-scope subscription</li>
+        </ul>
+
+        <h3 class="mt-3">Scoped write for remediation</h3>
+        <ul class="small" style="padding-left:18px; color:var(--ag-muted)">
+            <li><span class="mono">Policy.ReadWrite.Authorization</span> and <span class="mono">Policy.ReadWrite.ConditionalAccess</span></li>
+            <li><span class="mono">User.ReadWrite.All</span> for sign-in blocking on shared mailboxes</li>
+            <li>Azure Lighthouse delegation with a purpose-built role for storage, network and App Service fixes</li>
+        </ul>
+
+        <div class="ag-alert ag-alert-warn mt-3">
+            Azure Lighthouse must be delegated before any Azure benchmark remediation can run cross-tenant.
+            Microsoft 365 controls work with the app registration alone.
+        </div>
+    </div>
+</div>

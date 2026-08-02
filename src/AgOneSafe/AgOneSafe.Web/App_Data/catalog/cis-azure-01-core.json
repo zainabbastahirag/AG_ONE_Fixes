@@ -1,0 +1,495 @@
+{
+  "benchmark": "Azure",
+  "version": "CIS Microsoft Azure Foundations Benchmark v3.0.0",
+  "controls": [
+    {
+      "reference": "2.1.1",
+      "domain": "Defender for Cloud",
+      "title": "Ensure that Microsoft Defender for Servers is set to 'On'",
+      "description": "The Defender for Cloud servers plan must be enabled on every subscription in scope.",
+      "rationale": "Without the servers plan there is no endpoint detection, no vulnerability assessment and no just-in-time access on Azure VMs.",
+      "level": "L2",
+      "severity": "High",
+      "userImpact": "Impact: Enabling the plan incurs a per-server monthly charge.",
+      "cisControl": "CIS Control 10: Malware Defenses",
+      "nistFunction": "Detect",
+      "nistCategory": "DE.CM-01 Networks and network services are monitored",
+      "auditProcedure": "GET https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.Security/pricings/VirtualMachines?api-version=2023-01-01\nConfirm properties.pricingTier is Standard.",
+      "remediationProcedure": "PUT the pricing resource with properties.pricingTier set to Standard.",
+      "riskWeight": 8,
+      "effortWeight": 2,
+      "audit": {
+        "name": "Read the Defender for Servers pricing tier",
+        "executor": "AzureRest",
+        "module": "AzureResourceManager",
+        "scopes": "https://management.azure.com/user_impersonation",
+        "payload": "{ \"method\": \"GET\", \"path\": \"/subscriptions/{{subscriptionId}}/providers/Microsoft.Security/pricings/VirtualMachines?api-version=2023-01-01\", \"emulatorKey\": \"arm:defenderPricing\" }",
+        "parameters": { "subscriptionId": "00000000-0000-0000-0000-000000000000" },
+        "assertions": [
+          {
+            "path": "properties.pricingTier",
+            "operator": "Equals",
+            "expected": "Standard",
+            "failure": "Microsoft Defender for Servers is on the {actual} tier; CIS requires {expected}.",
+            "hint": "Set the VirtualMachines pricing tier to Standard on every in-scope subscription."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Enable Defender for Servers",
+        "executor": "AzureRest",
+        "module": "AzureResourceManager",
+        "parameters": {
+          "subscriptionId": "00000000-0000-0000-0000-000000000000",
+          "impactScope": "resources",
+          "proposedValue": "pricingTier = Standard",
+          "estimatedSeconds": "40"
+        },
+        "payload": "{ \"method\": \"PUT\", \"path\": \"/subscriptions/{{subscriptionId}}/providers/Microsoft.Security/pricings/VirtualMachines?api-version=2023-01-01\", \"emulatorKey\": \"arm:defenderPricing\", \"body\": { \"properties\": { \"pricingTier\": \"Standard\" } } }"
+      },
+      "rollback": {
+        "name": "Restore the previous Defender pricing tier",
+        "executor": "AzureRest",
+        "module": "AzureResourceManager",
+        "payload": "{ \"method\": \"PUT\", \"path\": \"/subscriptions/{{subscriptionId}}/providers/Microsoft.Security/pricings/VirtualMachines?api-version=2023-01-01\", \"emulatorKey\": \"arm:defenderPricing\", \"body\": { \"properties\": { \"pricingTier\": \"Free\" } } }"
+      },
+      "emulatorState": {
+        "arm:defenderPricing": { "name": "VirtualMachines", "properties": { "pricingTier": "Free" } }
+      }
+    },
+    {
+      "reference": "3.1",
+      "domain": "Storage",
+      "title": "Ensure that 'Secure transfer required' is set to 'Enabled'",
+      "description": "Every storage account must reject unencrypted HTTP requests.",
+      "rationale": "Without secure transfer, blob and file traffic including the shared key can traverse the network in clear text.",
+      "level": "L1",
+      "severity": "High",
+      "userImpact": "Impact: Clients using http:// endpoints will need to move to https://.",
+      "cisControl": "CIS Control 3: Data Protection",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.DS-02 Data-in-transit is protected",
+      "auditProcedure": "GET https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.Storage/storageAccounts?api-version=2023-01-01\nConfirm every account has properties.supportsHttpsTrafficOnly set to true.",
+      "remediationProcedure": "PATCH each storage account setting properties.supportsHttpsTrafficOnly to true.",
+      "riskWeight": 9,
+      "effortWeight": 1,
+      "audit": {
+        "name": "List storage accounts allowing plain HTTP",
+        "executor": "AzureRest",
+        "module": "AzureResourceManager",
+        "scopes": "https://management.azure.com/user_impersonation",
+        "payload": "{ \"method\": \"GET\", \"path\": \"/subscriptions/{{subscriptionId}}/providers/Microsoft.Storage/storageAccounts?api-version=2023-01-01\", \"emulatorKey\": \"arm:storageAccounts\" }",
+        "parameters": { "subscriptionId": "00000000-0000-0000-0000-000000000000" },
+        "assertions": [
+          {
+            "path": "value[*].properties.supportsHttpsTrafficOnly",
+            "operator": "AllEqual",
+            "expected": "true",
+            "failure": "Not every storage account requires secure transfer ({actual} across {count} accounts).",
+            "hint": "Set supportsHttpsTrafficOnly to true on each storage account that is still accepting HTTP."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Require secure transfer on all storage accounts",
+        "executor": "AzureRest",
+        "module": "AzureResourceManager",
+        "parameters": {
+          "subscriptionId": "00000000-0000-0000-0000-000000000000",
+          "impactScope": "resources",
+          "impactPath": "value",
+          "impactNamePath": "name",
+          "impactValuePath": "properties.supportsHttpsTrafficOnly",
+          "impactObjectType": "Storage account",
+          "proposedValue": "supportsHttpsTrafficOnly = true",
+          "estimatedSeconds": "60"
+        },
+        "payload": "{ \"method\": \"PATCH\", \"path\": \"/subscriptions/{{subscriptionId}}/providers/Microsoft.Storage/storageAccounts?api-version=2023-01-01\", \"emulatorKey\": \"arm:storageAccounts\", \"body\": { \"value\": [ { \"name\": \"stcontosoprod\", \"properties\": { \"supportsHttpsTrafficOnly\": true, \"allowBlobPublicAccess\": false, \"minimumTlsVersion\": \"TLS1_2\" } }, { \"name\": \"stcontosologs\", \"properties\": { \"supportsHttpsTrafficOnly\": true, \"allowBlobPublicAccess\": false, \"minimumTlsVersion\": \"TLS1_2\" } } ] } }"
+      },
+      "rollback": {
+        "name": "Restore the previous storage transport settings",
+        "executor": "AzureRest",
+        "module": "AzureResourceManager",
+        "payload": "{ \"method\": \"PATCH\", \"path\": \"/subscriptions/{{subscriptionId}}/providers/Microsoft.Storage/storageAccounts?api-version=2023-01-01\", \"emulatorKey\": \"arm:storageAccounts\", \"body\": { \"value\": [ { \"name\": \"stcontosoprod\", \"properties\": { \"supportsHttpsTrafficOnly\": true, \"allowBlobPublicAccess\": true, \"minimumTlsVersion\": \"TLS1_0\" } }, { \"name\": \"stcontosologs\", \"properties\": { \"supportsHttpsTrafficOnly\": false, \"allowBlobPublicAccess\": true, \"minimumTlsVersion\": \"TLS1_2\" } } ] } }"
+      },
+      "emulatorState": {
+        "arm:storageAccounts": {
+          "value": [
+            { "name": "stcontosoprod", "properties": { "supportsHttpsTrafficOnly": true, "allowBlobPublicAccess": true, "minimumTlsVersion": "TLS1_0" } },
+            { "name": "stcontosologs", "properties": { "supportsHttpsTrafficOnly": false, "allowBlobPublicAccess": true, "minimumTlsVersion": "TLS1_2" } }
+          ]
+        }
+      }
+    },
+    {
+      "reference": "3.7",
+      "domain": "Storage",
+      "title": "Ensure that 'Public access level' is disabled for storage accounts with blob containers",
+      "description": "Anonymous blob public access must be turned off at the storage account level.",
+      "rationale": "A public container is the single most common cause of accidental cloud data exposure.",
+      "level": "L1",
+      "severity": "Critical",
+      "userImpact": "Impact: Anything relying on anonymous blob reads will break and must move to SAS or managed identity.",
+      "cisControl": "CIS Control 3: Data Protection",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.DS-01 Data-at-rest is protected",
+      "auditProcedure": "GET https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.Storage/storageAccounts?api-version=2023-01-01\nConfirm properties.allowBlobPublicAccess is false for every account.",
+      "remediationProcedure": "PATCH each storage account setting properties.allowBlobPublicAccess to false.",
+      "riskWeight": 10,
+      "effortWeight": 1,
+      "audit": {
+        "name": "List storage accounts allowing public blob access",
+        "executor": "AzureRest",
+        "module": "AzureResourceManager",
+        "scopes": "https://management.azure.com/user_impersonation",
+        "payload": "{ \"method\": \"GET\", \"path\": \"/subscriptions/{{subscriptionId}}/providers/Microsoft.Storage/storageAccounts?api-version=2023-01-01\", \"emulatorKey\": \"arm:storageAccounts\" }",
+        "parameters": { "subscriptionId": "00000000-0000-0000-0000-000000000000" },
+        "assertions": [
+          {
+            "path": "value[*].properties.allowBlobPublicAccess",
+            "operator": "AllEqual",
+            "expected": "false",
+            "failure": "Anonymous blob access is still permitted ({actual} across {count} storage accounts).",
+            "hint": "Set allowBlobPublicAccess to false on every storage account, then re-issue SAS tokens for any legitimate anonymous consumer."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Block anonymous blob access",
+        "executor": "AzureRest",
+        "module": "AzureResourceManager",
+        "destructive": true,
+        "parameters": {
+          "subscriptionId": "00000000-0000-0000-0000-000000000000",
+          "impactScope": "resources",
+          "impactPath": "value",
+          "impactNamePath": "name",
+          "impactValuePath": "properties.allowBlobPublicAccess",
+          "impactObjectType": "Storage account",
+          "proposedValue": "allowBlobPublicAccess = false",
+          "estimatedSeconds": "60"
+        },
+        "payload": "{ \"method\": \"PATCH\", \"path\": \"/subscriptions/{{subscriptionId}}/providers/Microsoft.Storage/storageAccounts?api-version=2023-01-01\", \"emulatorKey\": \"arm:storageAccounts\", \"body\": { \"value\": [ { \"name\": \"stcontosoprod\", \"properties\": { \"supportsHttpsTrafficOnly\": true, \"allowBlobPublicAccess\": false, \"minimumTlsVersion\": \"TLS1_2\" } }, { \"name\": \"stcontosologs\", \"properties\": { \"supportsHttpsTrafficOnly\": true, \"allowBlobPublicAccess\": false, \"minimumTlsVersion\": \"TLS1_2\" } } ] } }"
+      }
+    },
+    {
+      "reference": "3.15",
+      "domain": "Storage",
+      "title": "Ensure the 'Minimum TLS version' for storage accounts is set to 'Version 1.2'",
+      "description": "Storage accounts must reject TLS versions below 1.2.",
+      "rationale": "TLS 1.0 and 1.1 have known weaknesses and are no longer acceptable for regulated data in transit.",
+      "level": "L1",
+      "severity": "Medium",
+      "userImpact": "Impact: Very old clients that cannot negotiate TLS 1.2 will fail to connect.",
+      "cisControl": "CIS Control 3: Data Protection",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.DS-02 Data-in-transit is protected",
+      "auditProcedure": "GET the storage accounts and confirm properties.minimumTlsVersion is TLS1_2.",
+      "remediationProcedure": "PATCH each storage account setting properties.minimumTlsVersion to TLS1_2.",
+      "riskWeight": 6,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the minimum TLS version of every storage account",
+        "executor": "AzureRest",
+        "module": "AzureResourceManager",
+        "scopes": "https://management.azure.com/user_impersonation",
+        "payload": "{ \"method\": \"GET\", \"path\": \"/subscriptions/{{subscriptionId}}/providers/Microsoft.Storage/storageAccounts?api-version=2023-01-01\", \"emulatorKey\": \"arm:storageAccounts\" }",
+        "parameters": { "subscriptionId": "00000000-0000-0000-0000-000000000000" },
+        "assertions": [
+          {
+            "path": "value[*].properties.minimumTlsVersion",
+            "operator": "AllEqual",
+            "expected": "TLS1_2",
+            "failure": "Not every storage account enforces TLS 1.2 ({actual}).",
+            "hint": "Set minimumTlsVersion to TLS1_2 on each storage account."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Enforce TLS 1.2 on storage accounts",
+        "executor": "AzureRest",
+        "module": "AzureResourceManager",
+        "parameters": {
+          "subscriptionId": "00000000-0000-0000-0000-000000000000",
+          "impactScope": "resources",
+          "impactPath": "value",
+          "impactNamePath": "name",
+          "impactObjectType": "Storage account",
+          "proposedValue": "minimumTlsVersion = TLS1_2",
+          "estimatedSeconds": "45"
+        },
+        "payload": "{ \"method\": \"PATCH\", \"path\": \"/subscriptions/{{subscriptionId}}/providers/Microsoft.Storage/storageAccounts?api-version=2023-01-01\", \"emulatorKey\": \"arm:storageAccounts\", \"body\": { \"value\": [ { \"name\": \"stcontosoprod\", \"properties\": { \"supportsHttpsTrafficOnly\": true, \"allowBlobPublicAccess\": false, \"minimumTlsVersion\": \"TLS1_2\" } }, { \"name\": \"stcontosologs\", \"properties\": { \"supportsHttpsTrafficOnly\": true, \"allowBlobPublicAccess\": false, \"minimumTlsVersion\": \"TLS1_2\" } } ] } }"
+      }
+    },
+    {
+      "reference": "6.1",
+      "domain": "Networking",
+      "title": "Ensure that RDP access from the Internet is evaluated and restricted",
+      "description": "No network security group rule may allow inbound TCP 3389 from the Internet.",
+      "rationale": "Internet-facing RDP is scanned continuously and is the most common initial access vector for ransomware in Azure.",
+      "level": "L1",
+      "severity": "Critical",
+      "userImpact": "Impact: Administrators must reach the VM through Bastion, a VPN or just-in-time access instead.",
+      "cisControl": "CIS Control 4: Secure Configuration",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.IR-01 Networks and environments are protected",
+      "auditProcedure": "GET https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.Network/networkSecurityGroups?api-version=2023-05-01\nConfirm no security rule allows destinationPortRange 3389 from source * or Internet.",
+      "remediationProcedure": "Change the offending rule's access to Deny, or narrow its source to a specific address prefix, then adopt Azure Bastion or just-in-time VM access.",
+      "riskWeight": 10,
+      "effortWeight": 2,
+      "audit": {
+        "name": "Find NSG rules exposing RDP to the Internet",
+        "executor": "AzureRest",
+        "module": "AzureResourceManager",
+        "scopes": "https://management.azure.com/user_impersonation",
+        "payload": "{ \"method\": \"GET\", \"path\": \"/subscriptions/{{subscriptionId}}/providers/Microsoft.Network/networkSecurityGroups?api-version=2023-05-01\", \"emulatorKey\": \"arm:networkSecurityGroups\" }",
+        "parameters": { "subscriptionId": "00000000-0000-0000-0000-000000000000" },
+        "assertions": [
+          {
+            "path": "openRdpRules",
+            "operator": "IsEmpty",
+            "failure": "These network security group rules expose RDP (TCP 3389) to the Internet: {actual}.",
+            "hint": "Set the rule access to Deny or scope its source prefix to the corporate range, and reach the VMs through Azure Bastion instead."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Deny inbound RDP from the Internet",
+        "executor": "AzureRest",
+        "module": "AzureResourceManager",
+        "destructive": true,
+        "parameters": {
+          "subscriptionId": "00000000-0000-0000-0000-000000000000",
+          "impactScope": "resources",
+          "impactPath": "openRdpRules",
+          "impactObjectType": "NSG rule",
+          "proposedValue": "access = Deny",
+          "estimatedSeconds": "50"
+        },
+        "payload": "{ \"method\": \"PATCH\", \"path\": \"/subscriptions/{{subscriptionId}}/providers/Microsoft.Network/networkSecurityGroups?api-version=2023-05-01\", \"emulatorKey\": \"arm:networkSecurityGroups\", \"body\": { \"openRdpRules\": [], \"openSshRules\": [\"nsg-app-prod/allow-ssh-any\"], \"rules\": [ { \"name\": \"nsg-app-prod/allow-rdp-any\", \"port\": \"3389\", \"source\": \"Internet\", \"access\": \"Deny\" }, { \"name\": \"nsg-app-prod/allow-ssh-any\", \"port\": \"22\", \"source\": \"Internet\", \"access\": \"Allow\" } ] } }"
+      },
+      "rollback": {
+        "name": "Restore the previous NSG rule state",
+        "executor": "AzureRest",
+        "module": "AzureResourceManager",
+        "payload": "{ \"method\": \"PATCH\", \"path\": \"/subscriptions/{{subscriptionId}}/providers/Microsoft.Network/networkSecurityGroups?api-version=2023-05-01\", \"emulatorKey\": \"arm:networkSecurityGroups\", \"body\": { \"openRdpRules\": [\"nsg-app-prod/allow-rdp-any\"], \"openSshRules\": [\"nsg-app-prod/allow-ssh-any\"], \"rules\": [ { \"name\": \"nsg-app-prod/allow-rdp-any\", \"port\": \"3389\", \"source\": \"Internet\", \"access\": \"Allow\" }, { \"name\": \"nsg-app-prod/allow-ssh-any\", \"port\": \"22\", \"source\": \"Internet\", \"access\": \"Allow\" } ] } }"
+      },
+      "emulatorState": {
+        "arm:networkSecurityGroups": {
+          "openRdpRules": ["nsg-app-prod/allow-rdp-any"],
+          "openSshRules": ["nsg-app-prod/allow-ssh-any"],
+          "rules": [
+            { "name": "nsg-app-prod/allow-rdp-any", "port": "3389", "source": "Internet", "access": "Allow" },
+            { "name": "nsg-app-prod/allow-ssh-any", "port": "22", "source": "Internet", "access": "Allow" }
+          ]
+        }
+      }
+    },
+    {
+      "reference": "6.2",
+      "domain": "Networking",
+      "title": "Ensure that SSH access from the Internet is evaluated and restricted",
+      "description": "No network security group rule may allow inbound TCP 22 from the Internet.",
+      "rationale": "Exposed SSH is brute-forced continuously and gives direct shell access when a key or password is weak.",
+      "level": "L1",
+      "severity": "Critical",
+      "userImpact": "Impact: Administrators must reach Linux VMs through Bastion, a VPN or just-in-time access.",
+      "cisControl": "CIS Control 4: Secure Configuration",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.IR-01 Networks and environments are protected",
+      "auditProcedure": "GET the network security groups and confirm no rule allows destinationPortRange 22 from source * or Internet.",
+      "remediationProcedure": "Set the offending rule's access to Deny or narrow its source prefix.",
+      "riskWeight": 10,
+      "effortWeight": 2,
+      "audit": {
+        "name": "Find NSG rules exposing SSH to the Internet",
+        "executor": "AzureRest",
+        "module": "AzureResourceManager",
+        "scopes": "https://management.azure.com/user_impersonation",
+        "payload": "{ \"method\": \"GET\", \"path\": \"/subscriptions/{{subscriptionId}}/providers/Microsoft.Network/networkSecurityGroups?api-version=2023-05-01\", \"emulatorKey\": \"arm:networkSecurityGroups\" }",
+        "parameters": { "subscriptionId": "00000000-0000-0000-0000-000000000000" },
+        "assertions": [
+          {
+            "path": "openSshRules",
+            "operator": "IsEmpty",
+            "failure": "These network security group rules expose SSH (TCP 22) to the Internet: {actual}.",
+            "hint": "Set the rule access to Deny or scope its source prefix, and use Azure Bastion for administrative access."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Deny inbound SSH from the Internet",
+        "executor": "AzureRest",
+        "module": "AzureResourceManager",
+        "destructive": true,
+        "parameters": {
+          "subscriptionId": "00000000-0000-0000-0000-000000000000",
+          "impactScope": "resources",
+          "impactPath": "openSshRules",
+          "impactObjectType": "NSG rule",
+          "proposedValue": "access = Deny",
+          "estimatedSeconds": "50"
+        },
+        "payload": "{ \"method\": \"PATCH\", \"path\": \"/subscriptions/{{subscriptionId}}/providers/Microsoft.Network/networkSecurityGroups?api-version=2023-05-01\", \"emulatorKey\": \"arm:networkSecurityGroups\", \"body\": { \"openSshRules\": [] } }"
+      }
+    },
+    {
+      "reference": "5.1.1",
+      "domain": "Logging & Monitoring",
+      "title": "Ensure that a 'Diagnostic Setting' exists for the subscription activity log",
+      "description": "The subscription activity log must be exported to a Log Analytics workspace or storage account.",
+      "rationale": "The activity log is retained for only 90 days by default, which is shorter than most breach detection windows.",
+      "level": "L1",
+      "severity": "High",
+      "userImpact": "Impact: Log export incurs ingestion and retention charges.",
+      "cisControl": "CIS Control 8: Audit Log Management",
+      "nistFunction": "Detect",
+      "nistCategory": "DE.AE-03 Information is correlated from multiple sources",
+      "auditProcedure": "GET https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.Insights/diagnosticSettings?api-version=2021-05-01-preview\nConfirm at least one setting exists and is enabled.",
+      "remediationProcedure": "Create a diagnostic setting for the subscription activity log targeting a Log Analytics workspace with at least 365 days of retention.",
+      "riskWeight": 8,
+      "effortWeight": 2,
+      "audit": {
+        "name": "Count subscription diagnostic settings",
+        "executor": "AzureRest",
+        "module": "AzureResourceManager",
+        "scopes": "https://management.azure.com/user_impersonation",
+        "payload": "{ \"method\": \"GET\", \"path\": \"/subscriptions/{{subscriptionId}}/providers/Microsoft.Insights/diagnosticSettings?api-version=2021-05-01-preview\", \"emulatorKey\": \"arm:diagnosticSettings\" }",
+        "parameters": { "subscriptionId": "00000000-0000-0000-0000-000000000000" },
+        "assertions": [
+          {
+            "path": "value",
+            "operator": "CountGreaterThanOrEqual",
+            "expected": "1",
+            "failure": "No diagnostic setting exports the subscription activity log ({count} found).",
+            "hint": "Create a diagnostic setting sending the activity log to a Log Analytics workspace with 365-day retention."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Export the activity log to Log Analytics",
+        "executor": "AzureRest",
+        "module": "AzureResourceManager",
+        "parameters": {
+          "subscriptionId": "00000000-0000-0000-0000-000000000000",
+          "impactScope": "resources",
+          "proposedValue": "activity log exported",
+          "estimatedSeconds": "45"
+        },
+        "payload": "{ \"method\": \"PUT\", \"path\": \"/subscriptions/{{subscriptionId}}/providers/Microsoft.Insights/diagnosticSettings/ag-one-activity?api-version=2021-05-01-preview\", \"emulatorKey\": \"arm:diagnosticSettings\", \"body\": { \"value\": [ { \"name\": \"ag-one-activity\", \"properties\": { \"workspaceId\": \"law-contoso-security\", \"retentionDays\": 365 } } ] } }"
+      },
+      "rollback": {
+        "name": "Remove the diagnostic setting",
+        "executor": "AzureRest",
+        "module": "AzureResourceManager",
+        "payload": "{ \"method\": \"PATCH\", \"path\": \"/subscriptions/{{subscriptionId}}/providers/Microsoft.Insights/diagnosticSettings?api-version=2021-05-01-preview\", \"emulatorKey\": \"arm:diagnosticSettings\", \"body\": { \"value\": [] } }"
+      },
+      "emulatorState": {
+        "arm:diagnosticSettings": { "value": [] }
+      }
+    },
+    {
+      "reference": "9.2",
+      "domain": "App Service",
+      "title": "Ensure Web App redirects all HTTP traffic to HTTPS",
+      "description": "Every App Service must have HTTPS Only enabled.",
+      "rationale": "Without the redirect, session cookies and bearer tokens can be captured on the first plaintext request.",
+      "level": "L1",
+      "severity": "High",
+      "userImpact": "Impact: HTTP callers are redirected; clients pinned to http:// need updating.",
+      "cisControl": "CIS Control 3: Data Protection",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.DS-02 Data-in-transit is protected",
+      "auditProcedure": "GET https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.Web/sites?api-version=2022-03-01\nConfirm properties.httpsOnly is true for every site.",
+      "remediationProcedure": "PATCH each site setting properties.httpsOnly to true.",
+      "riskWeight": 8,
+      "effortWeight": 1,
+      "audit": {
+        "name": "List App Services accepting plain HTTP",
+        "executor": "AzureRest",
+        "module": "AzureResourceManager",
+        "scopes": "https://management.azure.com/user_impersonation",
+        "payload": "{ \"method\": \"GET\", \"path\": \"/subscriptions/{{subscriptionId}}/providers/Microsoft.Web/sites?api-version=2022-03-01\", \"emulatorKey\": \"arm:webApps\" }",
+        "parameters": { "subscriptionId": "00000000-0000-0000-0000-000000000000" },
+        "assertions": [
+          {
+            "path": "value[*].properties.httpsOnly",
+            "operator": "AllEqual",
+            "expected": "true",
+            "failure": "Not every App Service enforces HTTPS ({actual} across {count} sites).",
+            "hint": "Set httpsOnly to true on each App Service still accepting plain HTTP."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Enforce HTTPS on all App Services",
+        "executor": "AzureRest",
+        "module": "AzureResourceManager",
+        "parameters": {
+          "subscriptionId": "00000000-0000-0000-0000-000000000000",
+          "impactScope": "resources",
+          "impactPath": "value",
+          "impactNamePath": "name",
+          "impactValuePath": "properties.httpsOnly",
+          "impactObjectType": "App Service",
+          "proposedValue": "httpsOnly = true",
+          "estimatedSeconds": "45"
+        },
+        "payload": "{ \"method\": \"PATCH\", \"path\": \"/subscriptions/{{subscriptionId}}/providers/Microsoft.Web/sites?api-version=2022-03-01\", \"emulatorKey\": \"arm:webApps\", \"body\": { \"value\": [ { \"name\": \"app-contoso-portal\", \"properties\": { \"httpsOnly\": true, \"minTlsVersion\": \"1.2\" } }, { \"name\": \"app-contoso-api\", \"properties\": { \"httpsOnly\": true, \"minTlsVersion\": \"1.2\" } } ] } }"
+      },
+      "rollback": {
+        "name": "Restore the previous App Service transport settings",
+        "executor": "AzureRest",
+        "module": "AzureResourceManager",
+        "payload": "{ \"method\": \"PATCH\", \"path\": \"/subscriptions/{{subscriptionId}}/providers/Microsoft.Web/sites?api-version=2022-03-01\", \"emulatorKey\": \"arm:webApps\", \"body\": { \"value\": [ { \"name\": \"app-contoso-portal\", \"properties\": { \"httpsOnly\": false, \"minTlsVersion\": \"1.2\" } }, { \"name\": \"app-contoso-api\", \"properties\": { \"httpsOnly\": true, \"minTlsVersion\": \"1.0\" } } ] } }"
+      },
+      "emulatorState": {
+        "arm:webApps": {
+          "value": [
+            { "name": "app-contoso-portal", "properties": { "httpsOnly": false, "minTlsVersion": "1.2" } },
+            { "name": "app-contoso-api", "properties": { "httpsOnly": true, "minTlsVersion": "1.0" } }
+          ]
+        }
+      }
+    },
+    {
+      "reference": "8.1",
+      "domain": "Key Vault",
+      "title": "Ensure that the expiration date is set on all keys and secrets",
+      "description": "Key Vault keys and secrets must carry an expiry date.",
+      "rationale": "Secrets without an expiry live forever, which defeats rotation and leaves leaked material valid indefinitely.",
+      "level": "L1",
+      "severity": "Medium",
+      "userImpact": "Impact: Applications must handle rotation before the expiry date.",
+      "cisControl": "CIS Control 3: Data Protection",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.DS-01 Data-at-rest is protected",
+      "auditProcedure": "Enumerate each Key Vault's keys and secrets and confirm attributes.exp is set.",
+      "remediationProcedure": "Set an expiry on every key and secret, then adopt an automated rotation policy.",
+      "riskWeight": 6,
+      "effortWeight": 3,
+      "automatedRemediation": false,
+      "audit": {
+        "name": "Find Key Vault objects with no expiry",
+        "executor": "AzureRest",
+        "module": "AzureResourceManager",
+        "scopes": "https://management.azure.com/user_impersonation",
+        "payload": "{ \"method\": \"GET\", \"path\": \"/subscriptions/{{subscriptionId}}/providers/Microsoft.KeyVault/vaults?api-version=2023-02-01\", \"emulatorKey\": \"arm:keyVaultObjects\" }",
+        "parameters": { "subscriptionId": "00000000-0000-0000-0000-000000000000" },
+        "assertions": [
+          {
+            "path": "withoutExpiry",
+            "operator": "IsEmpty",
+            "failure": "These Key Vault objects have no expiry date: {actual}.",
+            "hint": "Set an expiry on each key and secret and configure an automated rotation policy."
+          }
+        ]
+      },
+      "emulatorState": {
+        "arm:keyVaultObjects": {
+          "withoutExpiry": ["kv-contoso/secrets/sql-admin", "kv-contoso/keys/storage-cmk"]
+        }
+      }
+    }
+  ]
+}

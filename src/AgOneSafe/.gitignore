@@ -1,0 +1,9 @@
+bin/
+obj/
+
+# Runtime artefacts: the SQLite database and the per-tenant emulator state are rebuilt on
+# first run from the catalog packs, so they are never committed.
+AgOneSafe.Web/App_Data/*.db
+AgOneSafe.Web/App_Data/*.db-shm
+AgOneSafe.Web/App_Data/*.db-wal
+AgOneSafe.Web/App_Data/emulator/

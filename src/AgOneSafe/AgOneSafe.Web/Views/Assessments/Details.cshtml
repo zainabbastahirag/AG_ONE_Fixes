@@ -1,0 +1,81 @@
+@model AssessmentDetailsViewModel
+@{
+    var assessment = Model.Assessment;
+    ViewData["Title"] = $"Assessment #{assessment.Id}";
+}
+
+<div class="ag-page-head">
+    <div>
+        <h1>Assessment #@assessment.Id</h1>
+        <p class="ag-sub">
+            @assessment.Trigger scan started @assessment.StartedAt.ToString("dd MMM yyyy HH:mm:ss") UTC by @assessment.TriggeredBy,
+            scored against CIS Level @((int)assessment.TargetLevel)@(assessment.Duration is null ? "" : $", completed in {assessment.Duration.Value.TotalSeconds:0.0} seconds").
+        </p>
+    </div>
+    <a class="btn" asp-action="Index">All assessments</a>
+</div>
+
+<div class="ag-grid cols-4">
+    <div class="ag-card ag-kpi"><div class="label">Posture</div><div class="value" style="color:@ViewHelpers.ScoreColour(assessment.PostureScore)">@assessment.PostureScore.ToString("0.#")%</div><div class="foot">severity-weighted</div></div>
+    <div class="ag-card ag-kpi"><div class="label">Passed</div><div class="value" style="color:var(--ag-pass)">@assessment.PassedCount</div><div class="foot">of @assessment.ScoredCount scored</div></div>
+    <div class="ag-card ag-kpi"><div class="label">Failed</div><div class="value" style="color:var(--ag-fail)">@assessment.FailedCount</div><div class="foot">promoted to findings</div></div>
+    <div class="ag-card ag-kpi"><div class="label">Not scored</div><div class="value">@(assessment.ErrorCount + assessment.ManualCount + assessment.NotApplicableCount)</div><div class="foot">@assessment.ErrorCount error · @assessment.ManualCount manual · @assessment.NotApplicableCount out of scope</div></div>
+</div>
+
+<div class="ag-card mt-3">
+    <div class="ag-card-head">
+        <h2>Control results</h2>
+        <div class="flex">
+            <a class="btn btn-sm @(Model.OutcomeFilter is null ? "btn-primary" : "")" asp-action="Details" asp-route-id="@assessment.Id">All</a>
+            @foreach (var outcome in new[] { ControlOutcome.Fail, ControlOutcome.Pass, ControlOutcome.Error, ControlOutcome.Manual, ControlOutcome.Skipped })
+            {
+                <a class="btn btn-sm @(Model.OutcomeFilter == outcome ? "btn-primary" : "")"
+                   asp-action="Details" asp-route-id="@assessment.Id" asp-route-outcome="@outcome">@outcome</a>
+            }
+        </div>
+    </div>
+
+    <div class="ag-table-wrap">
+        <table class="ag-table">
+            <thead>
+            <tr>
+                <th>Outcome</th><th>Control</th><th>Severity</th><th>Result detail</th><th>Command</th><th class="num">ms</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var result in Model.Results)
+            {
+                <tr>
+                    <td><span class="badge @ViewHelpers.OutcomeBadge(result.Outcome)">@result.Outcome</span></td>
+                    <td class="wrap">
+                        <strong>@result.ControlDefinition?.VendorReference</strong>
+                        <div class="small">@ViewHelpers.Truncate(result.ControlDefinition?.Title, 80)</div>
+                        <div class="small muted">@result.ControlDefinition?.Domain · NIST @result.ControlDefinition?.NistCsfFunction</div>
+                    </td>
+                    <td><span class="badge @ViewHelpers.SeverityBadge(result.ControlDefinition?.Severity ?? Severity.Low)">@result.ControlDefinition?.Severity</span></td>
+                    <td class="wrap small">
+                        @if (result.Outcome == ControlOutcome.Pass)
+                        {
+                            <span class="muted">All assertions satisfied.</span>
+                        }
+                        else
+                        {
+                            <div style="color:var(--ag-fail)">@ViewHelpers.Truncate(result.FailureReason, 200)</div>
+                            @if (!string.IsNullOrWhiteSpace(result.RequiredAction))
+                            {
+                                <div class="muted">→ @ViewHelpers.Truncate(result.RequiredAction, 160)</div>
+                            }
+                        }
+                    </td>
+                    <td class="wrap mono small muted">@ViewHelpers.Truncate(result.ExecutedCommand, 90)</td>
+                    <td class="num small">@result.DurationMs</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    @if (Model.Results.Count == 0)
+    {
+        <div class="ag-empty">No results match this filter.</div>
+    }
+</div>

@@ -1,0 +1,440 @@
+{
+  "benchmark": "Microsoft365",
+  "version": "CIS Microsoft 365 Foundations Benchmark v4.0.0",
+  "controls": [
+    {
+      "reference": "6.1.1",
+      "domain": "Exchange Online",
+      "title": "Ensure 'AuditDisabled' organizationally is set to 'False'",
+      "description": "Organisation-wide mailbox auditing must not be disabled.",
+      "rationale": "AuditDisabled set to true silently switches off mailbox auditing for every mailbox in the tenant.",
+      "level": "L1",
+      "severity": "Critical",
+      "userImpact": "No Impact",
+      "cisControl": "CIS Control 8: Audit Log Management",
+      "nistFunction": "Detect",
+      "nistCategory": "DE.AE-03 Information is correlated from multiple sources",
+      "auditProcedure": "Get-OrganizationConfig | Format-List AuditDisabled",
+      "remediationProcedure": "Set-OrganizationConfig -AuditDisabled $false",
+      "riskWeight": 10,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the organisation audit flag",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "scopes": "Exchange.ManageAsApp",
+        "payload": "Get-OrganizationConfig | Select-Object AuditDisabled | ConvertTo-Json -Compress",
+        "assertions": [
+          {
+            "path": "AuditDisabled",
+            "operator": "IsFalse",
+            "failure": "Organisation-wide mailbox auditing is disabled (AuditDisabled is {actual}); no mailbox activity is being recorded.",
+            "hint": "Run Set-OrganizationConfig -AuditDisabled $false."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Re-enable organisation-wide mailbox auditing",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "AuditDisabled = false",
+          "estimatedSeconds": "20"
+        },
+        "payload": "Set-OrganizationConfig -AuditDisabled $false\nGet-OrganizationConfig | Select-Object AuditDisabled | ConvertTo-Json -Compress"
+      },
+      "rollback": {
+        "name": "Restore the previous audit flag",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "payload": "Set-OrganizationConfig -AuditDisabled {{AuditDisabled}}\nGet-OrganizationConfig | Select-Object AuditDisabled | ConvertTo-Json -Compress"
+      },
+      "emulatorState": {
+        "Get-OrganizationConfig": {
+          "AuditDisabled": true,
+          "OAuth2ClientProfileEnabled": true,
+          "MailTipsAllTipsEnabled": false,
+          "MailTipsExternalRecipientsTipsEnabled": false,
+          "MailTipsGroupMetricsEnabled": true,
+          "MailTipsLargeAudienceThreshold": 25
+        }
+      }
+    },
+    {
+      "reference": "6.1.2",
+      "domain": "Exchange Online",
+      "title": "Ensure mailbox auditing for E3 users is Enabled",
+      "description": "Every user mailbox must have AuditEnabled set with the CIS-recommended action sets.",
+      "rationale": "Per-mailbox auditing is what makes a business email compromise investigation possible.",
+      "level": "L1",
+      "severity": "High",
+      "userImpact": "No Impact",
+      "cisControl": "CIS Control 8: Audit Log Management",
+      "nistFunction": "Detect",
+      "nistCategory": "DE.AE-03 Information is correlated from multiple sources",
+      "auditProcedure": "$MailAudit = Get-EXOMailbox -PropertySets Audit -ResultSize Unlimited | Select-Object UserPrincipalName, AuditEnabled, AuditAdmin, AuditDelegate, AuditOwner\n$MailAudit | Export-Csv -Path C:\\CISAuditSettings.csv -NoTypeInformation",
+      "remediationProcedure": "$AuditAdmin = @(\"ApplyRecord\", \"Copy\", \"Create\", \"FolderBind\", \"HardDelete\", \"Move\", \"MoveToDeletedItems\", \"SendAs\", \"SendOnBehalf\", \"SoftDelete\", \"Update\", \"UpdateCalendarDelegation\", \"UpdateFolderPermissions\", \"UpdateInboxRules\")\n$MBX = Get-EXOMailbox -ResultSize Unlimited | Where-Object { $_.RecipientTypeDetails -eq \"UserMailbox\" }\n$MBX | Set-Mailbox -AuditEnabled $true -AuditLogAgeLimit 90 -AuditAdmin $AuditAdmin",
+      "riskWeight": 8,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Find user mailboxes without auditing",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "scopes": "Exchange.ManageAsApp",
+        "payload": "$mbx = @(Get-EXOMailbox | Where-Object { $_.RecipientTypeDetails -eq 'UserMailbox' })\n[pscustomobject]@{ UserMailboxCount = $mbx.Count; MailboxesWithoutAudit = @($mbx | Where-Object { $_.AuditEnabled -ne $true } | ForEach-Object { $_.UserPrincipalName }) } | ConvertTo-Json -Depth 5 -Compress",
+        "assertions": [
+          {
+            "path": "MailboxesWithoutAudit",
+            "operator": "IsEmpty",
+            "failure": "Mailbox auditing is off for {actual}.",
+            "hint": "Run Set-Mailbox -AuditEnabled $true -AuditLogAgeLimit 90 against every user mailbox."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Enable auditing on every user mailbox",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "parameters": {
+          "impactScope": "users",
+          "impactPath": "MailboxesWithoutAudit",
+          "impactObjectType": "Mailbox",
+          "proposedValue": "AuditEnabled = true",
+          "reversible": "false",
+          "estimatedSeconds": "60"
+        },
+        "payload": "$mbx = @(Get-EXOMailbox | Where-Object { $_.RecipientTypeDetails -eq 'UserMailbox' })\nforeach ($m in $mbx) { Set-EXOMailbox -Identity $m.UserPrincipalName -AuditEnabled $true }\n[pscustomobject]@{ Updated = $mbx.Count } | ConvertTo-Json -Compress",
+        "dryRunPayload": "$mbx = @(Get-EXOMailbox | Where-Object { $_.RecipientTypeDetails -eq 'UserMailbox' -and $_.AuditEnabled -ne $true })\n[pscustomobject]@{ WouldUpdate = @($mbx | ForEach-Object { $_.UserPrincipalName }) } | ConvertTo-Json -Depth 5 -Compress"
+      }
+    },
+    {
+      "reference": "6.2.1",
+      "domain": "Exchange Online",
+      "title": "Ensure all forms of mail forwarding are blocked and/or disabled",
+      "description": "The outbound spam filter policy must block automatic external forwarding.",
+      "rationale": "Auto-forwarding rules are how an attacker exfiltrates mail quietly after a mailbox compromise.",
+      "level": "L1",
+      "severity": "Critical",
+      "userImpact": "Impact: Users relying on auto-forwarding to personal addresses will lose it.",
+      "cisControl": "CIS Control 3: Data Protection",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.DS-02 Data-in-transit is protected",
+      "auditProcedure": "Get-HostedOutboundSpamFilterPolicy | Select-Object Name, AutoForwardingMode",
+      "remediationProcedure": "Set-HostedOutboundSpamFilterPolicy -Identity Default -AutoForwardingMode Off",
+      "riskWeight": 10,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the outbound auto-forwarding mode",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "scopes": "Exchange.ManageAsApp",
+        "payload": "Get-HostedOutboundSpamFilterPolicy | Select-Object Name, AutoForwardingMode | ConvertTo-Json -Depth 4 -Compress",
+        "assertions": [
+          {
+            "path": "AutoForwardingMode",
+            "operator": "Equals",
+            "expected": "Off",
+            "failure": "Automatic external forwarding is set to {actual}; mail can be silently exfiltrated from a compromised mailbox.",
+            "hint": "Run Set-HostedOutboundSpamFilterPolicy -Identity Default -AutoForwardingMode Off."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Block automatic external forwarding",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "AutoForwardingMode = Off",
+          "estimatedSeconds": "25"
+        },
+        "payload": "Set-HostedOutboundSpamFilterPolicy -Identity Default -AutoForwardingMode Off\nGet-HostedOutboundSpamFilterPolicy | Select-Object Name, AutoForwardingMode | ConvertTo-Json -Compress",
+        "destructive": true
+      },
+      "rollback": {
+        "name": "Restore the previous forwarding mode",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "payload": "Set-HostedOutboundSpamFilterPolicy -Identity Default -AutoForwardingMode {{AutoForwardingMode}}\nGet-HostedOutboundSpamFilterPolicy | Select-Object Name, AutoForwardingMode | ConvertTo-Json -Compress"
+      },
+      "emulatorState": {
+        "Get-HostedOutboundSpamFilterPolicy": { "Name": "Default", "AutoForwardingMode": "Automatic" }
+      }
+    },
+    {
+      "reference": "6.2.3",
+      "domain": "Exchange Online",
+      "title": "Ensure email from external senders is identified",
+      "description": "External sender identification must be enabled so inbound mail carries a visible tag.",
+      "rationale": "A visible external tag is the cheapest and most effective anti-impersonation cue available to users.",
+      "level": "L1",
+      "severity": "Medium",
+      "userImpact": "Impact: Users will see an External tag on mail from outside the organisation.",
+      "cisControl": "CIS Control 9: Email and Web Browser Protections",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.AT-01 Personnel are provided awareness and training",
+      "auditProcedure": "Get-ExternalInOutlook | Select-Object Enabled, AllowList",
+      "remediationProcedure": "Set-ExternalInOutlook -Enabled $true",
+      "riskWeight": 6,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the external sender tag setting",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "scopes": "Exchange.ManageAsApp",
+        "payload": "Get-ExternalInOutlook | Select-Object Enabled, AllowList | ConvertTo-Json -Depth 4 -Compress",
+        "assertions": [
+          {
+            "path": "Enabled",
+            "operator": "IsTrue",
+            "failure": "External sender identification is {actual}; inbound mail is not tagged as external.",
+            "hint": "Run Set-ExternalInOutlook -Enabled $true."
+          },
+          {
+            "path": "AllowList",
+            "operator": "IsEmpty",
+            "failure": "These senders are exempt from the external tag: {actual}.",
+            "hint": "Clear the external tag allow list unless there is a documented business reason for each entry."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Enable the external sender tag",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "Enabled = true",
+          "estimatedSeconds": "20"
+        },
+        "payload": "Set-ExternalInOutlook -Enabled $true\nGet-ExternalInOutlook | Select-Object Enabled, AllowList | ConvertTo-Json -Compress"
+      },
+      "rollback": {
+        "name": "Restore the previous external tag setting",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "payload": "Set-ExternalInOutlook -Enabled {{Enabled}}\nGet-ExternalInOutlook | Select-Object Enabled, AllowList | ConvertTo-Json -Compress"
+      },
+      "emulatorState": {
+        "Get-ExternalInOutlook": { "Enabled": false, "AllowList": [] }
+      }
+    },
+    {
+      "reference": "6.5.1",
+      "domain": "Exchange Online",
+      "title": "Ensure modern authentication for Exchange Online is enabled",
+      "description": "OAuth2 client profile must be enabled on the organisation configuration.",
+      "rationale": "Modern authentication is a prerequisite for Conditional Access and MFA on Exchange workloads.",
+      "level": "L1",
+      "severity": "High",
+      "userImpact": "Impact: Older Outlook clients that only support basic authentication will stop connecting.",
+      "cisControl": "CIS Control 6: Access Control Management",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.AA-03 Users and devices are authenticated",
+      "auditProcedure": "Get-OrganizationConfig | Select-Object OAuth2ClientProfileEnabled",
+      "remediationProcedure": "Set-OrganizationConfig -OAuth2ClientProfileEnabled $true",
+      "riskWeight": 8,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the modern authentication flag",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "scopes": "Exchange.ManageAsApp",
+        "payload": "Get-OrganizationConfig | Select-Object OAuth2ClientProfileEnabled | ConvertTo-Json -Compress",
+        "assertions": [
+          {
+            "path": "OAuth2ClientProfileEnabled",
+            "operator": "IsTrue",
+            "failure": "Modern authentication for Exchange Online is {actual}; Conditional Access cannot be applied to these sessions.",
+            "hint": "Run Set-OrganizationConfig -OAuth2ClientProfileEnabled $true."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Enable modern authentication",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "OAuth2ClientProfileEnabled = true",
+          "estimatedSeconds": "20"
+        },
+        "payload": "Set-OrganizationConfig -OAuth2ClientProfileEnabled $true\nGet-OrganizationConfig | Select-Object OAuth2ClientProfileEnabled | ConvertTo-Json -Compress"
+      },
+      "rollback": {
+        "name": "Restore the previous modern authentication setting",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "payload": "Set-OrganizationConfig -OAuth2ClientProfileEnabled {{OAuth2ClientProfileEnabled}}\nGet-OrganizationConfig | Select-Object OAuth2ClientProfileEnabled | ConvertTo-Json -Compress"
+      }
+    },
+    {
+      "reference": "6.5.2",
+      "domain": "Exchange Online",
+      "title": "Ensure MailTips are enabled for end users",
+      "description": "All MailTips, including the external recipient tip and large audience threshold, must be enabled.",
+      "rationale": "MailTips warn users before they send to an external or unexpectedly large audience, preventing accidental disclosure.",
+      "level": "L2",
+      "severity": "Low",
+      "userImpact": "No Impact",
+      "cisControl": "CIS Control 3: Data Protection",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.AT-01 Personnel are provided awareness and training",
+      "auditProcedure": "Get-OrganizationConfig | Select-Object MailTipsAllTipsEnabled, MailTipsExternalRecipientsTipsEnabled, MailTipsGroupMetricsEnabled, MailTipsLargeAudienceThreshold",
+      "remediationProcedure": "Set-OrganizationConfig -MailTipsAllTipsEnabled $true -MailTipsExternalRecipientsTipsEnabled $true -MailTipsGroupMetricsEnabled $true -MailTipsLargeAudienceThreshold 25",
+      "riskWeight": 3,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the MailTips configuration",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "scopes": "Exchange.ManageAsApp",
+        "payload": "Get-OrganizationConfig | Select-Object MailTipsAllTipsEnabled, MailTipsExternalRecipientsTipsEnabled, MailTipsGroupMetricsEnabled, MailTipsLargeAudienceThreshold | ConvertTo-Json -Compress",
+        "assertions": [
+          {
+            "path": "MailTipsAllTipsEnabled",
+            "operator": "IsTrue",
+            "failure": "MailTips are {actual}.",
+            "hint": "Enable all MailTips with Set-OrganizationConfig -MailTipsAllTipsEnabled $true."
+          },
+          {
+            "path": "MailTipsExternalRecipientsTipsEnabled",
+            "operator": "IsTrue",
+            "failure": "The external recipient MailTip is {actual}; users get no warning before mailing outside the organisation.",
+            "hint": "Enable MailTipsExternalRecipientsTipsEnabled."
+          },
+          {
+            "path": "MailTipsLargeAudienceThreshold",
+            "operator": "LessThanOrEqual",
+            "expected": "25",
+            "failure": "The large audience MailTip threshold is {actual}; CIS recommends no more than {expected}.",
+            "hint": "Set MailTipsLargeAudienceThreshold to 25 or lower."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Enable all MailTips",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "all MailTips enabled, threshold 25",
+          "estimatedSeconds": "20"
+        },
+        "payload": "Set-OrganizationConfig -MailTipsAllTipsEnabled $true -MailTipsExternalRecipientsTipsEnabled $true -MailTipsGroupMetricsEnabled $true -MailTipsLargeAudienceThreshold 25\nGet-OrganizationConfig | Select-Object MailTipsAllTipsEnabled, MailTipsExternalRecipientsTipsEnabled, MailTipsGroupMetricsEnabled, MailTipsLargeAudienceThreshold | ConvertTo-Json -Compress"
+      },
+      "rollback": {
+        "name": "Restore the previous MailTips configuration",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "payload": "Set-OrganizationConfig -MailTipsAllTipsEnabled {{MailTipsAllTipsEnabled}} -MailTipsExternalRecipientsTipsEnabled {{MailTipsExternalRecipientsTipsEnabled}} -MailTipsGroupMetricsEnabled {{MailTipsGroupMetricsEnabled}} -MailTipsLargeAudienceThreshold {{MailTipsLargeAudienceThreshold}}\nGet-OrganizationConfig | Select-Object MailTipsAllTipsEnabled, MailTipsExternalRecipientsTipsEnabled, MailTipsGroupMetricsEnabled, MailTipsLargeAudienceThreshold | ConvertTo-Json -Compress"
+      }
+    },
+    {
+      "reference": "6.5.3",
+      "domain": "Exchange Online",
+      "title": "Ensure additional storage providers are restricted in Outlook on the web",
+      "description": "Third-party storage providers must be unavailable in Outlook on the web.",
+      "rationale": "Consumer storage providers inside the mail client are an uncontrolled exfiltration channel.",
+      "level": "L2",
+      "severity": "Medium",
+      "userImpact": "Impact: Users will not be able to attach files from third-party cloud storage in OWA.",
+      "cisControl": "CIS Control 3: Data Protection",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.DS-01 Data-at-rest is protected",
+      "auditProcedure": "Get-OwaMailboxPolicy | Select-Object Name, AdditionalStorageProvidersAvailable",
+      "remediationProcedure": "Set-OwaMailboxPolicy -Identity OwaMailboxPolicy-Default -AdditionalStorageProvidersAvailable $false",
+      "riskWeight": 5,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the OWA storage provider policy",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "scopes": "Exchange.ManageAsApp",
+        "payload": "Get-OwaMailboxPolicy | Select-Object Name, AdditionalStorageProvidersAvailable | ConvertTo-Json -Depth 4 -Compress",
+        "assertions": [
+          {
+            "path": "AdditionalStorageProvidersAvailable",
+            "operator": "IsFalse",
+            "failure": "Third-party storage providers are available in Outlook on the web ({actual}).",
+            "hint": "Run Set-OwaMailboxPolicy -AdditionalStorageProvidersAvailable $false."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Restrict third-party storage providers in OWA",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "AdditionalStorageProvidersAvailable = false",
+          "estimatedSeconds": "20"
+        },
+        "payload": "Set-OwaMailboxPolicy -Identity OwaMailboxPolicy-Default -AdditionalStorageProvidersAvailable $false\nGet-OwaMailboxPolicy | Select-Object Name, AdditionalStorageProvidersAvailable | ConvertTo-Json -Compress"
+      },
+      "rollback": {
+        "name": "Restore the previous OWA storage provider setting",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "payload": "Set-OwaMailboxPolicy -Identity OwaMailboxPolicy-Default -AdditionalStorageProvidersAvailable {{AdditionalStorageProvidersAvailable}}\nGet-OwaMailboxPolicy | Select-Object Name, AdditionalStorageProvidersAvailable | ConvertTo-Json -Compress"
+      },
+      "emulatorState": {
+        "Get-OwaMailboxPolicy": { "Name": "OwaMailboxPolicy-Default", "AdditionalStorageProvidersAvailable": true }
+      }
+    },
+    {
+      "reference": "6.5.4",
+      "domain": "Exchange Online",
+      "title": "Ensure SMTP AUTH is disabled",
+      "description": "SMTP client authentication must be disabled at the transport configuration level.",
+      "rationale": "SMTP AUTH is basic authentication under another name and cannot be protected by Conditional Access.",
+      "level": "L1",
+      "severity": "High",
+      "userImpact": "Impact: Devices and line-of-business applications relaying through SMTP AUTH will stop working until migrated.",
+      "cisControl": "CIS Control 6: Access Control Management",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.AA-03 Users and devices are authenticated",
+      "auditProcedure": "Get-TransportConfig | Select-Object SmtpClientAuthenticationDisabled",
+      "remediationProcedure": "Set-TransportConfig -SmtpClientAuthenticationDisabled $true",
+      "riskWeight": 8,
+      "effortWeight": 2,
+      "audit": {
+        "name": "Read the SMTP AUTH transport setting",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "scopes": "Exchange.ManageAsApp",
+        "payload": "Get-TransportConfig | Select-Object SmtpClientAuthenticationDisabled | ConvertTo-Json -Compress",
+        "assertions": [
+          {
+            "path": "SmtpClientAuthenticationDisabled",
+            "operator": "IsTrue",
+            "failure": "SMTP AUTH is still enabled tenant-wide ({actual}); it accepts basic authentication that Conditional Access cannot see.",
+            "hint": "Run Set-TransportConfig -SmtpClientAuthenticationDisabled $true after migrating any device that relays mail."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Disable SMTP AUTH tenant-wide",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "SmtpClientAuthenticationDisabled = true",
+          "estimatedSeconds": "25"
+        },
+        "payload": "Set-TransportConfig -SmtpClientAuthenticationDisabled $true\nGet-TransportConfig | Select-Object SmtpClientAuthenticationDisabled | ConvertTo-Json -Compress",
+        "destructive": true
+      },
+      "rollback": {
+        "name": "Restore the previous SMTP AUTH setting",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "payload": "Set-TransportConfig -SmtpClientAuthenticationDisabled {{SmtpClientAuthenticationDisabled}}\nGet-TransportConfig | Select-Object SmtpClientAuthenticationDisabled | ConvertTo-Json -Compress"
+      },
+      "emulatorState": {
+        "Get-TransportConfig": { "SmtpClientAuthenticationDisabled": false }
+      }
+    }
+  ]
+}

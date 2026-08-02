@@ -1,0 +1,288 @@
+{
+  "benchmark": "Microsoft365",
+  "version": "CIS Microsoft 365 Foundations Benchmark v4.0.0",
+  "controls": [
+    {
+      "reference": "1.1.1",
+      "domain": "Microsoft 365 Admin",
+      "title": "Ensure Administrative accounts are cloud-only",
+      "description": "Privileged roles must be held by cloud-only accounts that are not synchronised from on-premises Active Directory.",
+      "rationale": "A compromised on-premises directory can be used to pivot into the tenant if privileged identities are synchronised.",
+      "level": "L1",
+      "severity": "High",
+      "userImpact": "No Impact",
+      "cisControl": "CIS Control 6: Access Control Management",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.AA-05 Access permissions and authorizations",
+      "auditProcedure": "# Get privileged role IDs\n$PrivilegedRoles = $DirectoryRoles | Where-Object { $_.DisplayName -like \"*Administrator*\" -or $_.DisplayName -eq \"Global Reader\" }\n# Get the members of these various roles\n$RoleMembers = $PrivilegedRoles | ForEach-Object { Get-MgDirectoryRoleMember -DirectoryRoleId $_.Id } | Select-Object Id -Unique\n# Retrieve details about the members in these roles\n$PrivilegedUsers = $RoleMembers | ForEach-Object { Get-MgUser -UserId $_.Id -Property UserPrincipalName, DisplayName, Id, OnPremisesSyncEnabled }\n$PrivilegedUsers | Where-Object { $_.OnPremisesSyncEnabled -eq $true } | ft DisplayName,UserPrincipalName,OnPremisesSyncEnabled",
+      "remediationProcedure": "Remediation will require first identifying the privileged accounts that are synced from on-premises and then creating a new cloud-only account for that user. Once a replacement account is established, the hybrid account should have its role reduced to that of a nonprivileged user or removed depending on the need.",
+      "riskWeight": 9,
+      "effortWeight": 4,
+      "automatedRemediation": false,
+      "audit": {
+        "name": "List synchronised privileged accounts",
+        "executor": "PowerShell",
+        "module": "MicrosoftGraph",
+        "scopes": "Directory.Read.All, RoleManagement.Read.Directory",
+        "payload": "$roles = @(Get-MgDirectoryRole) | Where-Object { $_.DisplayName -like '*Administrator*' -or $_.DisplayName -eq 'Global Reader' }\n$adminUpns = @($roles | ForEach-Object { $_.Members }) | Sort-Object -Unique\n$users = @(Get-MgUser)\n$synced = @($users | Where-Object { $adminUpns -contains $_.UserPrincipalName -and $_.OnPremisesSyncEnabled -eq $true })\n[pscustomobject]@{ PrivilegedAccountCount = $adminUpns.Count; SyncedPrivilegedAccounts = @($synced | ForEach-Object { $_.UserPrincipalName }) } | ConvertTo-Json -Depth 5 -Compress",
+        "assertions": [
+          {
+            "path": "SyncedPrivilegedAccounts",
+            "operator": "IsEmpty",
+            "failure": "Privileged roles are held by accounts synchronised from on-premises Active Directory: {actual}.",
+            "hint": "Create cloud-only replacement accounts for these identities, move the role assignment across, then reduce the hybrid account to a standard user."
+          }
+        ]
+      },
+      "emulatorState": {
+        "Get-MgDirectoryRole": [
+          { "Id": "62e90394-69f5-4237-9190-012177145e10", "DisplayName": "Global Administrator", "Members": ["ciso@contoso.com", "breakglass1@contoso.com", "svc-sync@contoso.com"] },
+          { "Id": "729827e3-9c14-49f7-bb1b-9608f156bbb8", "DisplayName": "Helpdesk Administrator", "Members": ["helpdesk@contoso.com"] },
+          { "Id": "f2ef992c-3afb-46b9-b7cf-a126ee74c451", "DisplayName": "Global Reader", "Members": ["auditor@contoso.com"] }
+        ],
+        "Get-MgUser": [
+          { "Id": "u1", "UserPrincipalName": "ciso@contoso.com", "DisplayName": "Dana Patel", "AccountEnabled": true, "OnPremisesSyncEnabled": false },
+          { "Id": "u2", "UserPrincipalName": "breakglass1@contoso.com", "DisplayName": "Break Glass 1", "AccountEnabled": true, "OnPremisesSyncEnabled": false },
+          { "Id": "u3", "UserPrincipalName": "svc-sync@contoso.com", "DisplayName": "Directory Sync Service", "AccountEnabled": true, "OnPremisesSyncEnabled": true },
+          { "Id": "u4", "UserPrincipalName": "helpdesk@contoso.com", "DisplayName": "Helpdesk Team", "AccountEnabled": true, "OnPremisesSyncEnabled": false },
+          { "Id": "u5", "UserPrincipalName": "auditor@contoso.com", "DisplayName": "Internal Audit", "AccountEnabled": true, "OnPremisesSyncEnabled": false },
+          { "Id": "u6", "UserPrincipalName": "billing@contoso.com", "DisplayName": "Billing Shared", "AccountEnabled": true, "OnPremisesSyncEnabled": false },
+          { "Id": "u7", "UserPrincipalName": "reception@contoso.com", "DisplayName": "Reception Shared", "AccountEnabled": true, "OnPremisesSyncEnabled": false }
+        ]
+      }
+    },
+    {
+      "reference": "1.1.3",
+      "domain": "Microsoft 365 Admin",
+      "title": "Ensure that between two and four global admins are designated",
+      "description": "The Global Administrator role must be held by at least two and no more than four accounts.",
+      "rationale": "A single global admin is an availability risk; too many multiply the tenant's attack surface.",
+      "level": "L1",
+      "severity": "High",
+      "userImpact": "No Impact",
+      "cisControl": "CIS Control 6: Access Control Management",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.AA-05 Access permissions and authorizations",
+      "auditProcedure": "# Determine Id of role using the immutable RoleTemplateId value.\n$globalAdminRole = Get-MgDirectoryRole -Filter \"RoleTemplateId eq '62e90394-69f5-4237-9190-012177145e10'\"\n$globalAdmins = Get-MgDirectoryRoleMember -DirectoryRoleId $globalAdminRole.Id\nWrite-Host \"*** There are\" $globalAdmins.AdditionalProperties.Count \"Global Administrators assigned.\"\n\nGraph API:\nGET https://graph.microsoft.com/beta/security/secureScores",
+      "remediationProcedure": "To remediate using the UI:\n1. Navigate to the Microsoft 365 admin center https://admin.microsoft.com\n2. Select Users > Active Users.\n3. In the Search field enter the name of the user to be made a Global Administrator.\n4. To create a new Global Admin: select the user's name, select Manage roles, select Admin center access, check Global Administrator, click Save changes.\n5. To remove Global Admins: select the user, under Roles select Manage roles, de-select the appropriate role, click Save changes.",
+      "riskWeight": 8,
+      "effortWeight": 2,
+      "automatedRemediation": false,
+      "audit": {
+        "name": "Count Global Administrator assignments",
+        "executor": "PowerShell",
+        "module": "MicrosoftGraph",
+        "scopes": "RoleManagement.Read.Directory",
+        "payload": "$role = @(Get-MgDirectoryRole) | Where-Object { $_.Id -eq '62e90394-69f5-4237-9190-012177145e10' }\n[pscustomobject]@{ GlobalAdministratorCount = @($role.Members).Count; GlobalAdministrators = @($role.Members) } | ConvertTo-Json -Depth 5 -Compress",
+        "assertions": [
+          {
+            "path": "GlobalAdministratorCount",
+            "operator": "Between",
+            "expected": "2",
+            "secondary": "4",
+            "failure": "The tenant has {actual} Global Administrators; CIS requires between {expected} and {secondary}.",
+            "hint": "Assign or remove Global Administrator role holders until between two and four accounts remain, keeping one dedicated break-glass account."
+          }
+        ]
+      }
+    },
+    {
+      "reference": "1.2.2",
+      "domain": "Microsoft 365 Admin",
+      "title": "Ensure sign-in to shared mailboxes is blocked",
+      "description": "The Entra ID account backing every shared mailbox must be disabled so it cannot be used to sign in interactively.",
+      "rationale": "Shared mailbox accounts have a known password-less identity; leaving sign-in enabled gives an attacker a foothold that no one monitors.",
+      "level": "L1",
+      "severity": "High",
+      "userImpact": "No Impact",
+      "cisControl": "CIS Control 6: Access Control Management",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.AA-01 Identities and credentials are managed",
+      "auditProcedure": "$MBX = Get-EXOMailbox -RecipientTypeDetails SharedMailbox\n$MBX | ForEach-Object { Get-MgUser -UserId $_.ExternalDirectoryObjectId -Property DisplayName, UserPrincipalName, AccountEnabled } | Format-Table DisplayName, UserPrincipalName, AccountEnabled",
+      "remediationProcedure": "To disable sign-in for a single account:\n$MBX = Get-EXOMailbox -Identity TestUser@example.com\nUpdate-MgUser -UserId $MBX.ExternalDirectoryObjectId -AccountEnabled:$false\n\nThe following will block sign-in to all Shared Mailboxes:\n$MBX = Get-EXOMailbox -RecipientTypeDetails SharedMailbox\n$MBX | ForEach-Object { Update-MgUser -UserId $_.ExternalDirectoryObjectId -AccountEnabled:$false }",
+      "riskWeight": 8,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Find shared mailboxes that can still sign in",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "scopes": "Exchange.ManageAsApp, User.ReadWrite.All",
+        "payload": "$shared = @(Get-EXOMailbox | Where-Object { $_.RecipientTypeDetails -eq 'SharedMailbox' })\n$users = @(Get-MgUser)\n$enabled = @($shared | Where-Object { $upn = $_.UserPrincipalName; ($users | Where-Object { $_.UserPrincipalName -eq $upn -and $_.AccountEnabled -eq $true }) })\n[pscustomobject]@{ SharedMailboxCount = $shared.Count; SignInEnabledMailboxes = @($enabled | ForEach-Object { $_.UserPrincipalName }) } | ConvertTo-Json -Depth 5 -Compress",
+        "assertions": [
+          {
+            "path": "SignInEnabledMailboxes",
+            "operator": "IsEmpty",
+            "failure": "Interactive sign-in is still enabled on these shared mailboxes: {actual}.",
+            "hint": "Disable the Entra ID account behind each shared mailbox with Update-MgUser -AccountEnabled:$false."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Block sign-in on every shared mailbox",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "scopes": "User.ReadWrite.All",
+        "parameters": {
+          "impactScope": "users",
+          "impactPath": "SignInEnabledMailboxes",
+          "impactObjectType": "Shared mailbox",
+          "proposedValue": "AccountEnabled = false",
+          "reversible": "false",
+          "estimatedSeconds": "45"
+        },
+        "payload": "$shared = @(Get-EXOMailbox | Where-Object { $_.RecipientTypeDetails -eq 'SharedMailbox' })\nforeach ($mbx in $shared) { Set-MgUser -Identity $mbx.UserPrincipalName -AccountEnabled $false }\n[pscustomobject]@{ Blocked = $shared.Count } | ConvertTo-Json -Compress",
+        "dryRunPayload": "$shared = @(Get-EXOMailbox | Where-Object { $_.RecipientTypeDetails -eq 'SharedMailbox' })\n[pscustomobject]@{ WouldBlock = @($shared | ForEach-Object { $_.UserPrincipalName }) } | ConvertTo-Json -Depth 5 -Compress"
+      },
+      "emulatorState": {
+        "Get-EXOMailbox": [
+          { "UserPrincipalName": "billing@contoso.com", "DisplayName": "Billing Shared", "RecipientTypeDetails": "SharedMailbox", "AuditEnabled": false },
+          { "UserPrincipalName": "reception@contoso.com", "DisplayName": "Reception Shared", "RecipientTypeDetails": "SharedMailbox", "AuditEnabled": false },
+          { "UserPrincipalName": "ciso@contoso.com", "DisplayName": "Dana Patel", "RecipientTypeDetails": "UserMailbox", "AuditEnabled": true },
+          { "UserPrincipalName": "helpdesk@contoso.com", "DisplayName": "Helpdesk Team", "RecipientTypeDetails": "UserMailbox", "AuditEnabled": false }
+        ]
+      }
+    },
+    {
+      "reference": "1.3.1",
+      "domain": "Microsoft 365 Admin",
+      "title": "Ensure the 'Password expiration policy' is set to 'Set passwords to never expire'",
+      "description": "Password expiry must be disabled so users are not driven towards predictable password rotation patterns.",
+      "rationale": "Forced rotation encourages weak, incremental passwords. NIST and Microsoft both recommend expiry be disabled in favour of MFA and banned-password lists.",
+      "level": "L1",
+      "severity": "Medium",
+      "userImpact": "No Impact",
+      "cisControl": "CIS Control 5: Account Management",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.AA-01 Identities and credentials are managed",
+      "auditProcedure": "Get-MgDomain | Select-Object Id, PasswordValidityPeriodInDays",
+      "remediationProcedure": "Update-MgDomain -DomainId <domain> -PasswordValidityPeriodInDays 2147483647 -PasswordNotificationWindowInDays 14",
+      "riskWeight": 5,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the domain password validity period",
+        "executor": "PowerShell",
+        "module": "MicrosoftGraph",
+        "scopes": "Domain.Read.All",
+        "payload": "Get-MgDomain | Select-Object Id, PasswordValidityPeriodInDays | ConvertTo-Json -Depth 4 -Compress",
+        "assertions": [
+          {
+            "path": "PasswordValidityPeriodInDays",
+            "operator": "Equals",
+            "expected": "2147483647",
+            "failure": "Passwords expire after {actual} days on this domain; CIS requires the never-expire value {expected}.",
+            "hint": "Run Update-MgDomain -PasswordValidityPeriodInDays 2147483647 for every verified domain."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Set passwords to never expire",
+        "executor": "PowerShell",
+        "module": "MicrosoftGraph",
+        "scopes": "Domain.ReadWrite.All",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "PasswordValidityPeriodInDays = 2147483647",
+          "estimatedSeconds": "15"
+        },
+        "payload": "Set-MgDomain -PasswordValidityPeriodInDays 2147483647\nGet-MgDomain | Select-Object Id, PasswordValidityPeriodInDays | ConvertTo-Json -Compress"
+      },
+      "rollback": {
+        "name": "Restore the previous password validity period",
+        "executor": "PowerShell",
+        "module": "MicrosoftGraph",
+        "payload": "Set-MgDomain -PasswordValidityPeriodInDays {{PasswordValidityPeriodInDays}}\nGet-MgDomain | Select-Object Id, PasswordValidityPeriodInDays | ConvertTo-Json -Compress"
+      },
+      "emulatorState": {
+        "Get-MgDomain": { "Id": "contoso.com", "PasswordValidityPeriodInDays": 90, "PasswordNotificationWindowInDays": 14 }
+      }
+    },
+    {
+      "reference": "1.3.3",
+      "domain": "Microsoft 365 Admin",
+      "title": "Ensure 'External sharing' of calendars is not available",
+      "description": "Anonymous calendar sharing outside the organisation must be turned off.",
+      "rationale": "Published calendars leak meeting subjects, attendee lists and travel patterns that are useful for social engineering.",
+      "level": "L2",
+      "severity": "Medium",
+      "userImpact": "Impact: Users will no longer be able to publish calendars to external recipients.",
+      "cisControl": "CIS Control 3: Data Protection",
+      "nistFunction": "Protect",
+      "nistCategory": "PR.DS-01 Data-at-rest is protected",
+      "auditProcedure": "Get-SharingPolicy -Identity \"Default Sharing Policy\" | Select-Object Domains, Enabled",
+      "remediationProcedure": "Set-SharingPolicy -Identity \"Default Sharing Policy\" -Enabled $false",
+      "riskWeight": 4,
+      "effortWeight": 1,
+      "audit": {
+        "name": "Read the default calendar sharing policy",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "scopes": "Exchange.ManageAsApp",
+        "payload": "Get-SharingPolicy | Select-Object Name, Enabled | ConvertTo-Json -Depth 4 -Compress",
+        "assertions": [
+          {
+            "path": "Enabled",
+            "operator": "IsFalse",
+            "failure": "The default calendar sharing policy is enabled ({actual}), so users can publish calendars externally.",
+            "hint": "Disable the default sharing policy with Set-SharingPolicy -Enabled $false."
+          }
+        ]
+      },
+      "remediation": {
+        "name": "Disable external calendar sharing",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "parameters": {
+          "impactScope": "tenant",
+          "proposedValue": "Enabled = false",
+          "estimatedSeconds": "20"
+        },
+        "payload": "Set-SharingPolicy -Identity 'Default Sharing Policy' -Enabled $false\nGet-SharingPolicy | Select-Object Name, Enabled | ConvertTo-Json -Compress"
+      },
+      "rollback": {
+        "name": "Restore the previous calendar sharing setting",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "payload": "Set-SharingPolicy -Identity 'Default Sharing Policy' -Enabled {{Enabled}}\nGet-SharingPolicy | Select-Object Name, Enabled | ConvertTo-Json -Compress"
+      },
+      "emulatorState": {
+        "Get-SharingPolicy": { "Name": "Default Sharing Policy", "Enabled": true }
+      }
+    },
+    {
+      "reference": "1.3.6",
+      "domain": "Microsoft 365 Admin",
+      "title": "Ensure the customer lockbox feature is enabled",
+      "description": "Customer Lockbox requires explicit customer approval before a Microsoft engineer can access tenant content.",
+      "rationale": "Without Lockbox, support access to customer data happens without an approval record.",
+      "level": "L2",
+      "severity": "Medium",
+      "userImpact": "No Impact",
+      "cisControl": "CIS Control 6: Access Control Management",
+      "nistFunction": "Govern",
+      "nistCategory": "GV.SC-07 Supplier risk is managed",
+      "auditProcedure": "Get-OrganizationConfig | Select-Object CustomerLockBoxEnabled",
+      "remediationProcedure": "Set-OrganizationConfig -CustomerLockBoxEnabled $true. Requires Microsoft 365 E5 or the Compliance add-on.",
+      "requiredLicense": "Microsoft 365 E5 or Compliance add-on",
+      "riskWeight": 4,
+      "effortWeight": 3,
+      "audit": {
+        "name": "Read the Customer Lockbox setting",
+        "executor": "PowerShell",
+        "module": "ExchangeOnline",
+        "scopes": "Exchange.ManageAsApp",
+        "payload": "Get-OrganizationConfig | Select-Object CustomerLockBoxEnabled | ConvertTo-Json -Compress",
+        "assertions": [
+          {
+            "path": "CustomerLockBoxEnabled",
+            "operator": "IsTrue",
+            "failure": "Customer Lockbox is {actual}; Microsoft support can access tenant content without a recorded customer approval.",
+            "hint": "Enable Customer Lockbox once the tenant holds Microsoft 365 E5 or the Compliance add-on."
+          }
+        ]
+      },
+      "emulatorState": {
+        "Get-OrganizationConfig": { "CustomerLockBoxEnabled": false }
+      }
+    }
+  ]
+}
